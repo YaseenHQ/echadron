@@ -196,6 +196,7 @@ function formatPartMarkdown(part: ContentPart): string {
     case "image_url": return "[image]";
     case "audio_url": return "[audio]";
     case "video_url": return "[video]";
+    case "openai_compaction": return "";
   }
 }
 
@@ -205,7 +206,8 @@ function stringifyParts(parts: readonly ContentPart[]): string {
     if (part.type === "think") return part.think.trim() ? `<thinking>\n${part.think}\n</thinking>` : "";
     if (part.type === "image_url") return "[image]";
     if (part.type === "audio_url") return "[audio]";
-    return "[video]";
+    if (part.type === "video_url") return "[video]";
+    return "";
   }).filter(Boolean).join("\n");
 }
 
