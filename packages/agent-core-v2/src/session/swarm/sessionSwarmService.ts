@@ -10,10 +10,17 @@
  * carrying the swarm's tool-call context, `subagent.suspended` when a task is
  * requeued after a provider rate limit) are emitted here / via the
  * `agentLifecycle` wrapper helper `mirrorAgentRun`; the lifecycle registry
- * itself stays flat. Bound at Session scope.
+ * itself stays flat. Spawn tasks may carry a concrete `binding` resolved by
+ * the caller (the `AgentSwarm` tool via `resolveSubagentBinding`); without
+ * one, spawns inherit the caller agent's model and thinking level. Spawn
+ * bindings are resolved through the model catalog before lifecycle allocation.
+ * Resumed agents keep the model recorded in their own wire journal — with
+ * per-subagent models there is no "child follows the parent's current model"
+ * invariant to enforce. Bound at Session scope.
  */
 
 import type { TokenUsage } from '#/kosong/contract/usage';
+import { IModelCatalog } from '#/kosong/model/catalog';
 
 import { InstantiationType } from '#/_base/di/extensions';
 import { LifecycleScope, registerScopedService } from '#/_base/di/scope';
@@ -36,6 +43,7 @@ import {
 } from '#/session/agentLifecycle/subagentMetadata';
 import { emitAgentRunSpawned, mirrorAgentRun } from '#/session/subagent/mirrorAgentRun';
 import { ISessionSubagentService } from '#/session/subagent/subagent';
+import { wrapSubagentModelError } from '#/session/subagent/configSection';
 import { ISessionContext } from '#/session/sessionContext/sessionContext';
 import { ISessionMetadata, type AgentMeta } from '#/session/sessionMetadata/sessionMetadata';
 import { ISessionProcessRunner } from '#/session/process/processRunner';
@@ -83,6 +91,7 @@ export class SessionSwarmService implements ISessionSwarmService {
     @ISessionMetadata private readonly metadata: ISessionMetadata,
     @ISessionProcessRunner private readonly processRunner: ISessionProcessRunner,
     @ILogService private readonly log: ILogService,
+    @IModelCatalog private readonly modelCatalog: IModelCatalog,
   ) {}
 
   async getSwarmItem(args: {
@@ -146,15 +155,28 @@ export class SessionSwarmService implements ISessionSwarmService {
       throw new Error('Caller agent has no model bound');
     }
     const modelAlias = agentProfileModelAlias(profile, callerData.modelAlias);
-    const child = await this.lifecycle.create({
-      binding: {
-        profile: profile.name,
-        model: modelAlias,
-        thinking: modelAlias === callerData.modelAlias ? callerData.thinkingLevel : undefined,
-        cwd: callerData.cwd,
-      },
-      labels: subagentLabels(callerAgentId, { swarmItem: options.swarmItem }),
-    });
+    const binding = options.binding ?? {
+      model: modelAlias,
+      thinking: modelAlias === callerData.modelAlias ? callerData.thinkingLevel : undefined,
+    };
+    const usesProfileModel =
+      profile.model !== undefined && binding.model === profile.model;
+    let child: IAgentScopeHandle;
+    try {
+      this.modelCatalog.get(binding.model);
+      child = await this.lifecycle.create({
+        binding: {
+          profile: profile.name,
+          model: binding.model,
+          thinking: binding.thinking,
+          cwd: callerData.cwd,
+        },
+        labels: subagentLabels(callerAgentId, { swarmItem: options.swarmItem }),
+      });
+    } catch (error) {
+      if (usesProfileModel) throw error;
+      throw wrapSubagentModelError(error, binding.model, callerData.modelAlias);
+    }
     child.accessor
       .get(IAgentPermissionModeService)
       .setMode(caller.accessor.get(IAgentPermissionModeService).mode);
@@ -191,7 +213,6 @@ export class SessionSwarmService implements ISessionSwarmService {
     const caller = this.requireHandle(callerAgentId, 'Caller agent');
     const child = this.requireHandle(agentId, 'Agent instance');
     this.requireIdleSubagent(agentId, child);
-    await this.realignChildModel(caller, child);
     const profileName =
       child.accessor.get(IAgentProfileService).data().profileName ?? RESUMED_PROFILE_FALLBACK;
     if (!retryTurn) {
@@ -238,24 +259,6 @@ export class SessionSwarmService implements ISessionSwarmService {
     const handle = this.lifecycle.get(agentId);
     if (handle === undefined) throw new Error(`${label} "${agentId}" does not exist`);
     return handle;
-  }
-
-  private async realignChildModel(
-    caller: IAgentScopeHandle,
-    child: IAgentScopeHandle,
-  ): Promise<void> {
-    const inheritedModelAlias = caller.accessor.get(IAgentProfileService).data().modelAlias;
-    if (inheritedModelAlias === undefined) {
-      throw new Error('Caller agent has no model bound');
-    }
-    await this.catalog.ready;
-    const profileName = child.accessor.get(IAgentProfileService).data().profileName;
-    const profile = profileName === undefined ? undefined : this.catalog.get(profileName);
-    const modelAlias =
-      profile === undefined
-        ? inheritedModelAlias
-        : agentProfileModelAlias(profile, inheritedModelAlias);
-    child.accessor.get(IAgentProfileService).update({ modelAlias });
   }
 
   private requireIdleSubagent(agentId: string, child: IAgentScopeHandle): void {

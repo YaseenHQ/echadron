@@ -182,7 +182,6 @@ export class SessionSubagentHost {
     const completion = this.runWithActiveChild(agentId, options, async (runOptions) => {
       this.emitSubagentSpawned(parent, agentId, profileName, runOptions);
       try {
-        child.config.update({ modelAlias: this.resolveChildModel(parent, profileName) });
         return await this.runPromptTurn(parent, agentId, child, profileName, runOptions);
       } catch (error) {
         this.emitSubagentFailed(parent, agentId, runOptions, error);
@@ -198,7 +197,6 @@ export class SessionSubagentHost {
     const completion = this.runWithActiveChild(agentId, options, async (runOptions) => {
       try {
         runOptions.signal.throwIfAborted();
-        child.config.update({ modelAlias: this.resolveChildModel(parent, profileName) });
         this.emitSubagentStarted(parent, agentId);
         const turnId = child.turn.retry('agent-host');
         if (turnId === null) {
@@ -315,10 +313,6 @@ export class SessionSubagentHost {
       throw new Error(`Subagent profile "${profileName}" was not found`);
     }
     return profile;
-  }
-
-  private resolveChildModel(parent: Agent, profileName: string): string | undefined {
-    return this.resolveProfile(parent, profileName).model ?? parent.config.modelAlias;
   }
 
   private runWithActiveChild(

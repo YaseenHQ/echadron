@@ -114,7 +114,7 @@ interface ContextAppendMessagePayload {
   message: {
     role: 'system' | 'user' | 'assistant' | 'tool';
     name?: string;
-    content: ('text' | 'think' | 'image_url' | 'audio_url' | 'video_url')[];
+    content: ('text' | 'think' | 'image_url' | 'audio_url' | 'video_url' | 'openai_compaction')[];
     toolCalls: {
       type: 'function';
       id: string;
@@ -524,6 +524,7 @@ interface ToolsRegisterUserToolPayload {
   name: string;
   description: string;
   parameters: Record<string, unknown>;
+  disclosure?: 'inline' | 'deferred';
 }
 
 /**

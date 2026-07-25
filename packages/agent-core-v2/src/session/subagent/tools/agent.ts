@@ -10,6 +10,14 @@
  * under TaskList/TaskOutput/TaskStop when `run_in_background=true` or after
  * detach), and terminal text formatting.
  *
+ * Spawn bindings use an explicit tool choice first, then the target profile's
+ * symbolic model preference, before `resolveSubagentBinding` falls back to the
+ * configured secondary model or the caller's model. The selected alias is
+ * resolved through the model catalog before lifecycle allocation. A resumed
+ * agent keeps the model recorded in its own wire journal — with per-subagent
+ * models there is no "child follows the parent's current model" invariant to
+ * enforce.
+ *
  * Registered via the module-level `registerTool(AgentTool)` at the bottom of
  * this file — the same "import = register" pattern used by every builtin tool.
  */
@@ -57,6 +65,8 @@ import {
 } from '#/app/agentProfileCatalog/profile-shared';
 import { ILogService } from '#/_base/log/log';
 import { IConfigService } from '#/app/config/config';
+import { IFlagService } from '#/app/flag/flag';
+import { IModelCatalog } from '#/kosong/model/catalog';
 import { IAgentLifecycleService } from '#/session/agentLifecycle/agentLifecycle';
 import { isSubagentMeta, subagentLabels, subagentParentAgentId } from '#/session/agentLifecycle/subagentMetadata';
 import { ISessionProcessRunner } from '#/session/process/processRunner';
@@ -66,9 +76,13 @@ import { ISessionWorkspaceContext } from '#/session/workspaceContext/workspaceCo
 import { emitAgentRunSpawned, mirrorAgentRun } from '../mirrorAgentRun';
 import { ISessionSubagentService } from '../subagent';
 import {
+  buildSubagentModelDescriptions,
   formatSubagentTimeoutDescription,
+  resolveSubagentBinding,
   resolveSubagentTimeoutMs,
+  wrapSubagentModelError,
 } from '../configSection';
+import { SECONDARY_MODEL_FLAG_ID } from '../flag';
 import { SubagentTask, type SubagentHandle } from './subagent-task';
 
 import AGENT_BACKGROUND_DISABLED_DESCRIPTION from './agent-background-disabled.md?raw';
@@ -116,6 +130,12 @@ export const AgentToolInputSchema = z.preprocess(
       .optional()
       .describe(
         'If true, return immediately without waiting for completion. Prefer false unless the task can run independently and there is a clear benefit to not waiting.',
+      ),
+    model: z
+      .enum(['secondary', 'primary'])
+      .optional()
+      .describe(
+        'Which model to run the subagent on: "secondary" = the configured secondary model; "primary" = the main model you are running on (for hard, quality-sensitive tasks). This explicit choice overrides the selected agent type\'s model_preference; without either, secondary is the default when configured. Only effective when a secondary model is configured; otherwise the subagent inherits your model. Ignored when resuming — resumed subagents keep their own model.',
       ),
   }),
 );
@@ -168,6 +188,8 @@ export class AgentTool implements BuiltinTool<AgentToolInput> {
     @ILogService private readonly log: ILogService,
     @IAgentPermissionModeService private readonly permissionMode: IAgentPermissionModeService,
     @IConfigService private readonly config: IConfigService,
+    @IFlagService private readonly flags: IFlagService,
+    @IModelCatalog private readonly modelCatalog: IModelCatalog,
   ) {
     this.callerAgentId = scopeContext.agentId;
     this.canRunInBackground = () =>
@@ -180,7 +202,7 @@ export class AgentTool implements BuiltinTool<AgentToolInput> {
     const backgroundDescription = this.canRunInBackground()
       ? AGENT_BACKGROUND_DESCRIPTION
       : AGENT_BACKGROUND_DISABLED_DESCRIPTION;
-    const baseDescription = `${AGENT_DESCRIPTION_BASE}\n\n${backgroundDescription}`;
+    let description = `${AGENT_DESCRIPTION_BASE}\n\n${backgroundDescription}`;
     const allowlist = subagentAllowlistFor(this.catalog, this.profile.data());
     const profiles =
       allowlist === undefined
@@ -191,10 +213,20 @@ export class AgentTool implements BuiltinTool<AgentToolInput> {
       this.toolRegistry.listReferences(),
       (profile, name, source) =>
         this.toolPolicy.isToolActiveForProfile(profile, name, source),
+      this.flags.enabled(SECONDARY_MODEL_FLAG_ID),
     );
-    return typeLines
-      ? `${baseDescription}\n\nAvailable agent types (pass via subagent_type):\n${typeLines}`
-      : baseDescription;
+    if (typeLines) {
+      description += `\n\nAvailable agent types (pass via subagent_type):\n${typeLines}`;
+    }
+    const modelLines = buildSubagentModelDescriptions(
+      this.config,
+      this.flags,
+      this.profile.data().modelAlias,
+    );
+    if (modelLines !== undefined) {
+      description += `\n\n${modelLines}`;
+    }
+    return description;
   }
 
   async resolveExecution(args: AgentToolInput): Promise<ToolExecution> {
@@ -257,7 +289,6 @@ export class AgentTool implements BuiltinTool<AgentToolInput> {
         throw new Error(`Agent instance "${resumeAgentId}" does not exist`);
       }
       await this.ensureOwnedIdleSubagent(resumeAgentId, target);
-      await this.realignChildModel(target);
       agentId = target.id;
       profileName =
         target.accessor.get(IAgentProfileService).data().profileName ?? RESUMED_LABEL;
@@ -278,16 +309,35 @@ export class AgentTool implements BuiltinTool<AgentToolInput> {
       if (own.modelAlias === undefined) {
         throw new Error('Caller agent has no model bound');
       }
-      const modelAlias = agentProfileModelAlias(profile, own.modelAlias);
-      const created = await this.lifecycle.create({
-        binding: {
-          profile: profile.name,
-          model: modelAlias,
-          thinking: modelAlias === own.modelAlias ? own.thinkingLevel : undefined,
-          cwd: own.cwd,
-        },
-        labels: subagentLabels(this.callerAgentId),
-      });
+      const usesProfileModel = args.model === undefined && profile.model !== undefined;
+      const binding = usesProfileModel
+        ? {
+            model: agentProfileModelAlias(profile, own.modelAlias),
+            thinking:
+              profile.model === own.modelAlias ? own.thinkingLevel : undefined,
+          }
+        : resolveSubagentBinding(
+            this.config,
+            this.flags,
+            { modelAlias: own.modelAlias, thinkingLevel: own.thinkingLevel },
+            args.model ?? profile.modelPreference,
+          );
+      let created: IAgentScopeHandle;
+      try {
+        this.modelCatalog.get(binding.model);
+        created = await this.lifecycle.create({
+          binding: {
+            profile: profile.name,
+            model: binding.model,
+            thinking: binding.thinking,
+            cwd: own.cwd,
+          },
+          labels: subagentLabels(this.callerAgentId),
+        });
+      } catch (error) {
+        if (usesProfileModel) throw error;
+        throw wrapSubagentModelError(error, binding.model, own.modelAlias);
+      }
       created.accessor.get(IAgentPermissionModeService).setMode(this.permissionMode.mode);
       created.accessor
         .get(IAgentUserToolService)
@@ -343,21 +393,6 @@ export class AgentTool implements BuiltinTool<AgentToolInput> {
     if (target.accessor.get(IAgentLoopService).status().state === 'running') {
       throw new Error(`Agent instance "${agentId}" is already running and cannot run concurrently`);
     }
-  }
-
-  private async realignChildModel(target: IAgentScopeHandle): Promise<void> {
-    const ownModelAlias = this.profile.data().modelAlias;
-    if (ownModelAlias === undefined) {
-      throw new Error('Caller agent has no model bound');
-    }
-    await this.catalog.ready;
-    const profileName = target.accessor.get(IAgentProfileService).data().profileName;
-    const targetProfile = profileName === undefined ? undefined : this.catalog.get(profileName);
-    const modelAlias =
-      targetProfile === undefined
-        ? ownModelAlias
-        : agentProfileModelAlias(targetProfile, ownModelAlias);
-    target.accessor.get(IAgentProfileService).update({ modelAlias });
   }
 
   private async execution(
@@ -488,6 +523,7 @@ function buildProfileDescriptions(
     name: string,
     source: ToolReference['source'],
   ) => boolean,
+  showModelPreferences: boolean,
 ): string {
   return profiles
     .map((profile) => {
@@ -495,7 +531,12 @@ function buildProfileDescriptions(
         (part): part is string => part !== undefined && part.length > 0,
       );
       const header = details.length === 0 ? `- ${profile.name}` : `- ${profile.name}: ${details.join(' ')}`;
-      const model = profile.model === undefined ? '' : `\n  Model: ${profile.model}`;
+      const headerLines =
+        profile.model !== undefined
+          ? `${header}\n  Model: ${profile.model}`
+          : !showModelPreferences || profile.modelPreference === undefined
+            ? header
+            : `${header}\n  Model preference: ${profile.modelPreference}`;
       const activeTools = resolveActiveToolNames(profile);
       const externallyRestricted = tools.some(
         (tool) =>
@@ -507,20 +548,20 @@ function buildProfileDescriptions(
           .filter((tool) => isToolActive(profile, tool.name, tool.source))
           .map((tool) => tool.name);
         if (effectiveTools.length === 0) {
-          return `${header}${model}\n  Tools: none`;
+          return `${headerLines}\n  Tools: none`;
         }
-        return `${header}${model}\n  Tools: ${effectiveTools.join(', ')}`;
+        return `${headerLines}\n  Tools: ${effectiveTools.join(', ')}`;
       }
       if (activeTools === undefined) {
         if ((profile.disallowedTools?.length ?? 0) > 0) {
-          return `${header}${model}\n  Tools: all except ${profile.disallowedTools!.join(', ')}`;
+          return `${headerLines}\n  Tools: all except ${profile.disallowedTools!.join(', ')}`;
         }
-        return `${header}${model}\n  Tools: all`;
+        return `${headerLines}\n  Tools: all`;
       }
       if (activeTools.length === 0) {
-        return `${header}${model}\n  Tools: none`;
+        return `${headerLines}\n  Tools: none`;
       }
-      return `${header}${model}\n  Tools: ${activeTools.join(', ')}`;
+      return `${headerLines}\n  Tools: ${activeTools.join(', ')}`;
     })
     .join('\n');
 }

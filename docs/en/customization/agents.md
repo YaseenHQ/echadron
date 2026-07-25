@@ -97,8 +97,9 @@ You are a strict code reviewer. Read the diff, then report findings grouped by s
 | `name` | no | Unique identifier in kebab-case. Defaults to the file name without its extension (`review.md` → `review`); a file whose resolved name is missing or not kebab-case is skipped with a warning |
 | `description` | yes | What the agent does. Shown to the main Agent when it picks a sub-agent, so write it to guide delegation decisions |
 | `whenToUse` | no | Extra hint describing when the agent should be used |
-| `model` | no | Configured model alias used when this profile is launched as a sub-agent. Omit it or use `inherit` to keep the caller's current model |
+| `model` | no | Concrete configured model alias used when this profile is launched as a sub-agent. Omit it or use `inherit` to continue through the normal primary/secondary selection |
 | `override` | no | Whether this file may replace a same-name built-in Agent. Defaults to `false`; `--agent-file` is already explicit and does not require this field |
+| `model_preference` | no | Symbolic default used when `Agent` or `AgentSwarm` spawns this profile: `primary` selects the caller's main model, while `secondary` selects `[secondary_model] model`. An explicit tool-call `model` wins, then a concrete profile `model`, then `model_preference`; without any of them, the configured secondary model remains the default. If no secondary model is configured, the subagent inherits the caller's model |
 | `tools` | no | Allowlist of tool names such as `Read` or `Bash`; MCP tools are matched with globs such as `mcp__github__*`. Accepts a YAML list or a comma-separated string (`tools: Read, Grep`). Omit to allow all tools; a lone `*` also allows all tools; an empty list (`tools: []`) disables all tools |
 | `disallowedTools` | no | Denylist with the same syntax and matching rules, applied after `tools` |
 | `subagents` | no | Allowlist of sub-agent names this agent may delegate to, with the same syntax as `tools` (YAML list or comma-separated string). Omit to allow every type; a lone `*` also allows all types |
@@ -109,7 +110,9 @@ The body is the agent's system prompt, and it is rendered as a template each tim
 
 Unknown fields are ignored, so newer files stay readable by older versions. The `model` field follows Claude Code's `inherit` convention while accepting any Kimi configured model alias; OpenCode's `mode` remains an ignored compatibility field. The comma-separated `tools` form keeps Claude Code-style agent files loadable, and a missing `name` falls back to the file name so OpenCode-style files load too — a minimal file with `description` and a body works across tools.
 
-Model binding is fixed when a child starts and re-applied when that same child is resumed. It does not change the parent model, system prompt, or tool list, so delegating to another model does not invalidate the parent's prompt-cache prefix.
+Model binding is fixed when a child starts. Resuming that child retains its recorded model even if the profile or parent later changes. Delegating to another model does not change the parent model, system prompt, or tool list, so it does not invalidate the parent's prompt-cache prefix.
+
+`model_preference` applies only to newly spawned subagents when the secondary-model experiment is enabled. Under `kimi web`, set `KIMI_CODE_EXPERIMENTAL_SECONDARY_MODEL=1`; under experimental `kimi -p`, the required `KIMI_CODE_EXPERIMENTAL_FLAG=1` also enables it. The TUI currently ignores this field. It never names a concrete model alias, and resumed subagents keep their existing model. The selected preference is shown to the main agent alongside the profile description so it can still pass an explicit `model` when a task needs a different choice.
 
 A file with invalid content discovered in a directory is skipped with a warning and does not affect other files. A file passed explicitly via `--agent-file` must be valid — otherwise the CLI reports the error and exits.
 
@@ -121,7 +124,7 @@ Custom agents delegated as sub-agents run without the built-in sub-agent framing
 
 ### Selecting the Main Agent
 
-Two CLI flags select which agent drives the session. **Both currently require the v2 engine** — `kimi -p` with `KIMI_CODE_EXPERIMENTAL_FLAG=1`; the interactive TUI (v1) rejects them with a clear error for now:
+Two CLI flags select which agent drives the session. **Both are currently available only under `kimi -p` with `KIMI_CODE_EXPERIMENTAL_FLAG=1`**; the interactive TUI rejects them with a clear error for now:
 
 - **`--agent <name>`**: Start the session with the named agent as the main Agent. The name can refer to a built-in agent or to any discovered file; an unknown name fails with an error listing the available agents.
 - **`--agent-file <path>`**: Load one agent file at the highest priority for this launch and start with it. The flag accepts exactly one file: it cannot be repeated, and it cannot be combined with `--agent`.
@@ -138,7 +141,7 @@ For main-agent customization, reference `${base_prompt}` in the body so the envi
 
 ### Overriding the main agent's system prompt with SYSTEM.md
 
-To override the main agent's system prompt permanently — without passing `--agent` or `--agent-file` on every launch — write a `$KIMI_CODE_HOME/SYSTEM.md` file (default: `~/.kimi-code/SYSTEM.md`; it moves with `KIMI_CODE_HOME`). While the file exists and is non-empty, it replaces the built-in default main agent's system prompt in full — and only the prompt: the description and tool set are inherited from the built-in defaults. Like `--agent` / `--agent-file`, SYSTEM.md currently takes effect only under the v2 engine (`KIMI_CODE_EXPERIMENTAL_FLAG=1`); the v1 engine ignores the file.
+To override the main agent's system prompt permanently — without passing `--agent` or `--agent-file` on every launch — write a `$KIMI_CODE_HOME/SYSTEM.md` file (default: `~/.kimi-code/SYSTEM.md`; it moves with `KIMI_CODE_HOME`). While the file exists and is non-empty, it replaces the built-in default main agent's system prompt in full — and only the prompt: the description and tool set are inherited from the built-in defaults. SYSTEM.md currently takes effect only under `kimi web` and under `kimi -p` with `KIMI_CODE_EXPERIMENTAL_FLAG=1`; the interactive TUI ignores the file.
 
 SYSTEM.md is a plain Markdown body — no frontmatter is required or read. A missing or empty file has no effect, and a read failure falls back to the built-in prompt with a warning. Explicit intent still outranks it: a project-scoped same-name agent file declaring `override: true` and any file passed via `--agent-file` take precedence, and selecting another agent with `--agent` bypasses it entirely. Within the user scope itself, SYSTEM.md wins over a same-name file discovered in the `agents/` directories.
 

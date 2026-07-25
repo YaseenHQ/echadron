@@ -6,7 +6,14 @@ import { ErrorCodes, KimiError, makeErrorPayload } from '#/errors';
 import { log } from '#/logging/logger';
 import type { Logger } from '#/logging/types';
 import type { AgentAPI, AgentEvent, KimiConfig, SDKAgentRPC, UsageStatus } from '#/rpc';
-import { generate, type ChatProvider } from '@moonshot-ai/kosong';
+import {
+  generate,
+  type ChatProvider,
+  type GenerateOptions,
+  type Message,
+  type ProviderCompactionResult,
+  type Tool,
+} from '@moonshot-ai/kosong';
 
 import type { EnabledPluginSessionStart, PluginCommandDef } from '#/plugin';
 import { expandCommandArguments } from '../plugin/commands';
@@ -63,7 +70,13 @@ import type { ToolServices } from '../tools/support/services';
 
 export type { AgentRecord, AgentRecordPersistence } from './records';
 export type { SwarmModeTrigger } from './swarm';
-export type { BuiltinTool, ToolInfo, ToolSource, UserToolRegistration } from './tool';
+export type {
+  BuiltinTool,
+  ToolDisclosure,
+  ToolInfo,
+  ToolSource,
+  UserToolRegistration,
+} from './tool';
 export * from './goal';
 
 export type AgentType = 'main' | 'sub' | 'independent';
@@ -311,6 +324,31 @@ export class Agent {
         return run({ ...generateOptions, auth });
       });
     };
+  }
+
+  async compactProvider(
+    provider: ChatProvider,
+    systemPrompt: string,
+    tools: Tool[],
+    history: Message[],
+    options?: GenerateOptions,
+  ): Promise<ProviderCompactionResult | undefined> {
+    if (provider.compact === undefined) return undefined;
+    const compact = provider.compact.bind(provider);
+    const modelAlias = this.config.modelAlias;
+    if (options?.auth !== undefined) {
+      return compact(systemPrompt, tools, history, options);
+    }
+    const withAuth =
+      modelAlias === undefined
+        ? undefined
+        : this.modelProvider?.resolveAuth?.(modelAlias, { log: this.log });
+    if (withAuth === undefined) {
+      return compact(systemPrompt, tools, history, options);
+    }
+    return withAuth((auth) =>
+      compact(systemPrompt, tools, history, { ...options, auth }),
+    );
   }
 
   private warnAboutAnthropicThinkingEffort(
