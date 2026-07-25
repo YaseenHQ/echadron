@@ -511,6 +511,8 @@ function toLegacyContent(content: readonly ContentPart[]): LegacyContentPart[] {
       case "video_url":
         result.push({ type: "video_url", video_url: { ...part.videoUrl } });
         break;
+      case "openai_compaction":
+        break;
     }
   }
   return result;

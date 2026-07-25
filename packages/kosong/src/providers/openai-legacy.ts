@@ -1,5 +1,5 @@
 import type { ContentPart, Message, StreamedMessagePart, ToolCall } from '#/message';
-import { isToolDeclarationOnlyMessage } from '#/message';
+import { isOpaqueAssistantMessage, isToolDeclarationOnlyMessage } from '#/message';
 import type {
   ChatProvider,
   FinishReason,
@@ -308,6 +308,7 @@ function convertHistoryMessages(
     // because the leftover `{role:"system"}` without content is rejected by
     // the Chat Completions API. See isToolDeclarationOnlyMessage.
     if (isToolDeclarationOnlyMessage(msg)) continue;
+    if (isOpaqueAssistantMessage(msg)) continue;
     if (msg.role !== 'tool') {
       appendToolResultMediaMessage(messages, pendingToolResultMedia);
     }
