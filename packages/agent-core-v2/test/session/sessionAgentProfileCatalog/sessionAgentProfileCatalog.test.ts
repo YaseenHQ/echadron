@@ -191,6 +191,16 @@ describe('SessionAgentProfileCatalogService', () => {
       expect(catalog.get(DEFAULT_AGENT_PROFILE_NAME)).toBeDefined();
       expect(catalog.getDefault().name).toBe(DEFAULT_AGENT_PROFILE_NAME);
       expect(catalog.list().length).toBeGreaterThan(0);
+      const explore = catalog.get('explore');
+      expect(explore?.tools).toEqual([
+        'Read',
+        'ReadMediaFile',
+        'Glob',
+        'Grep',
+        'WebSearch',
+        'FetchURL',
+      ]);
+      expect(explore?.tools).not.toContain('Bash');
       host.dispose();
     });
   });

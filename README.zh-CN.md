@@ -1,4 +1,8 @@
-# Kimi Code CLI
+# Imperium（兼容 Kimi Code）
+
+Imperium 是基于 Kimi Code CLI 架构构建的多模型 Agent Harness。本 Fork
+推荐使用 `imperium` 命令；在存储、Provider 和上游集成名称逐步迁移期间，
+`kimi` 仍作为兼容别名保留。
 
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE) [![Docs](https://img.shields.io/badge/docs-online-blue)](https://moonshotai.github.io/kimi-code/zh/)
 
@@ -8,9 +12,9 @@
 ![Kimi Code 的使用演示](./docs/media/intro.gif)
 
 
-## 什么是 Kimi Code CLI
+## 什么是 Imperium
 
-Kimi Code CLI 是一个运行在终端里的 AI 编程 agent，可以帮你读写代码、执行 shell 命令、检索文件、抓取网页，并根据反馈自主决定下一步动作。开箱即用对接 Moonshot AI 的 Kimi 模型，也可指向其他兼容厂商。
+Imperium 是一个运行在终端里的多模型 AI 编程 agent，可以帮你读写代码、执行 shell 命令、检索文件、抓取网页，并根据反馈自主决定下一步动作。它支持兼容的 Provider 和模型，并保留 Kimi Code 的兼容架构。
 
 ## 安装
 
@@ -30,6 +34,9 @@ irm https://code.kimi.com/kimi-code/install.ps1 | iex
 
 > Windows 用户首次启动前还需要安装 [Git for Windows](https://gitforwindows.org/)，Kimi Code CLI 会使用其中的 Git Bash 作为 Shell 环境。如果 Git Bash 安装在非标准路径，请把 `KIMI_SHELL_PATH` 设为 `bash.exe` 的绝对路径。
 
+独立 Native 安装器目前安装兼容命令 `kimi`；npm 包同时提供 `imperium` 和
+`kimi` 两个命令。
+
 随后在新的终端会话中运行：
 
 ```sh
@@ -47,7 +54,9 @@ cd your-project
 kimi
 ```
 
-首次启动时，在 Kimi Code CLI 里输入 `/login`，选择 Kimi Code OAuth 或 Moonshot AI Open Platform API 密钥登录。登录完成后，可以先让它熟悉项目：
+如果通过 npm 安装，也可以将上述命令中的 `kimi` 替换为 `imperium`。
+
+首次启动时，在 Imperium 里输入 `/login`，选择可用的 OAuth 或 API 密钥 Provider 登录。登录完成后，可以先让它熟悉项目：
 
 ```
 帮我看一下这个项目的目录结构，简单介绍一下每个目录是做什么的

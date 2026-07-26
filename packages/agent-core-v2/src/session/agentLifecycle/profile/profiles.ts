@@ -79,7 +79,6 @@ const CODER_TOOLS = [
 ] as const;
 
 const EXPLORE_TOOLS = [
-  'Bash',
   'Read',
   'ReadMediaFile',
   'Glob',

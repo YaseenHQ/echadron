@@ -1,13 +1,18 @@
-# Kimi Code CLI
+# Imperium (Kimi Code compatible)
+
+Imperium is the multi-provider agent harness built from the Kimi Code CLI
+architecture. The `imperium` command is the preferred entry point for this
+fork; `kimi` remains available as a compatibility alias while storage,
+provider, and upstream integration names migrate safely.
 
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE) [![Docs](https://img.shields.io/badge/docs-online-blue)](https://moonshotai.github.io/kimi-code/en/) <br>
 [Documentation](https://moonshotai.github.io/kimi-code/en/) · [Issues](https://github.com/MoonshotAI/kimi-code/issues) · [中文](README.zh-CN.md)
 
 ![Demo of using Kimi Code](./docs/media/intro.gif)
 
-## What is Kimi Code CLI
+## What is Imperium
 
-Kimi Code CLI is an AI coding agent that runs in your terminal — it can read and edit code, run shell commands, search files, fetch web pages, and choose the next step based on the feedback it receives. It works out of the box with Moonshot AI’s Kimi models and can also be configured to use other compatible providers.
+Imperium is an AI coding agent that runs in your terminal — it can read and edit code, run shell commands, search files, fetch web pages, and choose the next step based on the feedback it receives. It supports compatible providers and models through the Kimi Code architecture.
 
 ## Install
 
@@ -27,6 +32,9 @@ irm https://code.kimi.com/kimi-code/install.ps1 | iex
 
 > On Windows, install [Git for Windows](https://gitforwindows.org/) before first launch because Kimi Code CLI uses the bundled Git Bash as its shell environment. If Git Bash is installed in a custom location, set `KIMI_SHELL_PATH` to the absolute path of `bash.exe`.
 
+The standalone native installer currently installs the compatibility binary
+`kimi`; the npm package exposes both `imperium` and `kimi`.
+
 Then, run it with a new shell session:
 
 ```sh
@@ -44,7 +52,9 @@ cd your-project
 kimi
 ```
 
-On first launch, run `/login` inside Kimi Code CLI and choose either Kimi Code OAuth or a Moonshot AI Open Platform API key. After login, try your first task:
+If you installed the npm package instead, use `imperium` for the same commands.
+
+On first launch, run `/login` inside Imperium and choose an available OAuth or API-key provider. After login, try your first task:
 
 ```
 Take a look at this project and explain its main directories.
@@ -60,18 +70,18 @@ Take a look at this project and explain its main directories.
 - **Rich plugin ecosystem.** Install skills, MCP servers, and data sources from the marketplace or any GitHub repo, with each install's trust level surfaced up front.
 - **Subagents for focused, parallel work.** Dispatch built-in `coder`, `explore`, and `plan` subagents in isolated contexts while keeping the main conversation clean.
 - **Lifecycle hooks.** Run local commands at key points to gate risky tool calls, audit decisions, trigger desktop notifications, or connect to your own automation.
-- **Editor & IDE integration (ACP).** Drive a Kimi Code CLI session straight from Zed, JetBrains, or any [Agent Client Protocol](https://agentclientprotocol.com/) client with `kimi acp`.
+- **Editor & IDE integration (ACP).** Drive an Imperium session straight from Zed, JetBrains, or any [Agent Client Protocol](https://agentclientprotocol.com/) client with `kimi acp` (or `imperium acp` when installed from npm).
 
 ## Use it in your editor (ACP)
 
-Kimi Code CLI speaks the [Agent Client Protocol](https://agentclientprotocol.com/), so ACP-compatible editors and IDEs (Zed, JetBrains, …) can drive a session over stdio. Log in once, then point your editor at the `kimi acp` subcommand — no extra login needed.
+Imperium speaks the [Agent Client Protocol](https://agentclientprotocol.com/), so ACP-compatible editors and IDEs (Zed, JetBrains, …) can drive a session over stdio. Log in once, then point your editor at the `kimi acp` subcommand (or `imperium acp` for npm installs) — no extra login needed.
 
 For Zed, add this to `~/.config/zed/settings.json`:
 
 ```json
 {
   "agent_servers": {
-    "Kimi Code CLI": {
+    "Imperium": {
       "type": "custom",
       "command": "kimi",
       "args": ["acp"],

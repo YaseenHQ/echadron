@@ -1,12 +1,12 @@
-# @moonshot-ai/kimi-code
+# Imperium CLI (`@moonshot-ai/kimi-code`)
 
 > The Starting Point for Next-Gen Agents
 
 [![npm](https://img.shields.io/npm/v/@moonshot-ai/kimi-code)](https://www.npmjs.com/package/@moonshot-ai/kimi-code) [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)  [![Docs](https://img.shields.io/badge/docs-online-blue)](https://moonshotai.github.io/kimi-code/en/)
 
-## What is Kimi Code CLI
+## What is Imperium CLI
 
-Kimi Code CLI is an AI coding agent that runs in your terminal. It can read and edit code, run shell commands, search files, fetch web pages, and choose the next step based on the feedback it receives. It works out of the box with Moonshot AI's Kimi models and can also be configured to use other compatible providers.
+Imperium CLI is an AI coding agent that runs in your terminal. It can read and edit code, run shell commands, search files, fetch web pages, and choose the next step based on the feedback it receives. It supports compatible providers and retains the `kimi` command as a compatibility alias for existing installations.
 
 ## Install
 
@@ -25,6 +25,9 @@ irm https://code.kimi.com/kimi-code/install.ps1 | iex
 ```
 
 > On Windows, install [Git for Windows](https://gitforwindows.org/) before first launch because Kimi Code CLI uses the bundled Git Bash as its shell environment. If Git Bash is installed in a custom location, set `KIMI_SHELL_PATH` to the absolute path of `bash.exe`.
+
+The standalone native installer currently installs the compatibility binary
+`kimi`; the npm package exposes both `imperium` and `kimi`.
 
 Then run it with a new Terminal session:
 
@@ -57,7 +60,9 @@ cd your-project
 kimi
 ```
 
-On first launch, run `/login` inside Kimi Code CLI and choose either Kimi Code OAuth or a Kimi Platform API key. After login, try a first task:
+When installed from npm, use `imperium` for the same commands.
+
+On first launch, run `/login` inside Imperium and choose an available OAuth or API-key provider. After login, try a first task:
 
 ```
 Take a look at this project and explain the main directories.
