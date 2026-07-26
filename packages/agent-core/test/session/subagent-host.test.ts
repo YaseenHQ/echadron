@@ -8,7 +8,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import type { Agent, AgentOptions } from '../../src/agent';
 import { AGENT_WIRE_PROTOCOL_VERSION } from '../../src/agent/records';
-import type { ResolvedAgentProfile } from '../../src/profile';
+import { DEFAULT_AGENT_PROFILES, type ResolvedAgentProfile } from '../../src/profile';
 import type { SDKSessionRPC } from '../../src/rpc';
 import { Session } from '../../src/session';
 import { collectGitContext } from '../../src/session/git-context';
@@ -371,6 +371,47 @@ describe('SessionSubagentHost', () => {
         content: [{ type: 'text', text: 'Find the cause' }],
       },
     ]);
+  });
+
+  it('binds a spawned child to the concrete profile model', async () => {
+    const coder = DEFAULT_AGENT_PROFILES['agent']?.subagents?.['coder'];
+    if (coder === undefined) throw new Error('expected bundled coder profile');
+    const originalModel = coder.model;
+    Object.assign(coder, { model: 'profile-model' });
+
+    try {
+      const parent = testAgent();
+      parent.configure();
+
+      const child = testAgent();
+      child.configure();
+      child.configureRuntimeModel({
+        type: 'kimi',
+        apiKey: 'test-key',
+        model: 'profile-model',
+      });
+      child.mockNextResponse({
+        type: 'text',
+        text: 'Completed the delegated task using the model selected by the agent profile and returned enough implementation detail for the parent to continue without repeating the work. Verified that the concrete profile alias replaced the parent model and that model-specific thinking configuration was resolved independently for the child.',
+      });
+
+      const session = fakeSession(parent.agent, child.agent);
+      const host = new SessionSubagentHost(session, 'main');
+      const handle = await host.spawn({
+        profileName: 'coder',
+        parentToolCallId: 'call_agent',
+        prompt: 'Implement the profile-routed task',
+        description: 'Test profile routing',
+        runInBackground: false,
+        signal,
+      });
+
+      await handle.completion;
+      expect(child.agent.config.modelAlias).toBe('profile-model');
+      expect(child.agent.config.thinkingEffort).toBe('off');
+    } finally {
+      Object.assign(coder, { model: originalModel });
+    }
   });
 
   it('inherits active parent user tools when spawning a subagent', async () => {

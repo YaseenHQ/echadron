@@ -10,13 +10,13 @@
  * under TaskList/TaskOutput/TaskStop when `run_in_background=true` or after
  * detach), and terminal text formatting.
  *
- * Spawn bindings use an explicit tool choice first, then the target profile's
- * symbolic model preference, before `resolveSubagentBinding` falls back to the
- * configured secondary model or the caller's model. The selected alias is
- * resolved through the model catalog before lifecycle allocation. A resumed
- * agent keeps the model recorded in its own wire journal — with per-subagent
- * models there is no "child follows the parent's current model" invariant to
- * enforce.
+ * Spawn bindings use an explicit tool choice first, then a concrete target
+ * profile model, then its symbolic model preference, before
+ * `resolveSubagentBinding` falls back to the configured secondary model or the
+ * caller's model. The selected alias is resolved through the model catalog
+ * before lifecycle allocation. A resumed agent keeps the model recorded in
+ * its own wire journal — with per-subagent models there is no "child follows
+ * the parent's current model" invariant to enforce.
  *
  * Registered via the module-level `registerTool(AgentTool)` at the bottom of
  * this file — the same "import = register" pattern used by every builtin tool.
@@ -135,7 +135,7 @@ export const AgentToolInputSchema = z.preprocess(
       .enum(['secondary', 'primary'])
       .optional()
       .describe(
-        'Which model to run the subagent on: "secondary" = the configured secondary model; "primary" = the main model you are running on (for hard, quality-sensitive tasks). This explicit choice overrides the selected agent type\'s model_preference; without either, secondary is the default when configured. Only effective when a secondary model is configured; otherwise the subagent inherits your model. Ignored when resuming — resumed subagents keep their own model.',
+        'Which model to run the subagent on: "secondary" = the configured secondary model; "primary" = the main model you are running on (for hard, quality-sensitive tasks). The effective model is resolved by precedence: (1) this explicit tool choice; (2) the selected agent type\'s concrete model (its `model` field, when set); (3) the agent type\'s model_preference; (4) the configured secondary model as the default when set, otherwise your own model. Choosing "secondary" is only effective when a secondary model is configured; otherwise the subagent inherits your model. Ignored when resuming — resumed subagents keep their own model.',
       ),
   }),
 );

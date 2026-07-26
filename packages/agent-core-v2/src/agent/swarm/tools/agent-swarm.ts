@@ -5,11 +5,11 @@
  * session swarm coordinator and renders the per-subagent XML result. Reads
  * persisted swarm item labels through the Session-scoped coordinator so later
  * `resume_agent_ids` calls relabel resumed subagents like v1. When the caller
- * has a model bound, the tool resolves the explicit or target-profile model
- * preference up front via `resolveSubagentBinding` and threads it through the
- * swarm tasks; otherwise binding is left to the service, which keeps its own
- * "no model bound" check and inherit-caller fallback. Pure tool — owns no
- * scoped state.
+ * has a model bound, the tool resolves an explicit choice, concrete target
+ * profile model, or symbolic target-profile preference up front and threads
+ * it through the swarm tasks; otherwise binding is left to the service, which
+ * keeps its own "no model bound" check and inherit-caller fallback. Pure tool
+ * — owns no scoped state.
  */
 
 import { z } from 'zod';
@@ -86,7 +86,7 @@ export const AgentSwarmToolInputSchema = z
       .enum(['secondary', 'primary'])
       .optional()
       .describe(
-        'Which model to run the item-spawned subagents on: "secondary" = the configured secondary model; "primary" = the main model you are running on (for hard, quality-sensitive tasks). This explicit choice overrides the selected agent type\'s model_preference; without either, secondary is the default when configured. Only effective when a secondary model is configured; otherwise subagents inherit your model. Resumed subagents always keep their own model.',
+        'Which model to run the item-spawned subagents on: "secondary" = the configured secondary model; "primary" = the main model you are running on (for hard, quality-sensitive tasks). The effective model is resolved by precedence: (1) this explicit tool choice; (2) the selected agent type\'s concrete model (its `model` field, when set); (3) the agent type\'s model_preference; (4) the configured secondary model as the default when set, otherwise your own model. Choosing "secondary" is only effective when a secondary model is configured; otherwise subagents inherit your model. Resumed subagents always keep their own model.',
       ),
   })
   .strict();
