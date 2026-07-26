@@ -1091,6 +1091,39 @@ describe('Agent tool execution contract', () => {
     );
   });
 
+  it('treats an inherit profile model as the caller binding', async () => {
+    const lifecycle = createAgentLifecycleStub({ createAgentIds: ['agent-child'] });
+    const catalog = profileCatalogWithPreference('coder', 'primary');
+    const coder = catalog.get('coder');
+    if (coder === undefined) throw new Error('expected coder profile');
+    Object.assign(coder, { model: 'inherit' });
+    const context = createAgentToolContext(
+      lifecycle,
+      sessionService(ISessionAgentProfileCatalog, catalog),
+    );
+    context.get(IAgentProfileService).applyBindingSnapshot({
+      cwd: '',
+      profileName: 'agent',
+      modelAlias: 'mock-model',
+      thinkingLevel: 'high',
+      systemPrompt: 'main',
+    });
+
+    await executeAgentTool(context, {
+      prompt: 'Investigate',
+      description: 'Find cause',
+    });
+
+    expect(lifecycle.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        binding: expect.objectContaining({
+          model: 'mock-model',
+          thinking: 'high',
+        }),
+      }),
+    );
+  });
+
   it('lets an explicit model override the target profile preference', async () => {
     const lifecycle = createAgentLifecycleStub({ createAgentIds: ['agent-child'] });
     const catalog = profileCatalogWithPreference('coder', 'primary');

@@ -309,7 +309,10 @@ export class AgentTool implements BuiltinTool<AgentToolInput> {
       if (own.modelAlias === undefined) {
         throw new Error('Caller agent has no model bound');
       }
-      const usesProfileModel = args.model === undefined && profile.model !== undefined;
+      const usesProfileModel =
+        args.model === undefined &&
+        profile.model !== undefined &&
+        profile.model !== 'inherit';
       const binding = usesProfileModel
         ? {
             model: agentProfileModelAlias(profile, own.modelAlias),
