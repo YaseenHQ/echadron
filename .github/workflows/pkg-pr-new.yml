@@ -15,7 +15,9 @@ jobs:
   publish:
     name: Publish Echadron preview
     runs-on: ubuntu-latest
-    if: github.repository_owner == 'YaseenHQ' && github.event.pull_request.draft == false
+    # pkg.pr.new requires its GitHub App to be installed on the repository.
+    # Keep previews opt-in for forks until the app is installed there.
+    if: github.repository_owner == 'YaseenHQ' && github.event.pull_request.draft == false && vars.PKG_PR_NEW_ENABLED == 'true'
 
     steps:
       - name: Checkout
