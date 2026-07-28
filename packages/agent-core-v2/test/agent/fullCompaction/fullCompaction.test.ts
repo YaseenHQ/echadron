@@ -24,7 +24,7 @@ import {
 import { type Message, type StreamedMessagePart, type ToolCall } from '#/kosong/contract/message';
 import { generate as runKosongGenerate } from '#/kosong/contract/generate';
 import type { ChatProvider, StreamedMessage } from '#/kosong/contract/provider';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   DefaultCompactionStrategy,
@@ -37,6 +37,7 @@ import { estimateTokensForMessages } from '#/kosong/contract/tokens';
 import { recordingTelemetry, type TelemetryRecord } from '../../app/telemetry/stubs';
 import type { TestAgentContext, TestAgentOptions, TestAgentServiceOverride } from '../../harness';
 import { agentService, appServices, createCommandRunner, execEnvServices, hostEnvironmentServices, sessionServices, testAgent } from '../../harness';
+import { IAgentToolSelectAnnouncementsService } from '#/agent/toolSelect/toolSelectAnnouncements';
 import {
   IAgentFullCompactionService,
   IModelOAuthTokens,
@@ -96,6 +97,13 @@ const EXACT_COMPACTION_REFRESH_PROFILE: ResolvedAgentProfile = {
 };
 
 describe('FullCompaction', () => {
+  // Each scenario constructs a fresh scoped config service. Clear env overlays
+  // before construction so a preceding hard-cap case cannot influence the
+  // next compaction budget when Vitest reuses the worker.
+  beforeEach(() => {
+    vi.unstubAllEnvs();
+  });
+
   it('keeps an oversized trailing user message as recent', () => {
     const strategy = testCompactionStrategy();
     const messages = [
@@ -1980,12 +1988,19 @@ describe('FullCompaction', () => {
 
   it('does not trigger auto compaction from a deferred loaded MCP schema', async () => {
     vi.stubEnv(MASTER_ENV, '1');
-    const ctx = testAgent({
-      initialConfig: {
-        providers: {},
-        loopControl: { reservedContextSize: 0 },
+    const ctx = testAgent(
+      // Scope creation eagerly constructs every registered agent-scope service,
+      // so the tool-select announcements service now runs in this harness. The
+      // loadable-tools reminder it would inject for the MCP tool registered
+      // below is unrelated to this test's assertions, so stub it out.
+      agentService(IAgentToolSelectAnnouncementsService, { _serviceBrand: undefined }),
+      {
+        initialConfig: {
+          providers: {},
+          loopControl: { reservedContextSize: 0 },
+        },
       },
-    });
+    );
     const parameters = {
       type: 'object',
       properties: {
@@ -2948,6 +2963,15 @@ describe('FullCompaction', () => {
 afterEach(() => {
   vi.useRealTimers();
   vi.unstubAllEnvs();
+  // The Echadron/Kimi compatibility bridge fills the opposite spelling on
+  // process.env. Vitest only restores keys it stubbed itself, so remove the
+  // generated model aliases as well or a hard-cap case leaks into the next
+  // scoped config fixture.
+  for (const key of Object.keys(process.env)) {
+    if (key.startsWith('ECHADRON_MODEL_') || key.startsWith('KIMI_MODEL_')) {
+      delete process.env[key];
+    }
+  }
 });
 
 function deferred<T>() {

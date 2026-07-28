@@ -533,7 +533,7 @@ export function homeDirServices(homeDir: string | undefined): TestAgentServiceOv
       for (const [id, value] of bootstrapSeed({
         homeDir,
         cwd: process.cwd(),
-        env: process.env,
+        env: { ...process.env },
       })) {
         reg.defineInstance(id, value);
       }
@@ -1028,7 +1028,7 @@ export class AgentTestContext {
             homeDir: '/tmp/kimi-code-agent-app-v2-test',
             cwd: this.cwd,
             osHomeDir: TEST_HOME_DIR,
-            env: process.env,
+            env: { ...process.env },
           })) {
             reg.defineInstance(id, value);
           }

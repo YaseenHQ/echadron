@@ -87,6 +87,8 @@ import { IWireService } from '#/wire/wire';
 import type { PayloadOf } from '#/wire/types';
 import { IEventBus } from '#/app/event/eventBus';
 import { IHostIdentity } from '#/app/hostIdentity/hostIdentity';
+import { defineState } from '#/_base/state/stateRegistry';
+import { IAgentStateService } from '#/agent/state/agentState';
 import { prepareSystemPromptContext } from './context';
 import type {
   ApplyProfileOptions,
@@ -119,6 +121,23 @@ export interface WarningEvent {
   readonly code?: string;
 }
 
+export const profileActiveToolNamesOverlayKey = defineState<readonly string[] | undefined>(
+  'profile.activeToolNamesOverlay',
+  () => undefined as readonly string[] | undefined,
+);
+export const profileAgentsMdWarningKey = defineState<string | undefined>(
+  'profile.agentsMdWarning',
+  () => undefined as string | undefined,
+);
+export const profileEmittedThinkingEffortWarningsKey = defineState<Set<string>>(
+  'profile.emittedThinkingEffortWarnings',
+  () => new Set(),
+);
+export const profileEmittedToolPatternWarningsKey = defineState<Set<string>>(
+  'profile.emittedToolPatternWarnings',
+  () => new Set(),
+);
+
 declare module '#/app/event/eventBus' {
   interface DomainEventMap {
     warning: WarningEvent;
@@ -144,11 +163,6 @@ export class AgentProfileService extends Disposable implements IAgentProfileServ
   declare readonly _serviceBrand: undefined;
 
   private optionsValue: ProfileServiceOptions = {};
-  private activeToolNamesOverlay: readonly string[] | undefined;
-  private agentsMdWarning: string | undefined;
-  private readonly emittedThinkingEffortWarnings = new Set<string>();
-  private readonly emittedToolPatternWarnings = new Set<string>();
-
   private get activeToolNames(): ActiveToolsState {
     return (
       this.activeToolNamesOverlay ??
@@ -176,9 +190,14 @@ export class AgentProfileService extends Disposable implements IAgentProfileServ
     @ISessionToolPolicy private readonly sessionToolPolicy: ISessionToolPolicy,
     @IAgentToolRegistryService private readonly toolRegistry: IAgentToolRegistryService,
     @IAgentProfileCatalogService private readonly builtinProfiles: IAgentProfileCatalogService,
+    @IAgentStateService private readonly states: IAgentStateService,
     @IHostIdentity private readonly hostIdentity: IHostIdentity,
   ) {
     super();
+    this.states.register(profileActiveToolNamesOverlayKey);
+    this.states.register(profileAgentsMdWarningKey);
+    this.states.register(profileEmittedThinkingEffortWarningsKey);
+    this.states.register(profileEmittedToolPatternWarningsKey);
     this.configure({});
     this._register(
       this.sessionToolPolicy.onDidChange((event) => {
@@ -193,6 +212,30 @@ export class AgentProfileService extends Disposable implements IAgentProfileServ
         }
       }),
     );
+  }
+
+  private get activeToolNamesOverlay(): readonly string[] | undefined {
+    return this.states.get(profileActiveToolNamesOverlayKey);
+  }
+
+  private set activeToolNamesOverlay(value: readonly string[] | undefined) {
+    this.states.set(profileActiveToolNamesOverlayKey, value);
+  }
+
+  private get agentsMdWarning(): string | undefined {
+    return this.states.get(profileAgentsMdWarningKey);
+  }
+
+  private set agentsMdWarning(value: string | undefined) {
+    this.states.set(profileAgentsMdWarningKey, value);
+  }
+
+  private get emittedThinkingEffortWarnings(): Set<string> {
+    return this.states.get(profileEmittedThinkingEffortWarningsKey);
+  }
+
+  private get emittedToolPatternWarnings(): Set<string> {
+    return this.states.get(profileEmittedToolPatternWarningsKey);
   }
 
   configure(options: ProfileServiceOptions): void {
