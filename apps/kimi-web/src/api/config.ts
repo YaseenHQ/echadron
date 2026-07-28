@@ -4,7 +4,7 @@
 import { safeGetString, safeSetString, STORAGE_KEYS } from '../lib/storage';
 
 const CLIENT_ID_KEY = STORAGE_KEYS.clientId;
-const WEB_CLIENT_NAME = 'kimi-code-web';
+const WEB_CLIENT_NAME = 'echadron-web';
 const WEB_CLIENT_UI_MODE = 'web';
 
 export interface KimiApiConfig {
@@ -15,9 +15,13 @@ export interface KimiApiConfig {
   clientUiMode: string;
 }
 
+function serverHttpEnv(): string | undefined {
+  return import.meta.env.VITE_ECHADRON_SERVER_HTTP_URL ?? import.meta.env.VITE_KIMI_SERVER_HTTP_URL;
+}
+
 export function readKimiApiConfig(): KimiApiConfig {
   return {
-    serverHttpUrl: normalizeServerOrigin(import.meta.env.VITE_KIMI_SERVER_HTTP_URL),
+    serverHttpUrl: normalizeServerOrigin(serverHttpEnv()),
     clientId: getClientId(),
     clientName: WEB_CLIENT_NAME,
     clientVersion: webClientVersion(),
@@ -29,9 +33,9 @@ export function readKimiApiConfig(): KimiApiConfig {
 //  - dev: the SPA is served by Vite; the Vite dev proxy forwards /v1, /healthz
 //    and /v1/ws to the server (see vite.config.ts), so the browser only ever
 //    talks to its own origin.
-//  - prod: `kimi web` serves this built SPA from the server itself, so the
+//  - prod: `echadron web` serves this built SPA from the server itself, so the
 //    server's origin already is the API origin.
-// Set VITE_KIMI_SERVER_HTTP_URL to connect directly to an absolute server
+// Set VITE_ECHADRON_SERVER_HTTP_URL to connect directly to an absolute server
 // origin instead (that path does require the server to send CORS headers).
 function defaultServerOrigin(): string {
   if (typeof window !== 'undefined' && window.location?.origin) {
@@ -58,16 +62,20 @@ function shortOrigin(origin: string): string {
  * Address of the REAL server the client is connected to, shown in the status bar.
  * Always the actual server — never the dev-proxy URL — since that's the thing
  * worth knowing at a glance. Cases:
- *  - VITE_KIMI_SERVER_HTTP_URL set → that absolute server origin (direct mode).
+ *  - VITE_ECHADRON_SERVER_HTTP_URL set → that absolute server origin (direct mode).
  *  - dev (same-origin proxy) → the proxy's upstream target (the real server).
  *  - prod (server serves the SPA) → the page origin (it IS the server).
  */
 export function serverEndpointLabel(): string {
-  const direct = import.meta.env.VITE_KIMI_SERVER_HTTP_URL;
+  const direct = serverHttpEnv();
   if (direct && direct.trim()) return shortOrigin(normalizeServerOrigin(direct));
 
   const proxy =
-    typeof __KIMI_DEV_PROXY_TARGET__ !== 'undefined' ? __KIMI_DEV_PROXY_TARGET__ : '';
+    typeof __ECHADRON_DEV_PROXY_TARGET__ !== 'undefined'
+      ? __ECHADRON_DEV_PROXY_TARGET__
+      : typeof __KIMI_DEV_PROXY_TARGET__ !== 'undefined'
+        ? __KIMI_DEV_PROXY_TARGET__
+        : '';
   if (import.meta.env.DEV && proxy) return shortOrigin(proxy);
 
   const origin =
@@ -96,7 +104,11 @@ function getClientId(): string {
 }
 
 function webClientVersion(): string {
-  return typeof __KIMI_WEB_VERSION__ === 'string' && __KIMI_WEB_VERSION__.trim()
-    ? __KIMI_WEB_VERSION__
-    : '0.0.0-dev';
+  const version =
+    typeof __ECHADRON_WEB_VERSION__ === 'string'
+      ? __ECHADRON_WEB_VERSION__
+      : typeof __KIMI_WEB_VERSION__ === 'string'
+        ? __KIMI_WEB_VERSION__
+        : '';
+  return version.trim() ? version : '0.0.0-dev';
 }

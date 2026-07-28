@@ -250,7 +250,14 @@ async function handleCatalogProviderAdd(host: SlashCommandHost): Promise<void> {
     apiKey,
     models,
     selectedModelId: '', // no default yet; user picks in the model selector
-    thinking: false,    // will be resolved by the model selector
+    source: {
+      kind: 'modelsDev',
+      url: DEFAULT_CATALOG_URL,
+      catalogId: providerId,
+      ...(typeof entry.npm === 'string' ? { npm: entry.npm } : {}),
+      ...(typeof entry.api === 'string' ? { api: entry.api } : {}),
+      ...(baseUrl === undefined ? {} : { baseUrl }),
+    },
   });
 
   await host.harness.setConfig({

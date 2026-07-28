@@ -113,6 +113,7 @@ export interface AnthropicGenerationKwargs {
   output_config?: MessageCreateParams['output_config'] | undefined;
   betaFeatures?: string[] | undefined;
   contextManagement?: AnthropicContextManagement;
+  [key: string]: unknown;
 }
 
 interface AnthropicContextManagement {
@@ -141,6 +142,7 @@ export interface AnthropicOptions {
   defaultMaxTokens?: number | undefined;
   betaFeatures?: string[] | undefined;
   defaultHeaders?: Record<string, string>;
+  generationKwargs?: AnthropicGenerationKwargs | undefined;
   metadata?: Record<string, string> | undefined;
   stream?: boolean | undefined;
   adaptiveThinking?: boolean | undefined;
@@ -821,6 +823,7 @@ export class AnthropicChatProvider implements ChatProvider {
     this._client = this._apiKey === undefined ? undefined : this._buildClient(this._apiKey);
     this._explicitMaxTokens = options.defaultMaxTokens !== undefined;
     this._generationKwargs = {
+      ...options.generationKwargs,
       max_tokens: options.defaultMaxTokens ?? resolveDefaultMaxTokens(options.model),
       betaFeatures: options.betaFeatures ?? [INTERLEAVED_THINKING_BETA],
     };
@@ -938,7 +941,12 @@ export class AnthropicChatProvider implements ChatProvider {
       };
     }
 
-    const requestKwargs: Record<string, unknown> = {};
+    // Preserve catalog-provided request fields (for example Anthropic's
+    // `speed` fast-mode field) while keeping internal adapter fields out of
+    // the wire payload. First-class values below intentionally win.
+    const requestKwargs: Record<string, unknown> = { ...kwargs };
+    delete requestKwargs['betaFeatures'];
+    delete requestKwargs['contextManagement'];
     if (kwargs.max_tokens !== undefined) {
       requestKwargs['max_tokens'] = kwargs.max_tokens;
     }
@@ -977,9 +985,9 @@ export class AnthropicChatProvider implements ChatProvider {
     }
 
     const createParams: Record<string, unknown> = {
+      ...requestKwargs,
       model: this._model,
       messages,
-      ...requestKwargs,
     };
 
     if (system !== undefined) {

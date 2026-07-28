@@ -673,9 +673,28 @@ micro_compaction = false
 });
 
 describe('config path env override', () => {
+  it('prefers IMPERIUM_HOME over the upstream compatibility variable', () => {
+    const savedLegacyHome = process.env['IMPERIUM_HOME'];
+    const savedKimi = process.env['KIMI_CODE_HOME'];
+    try {
+      process.env['IMPERIUM_HOME'] = '/tmp/echadron-from-env';
+      process.env['KIMI_CODE_HOME'] = '/tmp/kimi-from-env';
+
+      expect(resolveKimiHome()).toBe('/tmp/echadron-from-env');
+      expect(resolveConfigPath({})).toBe('/tmp/echadron-from-env/config.toml');
+    } finally {
+      if (savedLegacyHome === undefined) delete process.env['IMPERIUM_HOME'];
+      else process.env['IMPERIUM_HOME'] = savedLegacyHome;
+      if (savedKimi === undefined) delete process.env['KIMI_CODE_HOME'];
+      else process.env['KIMI_CODE_HOME'] = savedKimi;
+    }
+  });
+
   it('uses KIMI_CODE_HOME when no explicit homeDir is supplied', () => {
     const saved = process.env['KIMI_CODE_HOME'];
+    const savedLegacyHome = process.env['IMPERIUM_HOME'];
     try {
+      delete process.env['IMPERIUM_HOME'];
       process.env['KIMI_CODE_HOME'] = '/tmp/kimi-from-env';
 
       expect(resolveKimiHome()).toBe('/tmp/kimi-from-env');
@@ -685,6 +704,8 @@ describe('config path env override', () => {
     } finally {
       if (saved === undefined) delete process.env['KIMI_CODE_HOME'];
       else process.env['KIMI_CODE_HOME'] = saved;
+      if (savedLegacyHome === undefined) delete process.env['IMPERIUM_HOME'];
+      else process.env['IMPERIUM_HOME'] = savedLegacyHome;
     }
   });
 });

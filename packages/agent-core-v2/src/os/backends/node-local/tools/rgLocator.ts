@@ -65,7 +65,11 @@ function rgBinaryName(): string {
 }
 
 function getShareDir(): string {
-  const override = process.env['KIMI_CODE_HOME'];
+  const override =
+    process.env['ECHADRON_HOME'] ??
+    process.env['ECHADRON_CODE_HOME'] ??
+    process.env['IMPERIUM_HOME'] ??
+    process.env['KIMI_CODE_HOME'];
   if (override !== undefined && override !== '') return override;
   return join(homedir(), '.kimi-code');
 }
@@ -143,7 +147,11 @@ async function downloadRgWithLock(probe: RgProbe, shareDir: string): Promise<RgR
 }
 
 function getVendorRgPath(_binName: string): string | undefined {
-  return undefined;
+  const configured =
+    process.env['ECHADRON_RG_PATH'] ??
+    process.env['KIMI_RG_PATH'] ??
+    process.env['KIMI_CODE_RG_PATH'];
+  return configured !== undefined && configured.trim().length > 0 ? configured.trim() : undefined;
 }
 
 async function findRgOnPath(): Promise<string | undefined> {

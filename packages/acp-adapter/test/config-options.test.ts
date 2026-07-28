@@ -104,6 +104,53 @@ describe('buildModelOption', () => {
     expect(option.options).toHaveLength(0);
     expect(option.currentValue).toBe('');
   });
+
+  it('carries non-secret Echadron model metadata without exposing credentials', () => {
+    const option = buildModelOption(
+      [
+        {
+          id: 'qwen',
+          name: 'Qwen',
+          providerId: 'alibaba',
+          model: 'qwen3.5-plus',
+          protocol: 'openai',
+          maxContextSize: 983616,
+          maxInputSize: 983616,
+          capabilities: ['thinking'],
+          thinkingSupported: true,
+          supportEfforts: ['low', 'high'],
+          defaultThinkingEffort: 'high',
+        },
+      ],
+      'qwen',
+    );
+
+    if (option.type !== 'select') throw new Error('expected a SessionConfigSelect option');
+    expect(option.options[0]).toEqual({
+      value: 'qwen',
+      name: 'Qwen',
+      _meta: {
+        'echadron:model': {
+          provider: 'alibaba',
+          model: 'qwen3.5-plus',
+          protocol: 'openai',
+          max_context_tokens: 983616,
+          max_input_tokens: 983616,
+          capabilities: ['thinking'],
+        },
+        'imperium:model': {
+          provider: 'alibaba',
+          model: 'qwen3.5-plus',
+          protocol: 'openai',
+          max_context_tokens: 983616,
+          max_input_tokens: 983616,
+          capabilities: ['thinking'],
+        },
+      },
+    });
+    expect(JSON.stringify(option)).not.toContain('apiKey');
+    expect(JSON.stringify(option)).not.toContain('authorization');
+  });
 });
 
 describe('buildThinkingOption', () => {

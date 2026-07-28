@@ -3,7 +3,7 @@
  *
  * Lookup order (first hit wins):
  *   1. System PATH (`which rg`) — fastest, respects developer setup
- *   2. Bundled vendor binary (hook; not wired yet — `getVendorRgPath` is a stub)
+ *   2. Bundled/vendor binary (`ECHADRON_RG_PATH`, with legacy aliases)
  *   3. `<KIMI_CODE_HOME>/bin/rg` — persistent cache for this app.
  *   4. CDN download to <KIMI_CODE_HOME>/bin/ — one-off bootstrap
  *
@@ -125,13 +125,21 @@ function rgBinaryName(): string {
 }
 
 function getShareDir(): string {
-  const override = process.env['KIMI_CODE_HOME'];
+  const override =
+    process.env['ECHADRON_HOME'] ??
+    process.env['ECHADRON_CODE_HOME'] ??
+    process.env['IMPERIUM_HOME'] ??
+    process.env['KIMI_CODE_HOME'];
   if (override !== undefined && override !== '') return override;
   return join(homedir(), '.kimi-code');
 }
 
 function getVendorRgPath(_binName: string): string | undefined {
-  return undefined;
+  const configured =
+    process.env['ECHADRON_RG_PATH'] ??
+    process.env['KIMI_RG_PATH'] ??
+    process.env['KIMI_CODE_RG_PATH'];
+  return configured !== undefined && configured.trim().length > 0 ? configured.trim() : undefined;
 }
 
 async function whichRg(): Promise<string | undefined> {

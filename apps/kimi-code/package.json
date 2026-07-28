@@ -1,21 +1,20 @@
 {
-  "name": "@moonshot-ai/kimi-code",
+  "name": "@yaseenhq/echadron",
   "version": "0.29.1",
   "description": "The Starting Point for Next-Gen Agents",
   "license": "MIT",
-  "author": "Moonshot AI",
-  "homepage": "https://github.com/MoonshotAI/kimi-code/tree/main/apps/kimi-code#readme",
+  "author": "YaseenHQ",
+  "homepage": "https://github.com/YaseenHQ/kimi/tree/main/apps/kimi-code#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/MoonshotAI/kimi-code.git",
+    "url": "git+https://github.com/YaseenHQ/kimi.git",
     "directory": "apps/kimi-code"
   },
   "bugs": {
-    "url": "https://github.com/MoonshotAI/kimi-code/issues"
+    "url": "https://github.com/YaseenHQ/kimi/issues"
   },
   "keywords": [
-    "kimi",
-    "kimi-code",
+    "echadron",
     "cli",
     "agent",
     "coding-agent",
@@ -23,8 +22,9 @@
     "tui"
   ],
   "bin": {
-    "kimi": "dist/main.mjs",
-    "imperium": "dist/main.mjs"
+    "echadron": "dist/main.mjs",
+    "chad": "dist/main.mjs",
+    "maker": "dist/main.mjs"
   },
   "files": [
     "dist",
@@ -63,10 +63,10 @@
     "release:native:resolve": "node scripts/native/resolve-release.mjs",
     "test:native:smoke": "node scripts/native/smoke.mjs",
     "dev": "node scripts/dev.mjs",
-    "dev:cli-only": "tsx --import ../../build/register-raw-text-loader.mjs ./src/main.ts",
-    "dev:server": "tsx --tsconfig ./tsconfig.dev.json --import ../../build/register-raw-text-loader.mjs ./src/main.ts web --no-open --debug-endpoints",
-    "dev:kap-server": "tsx --tsconfig ./tsconfig.dev.json --import ../../build/register-raw-text-loader.mjs ./src/main.ts web --no-open --debug-endpoints",
-    "dev:kap-server:multi": "tsx --tsconfig ./tsconfig.dev.json --import ../../build/register-raw-text-loader.mjs ./src/main.ts web --no-open --debug-endpoints",
+    "dev:cli-only": "node scripts/dev-entry.mjs",
+    "dev:server": "node scripts/dev-entry.mjs web --no-open --debug-endpoints",
+    "dev:kap-server": "node scripts/dev-entry.mjs web --no-open --debug-endpoints",
+    "dev:kap-server:multi": "node scripts/dev-entry.mjs web --no-open --debug-endpoints",
     "dev:server:restart": "node scripts/dev-server-restart.mjs",
     "dev:plugin-marketplace": "node scripts/dev-plugin-marketplace-server.mjs",
     "build:plugin-marketplace": "node scripts/build-plugin-marketplace-cdn.mjs",
@@ -105,6 +105,7 @@
     "semver": "^7.7.4",
     "smol-toml": "^1.6.1",
     "tsx": "^4.21.0",
+    "unicode-animations": "^1.0.3",
     "yazl": "^3.3.1",
     "zod": "^4.3.6"
   },

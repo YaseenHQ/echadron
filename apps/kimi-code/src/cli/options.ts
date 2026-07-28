@@ -4,7 +4,9 @@ export type UIMode = 'shell' | 'print';
 export type PromptOutputFormat = 'text' | 'stream-json';
 
 /** Environment variable that sets the default `-p` output format (flag wins). */
-export const OUTPUT_FORMAT_ENV = 'KIMI_MODEL_OUTPUT_FORMAT';
+export const OUTPUT_FORMAT_ENV = 'ECHADRON_MODEL_OUTPUT_FORMAT';
+/** @deprecated Accepted for existing shell scripts. */
+export const LEGACY_OUTPUT_FORMAT_ENV = 'KIMI_MODEL_OUTPUT_FORMAT';
 
 const OUTPUT_FORMATS = ['text', 'stream-json'] as const;
 
@@ -15,7 +17,7 @@ function isOutputFormat(value: string): value is PromptOutputFormat {
 /**
  * Resolve the effective `-p` output format.
  *
- * Precedence: explicit `--output-format` flag → `KIMI_MODEL_OUTPUT_FORMAT` env
+ * Precedence: explicit `--output-format` flag → `ECHADRON_MODEL_OUTPUT_FORMAT` env
  * (prompt mode only) → `text`. The env var is ignored outside prompt mode so an
  * ambient value never affects interactive `kimi`. An invalid env value fails
  * fast via `OptionConflictError`.
@@ -26,7 +28,7 @@ export function resolveOutputFormat(
 ): PromptOutputFormat {
   if (opts.outputFormat !== undefined) return opts.outputFormat;
   if (opts.prompt === undefined) return 'text';
-  const raw = (env[OUTPUT_FORMAT_ENV] ?? '').trim();
+  const raw = (env[OUTPUT_FORMAT_ENV] ?? env[LEGACY_OUTPUT_FORMAT_ENV] ?? '').trim();
   if (raw.length === 0) return 'text';
   if (!isOutputFormat(raw)) {
     throw new OptionConflictError(
@@ -104,7 +106,7 @@ export function validateOptions(
     (!promptMode || !isKimiV2Enabled(env))
   ) {
     throw new OptionConflictError(
-      '--agent/--agent-file are only available with the v2 engine (kimi -p with KIMI_CODE_EXPERIMENTAL_FLAG=1).',
+      '--agent/--agent-file are only available with the v2 engine (echadron -p with ECHADRON_EXPERIMENTAL_FLAG=1).',
     );
   }
   if (promptMode && opts.session === '') {
@@ -116,7 +118,7 @@ export function validateOptions(
   if (opts.yolo && opts.auto) {
     throw new OptionConflictError('Cannot combine --yolo with --auto.');
   }
-  // Validate `KIMI_MODEL_OUTPUT_FORMAT` eagerly in prompt mode so a typo fails
+  // Validate `ECHADRON_MODEL_OUTPUT_FORMAT` eagerly in prompt mode so a typo fails
   // fast through the friendly `error:` path instead of mid-run.
   if (promptMode) resolveOutputFormat(opts, env);
   return { options: opts, uiMode: promptMode ? 'print' : 'shell' };

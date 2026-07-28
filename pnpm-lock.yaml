@@ -140,6 +140,9 @@ importers:
       tsx:
         specifier: ^4.21.0
         version: 4.21.0
+      unicode-animations:
+        specifier: ^1.0.3
+        version: 1.0.3
       yazl:
         specifier: ^3.3.1
         version: 3.3.1
@@ -444,8 +447,8 @@ importers:
         version: 5.0.14(@types/react@19.2.14)(immer@11.1.11)(react@19.2.5)(use-sync-external-store@1.6.0(react@19.2.5))
     devDependencies:
       '@tailwindcss/vite':
-        specifier: 4.1.18
-        version: 4.1.18(vite@6.4.2(@types/node@22.19.17)(jiti@2.6.1)(lightningcss@1.32.0)(tsx@4.21.0)(yaml@2.8.3))
+        specifier: ^4.1.4
+        version: 4.2.2(vite@6.4.2(@types/node@22.19.17)(jiti@2.6.1)(lightningcss@1.32.0)(tsx@4.21.0)(yaml@2.8.3))
       '@types/diff':
         specifier: ^8.0.0
         version: 8.0.0
@@ -489,8 +492,8 @@ importers:
         specifier: 1.0.2
         version: 1.0.2
       tailwindcss:
-        specifier: 4.1.18
-        version: 4.1.18
+        specifier: ^4.1.4
+        version: 4.2.2
       vite:
         specifier: ^6.3.3
         version: 6.4.2(@types/node@22.19.17)(jiti@2.6.1)(lightningcss@1.32.0)(tsx@4.21.0)(yaml@2.8.3)
@@ -835,6 +838,9 @@ importers:
       '@moonshot-ai/agent-core-v2':
         specifier: workspace:^
         version: link:../agent-core-v2
+      '@moonshot-ai/kimi-code-oauth':
+        specifier: workspace:^
+        version: link:../oauth
       '@moonshot-ai/transcript':
         specifier: workspace:^
         version: link:../transcript
@@ -9317,6 +9323,10 @@ packages:
   undici@7.27.1:
     resolution: {integrity: sha512-UDdpiex+mzigiyrXrGbiUaF4HzTNhKbh2vRNFaTMzcqmLIPrZxaCtwo/1TMSuWoM1Xz3WiTo9KdgI3kRqYzJGg==}
     engines: {node: '>=20.18.1'}
+
+  unicode-animations@1.0.3:
+    resolution: {integrity: sha512-+klB2oWwcYZjYWhwP4Pr8UZffWDFVx6jKeIahE6z0QYyM2dwDeDPyn5nevCYbyotxvtT9lh21cVURO1RX0+YMg==}
+    hasBin: true
 
   unicode-emoji-modifier-base@1.0.0:
     resolution: {integrity: sha512-yLSH4py7oFH3oG/9K+XWrz1pSi3dfUrWEnInbxMfArOfc1+33BlGPQtLsOYwvdMy11AwUBetYuaRxSPqgkq+8g==}
@@ -19161,6 +19171,8 @@ snapshots:
   undici-types@6.21.0: {}
 
   undici@7.27.1: {}
+
+  unicode-animations@1.0.3: {}
 
   unicode-emoji-modifier-base@1.0.0: {}
 

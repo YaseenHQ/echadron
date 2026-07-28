@@ -23,7 +23,7 @@ export const authHandlers: Record<string, Handler<any, any>> = {
       await updateLoginContext(ctx.harness);
       return { success: true };
     } catch (error) {
-      ctx.logError("Kimi login failed", error);
+      ctx.logError("Echadron login failed", error);
       await updateLoginContext(ctx.harness).catch((statusError: unknown) => {
         ctx.logError("Unable to refresh login status after a failed login", statusError);
       });
@@ -40,7 +40,7 @@ export const authHandlers: Record<string, Handler<any, any>> = {
       await updateLoginContext(ctx.harness);
       return { success: true };
     } catch (error) {
-      ctx.logError("Kimi logout failed", error);
+      ctx.logError("Echadron logout failed", error);
       await updateLoginContext(ctx.harness).catch((statusError: unknown) => {
         ctx.logError("Unable to refresh login status after a failed logout", statusError);
       });

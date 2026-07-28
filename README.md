@@ -1,47 +1,33 @@
-# Imperium (Kimi Code compatible)
+# Echadron
 
-Imperium is the multi-provider agent harness built from the Kimi Code CLI
-architecture. The `imperium` command is the preferred entry point for this
-fork; `kimi` remains available as a compatibility alias while storage,
-provider, and upstream integration names migrate safely.
+Echadron is the multi-provider agent harness built from the Kimi Code CLI
+architecture. The `echadron` command (or short `chad` / `maker` alias) is the primary CLI
+entry point published by this fork. Only Echadron-owned executables are
+installed; upstream Kimi Code and its storage namespace remain independent.
 
-[![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE) [![Docs](https://img.shields.io/badge/docs-online-blue)](https://moonshotai.github.io/kimi-code/en/) <br>
-[Documentation](https://moonshotai.github.io/kimi-code/en/) · [Issues](https://github.com/MoonshotAI/kimi-code/issues) · [中文](README.zh-CN.md)
+[![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE) <br>
+[Documentation](https://github.com/YaseenHQ/kimi/tree/main/docs) · [Issues](https://github.com/YaseenHQ/kimi/issues) · [中文](README.zh-CN.md)
 
-![Demo of using Kimi Code](./docs/media/intro.gif)
+![Demo of using Echadron](./docs/media/intro.gif)
 
-## What is Imperium
+## What is Echadron
 
-Imperium is an AI coding agent that runs in your terminal — it can read and edit code, run shell commands, search files, fetch web pages, and choose the next step based on the feedback it receives. It supports compatible providers and models through the Kimi Code architecture.
+Echadron is an AI coding agent that runs in your terminal — it can read and edit code, run shell commands, search files, fetch web pages, and choose the next step based on the feedback it receives. It supports compatible providers and models through the Kimi Code architecture.
 
 ## Install
 
-Install with the official script. No Node.js required.
-
-- **macOS or Linux**:
-
-```sh
-curl -fsSL https://code.kimi.com/kimi-code/install.sh | bash
-```
-
-- **Windows (PowerShell)**:
-
-```powershell
-irm https://code.kimi.com/kimi-code/install.ps1 | iex
-```
-
-> On Windows, install [Git for Windows](https://gitforwindows.org/) before first launch because Kimi Code CLI uses the bundled Git Bash as its shell environment. If Git Bash is installed in a custom location, set `KIMI_SHELL_PATH` to the absolute path of `bash.exe`.
-
-The standalone native installer currently installs the compatibility binary
-`kimi`; the npm package exposes both `imperium` and `kimi`.
-
-Then, run it with a new shell session:
+The Echadron native installer/release channel is not published yet. Install the
+fork package or run it from this repository. After installing, run it with a
+new shell session:
 
 ```sh
-kimi --version
+echadron --version
+chad --version
+maker --version
 ```
 
-For npm install, upgrade, uninstall, see [Getting Started](https://moonshotai.github.io/kimi-code/en/guides/getting-started).
+The published package is `@yaseenhq/echadron`; its CLI entries are `echadron`,
+`chad`, and `maker`.
 
 ## Quick Start
 
@@ -49,16 +35,29 @@ Open a project and start the interactive UI:
 
 ```sh
 cd your-project
-kimi
+echadron
 ```
 
-If you installed the npm package instead, use `imperium` for the same commands.
+Echadron never installs a `kimi` executable, so it can coexist with upstream
+Kimi Code on the same machine.
 
-On first launch, run `/login` inside Imperium and choose an available OAuth or API-key provider. After login, try your first task:
+On first launch, run `/login` inside Echadron and choose an available OAuth or API-key provider. After login, try your first task:
 
 ```
 Take a look at this project and explain its main directories.
 ```
+
+Refresh the shared [models.dev](https://models.dev) provider/model directory
+without changing credentials or `config.toml`:
+
+```sh
+echadron update --models
+```
+
+The snapshot is stored under the legacy `~/.imperium/cache/models.dev.json` path and reused for
+normal provider browsing for up to four hours. `echadron update` without
+`--models` is intentionally disabled until Echadron has its own signed release
+channel; it never contacts or installs the upstream Kimi Code release.
 
 ## Key Features
 
@@ -70,20 +69,20 @@ Take a look at this project and explain its main directories.
 - **Rich plugin ecosystem.** Install skills, MCP servers, and data sources from the marketplace or any GitHub repo, with each install's trust level surfaced up front.
 - **Subagents for focused, parallel work.** Dispatch built-in `coder`, `explore`, and `plan` subagents in isolated contexts while keeping the main conversation clean.
 - **Lifecycle hooks.** Run local commands at key points to gate risky tool calls, audit decisions, trigger desktop notifications, or connect to your own automation.
-- **Editor & IDE integration (ACP).** Drive an Imperium session straight from Zed, JetBrains, or any [Agent Client Protocol](https://agentclientprotocol.com/) client with `kimi acp` (or `imperium acp` when installed from npm).
+- **Editor & IDE integration (ACP).** Drive an Echadron session straight from Zed, JetBrains, or any [Agent Client Protocol](https://agentclientprotocol.com/) client with `echadron acp`.
 
 ## Use it in your editor (ACP)
 
-Imperium speaks the [Agent Client Protocol](https://agentclientprotocol.com/), so ACP-compatible editors and IDEs (Zed, JetBrains, …) can drive a session over stdio. Log in once, then point your editor at the `kimi acp` subcommand (or `imperium acp` for npm installs) — no extra login needed.
+Echadron speaks the [Agent Client Protocol](https://agentclientprotocol.com/), so ACP-compatible editors and IDEs (Zed, JetBrains, …) can drive a session over stdio. Log in once with `/login`, then point your editor at `echadron acp` — no extra login is needed. ACP clients that support terminal authentication can also launch the Echadron OAuth flow when no credential is configured.
 
 For Zed, add this to `~/.config/zed/settings.json`:
 
 ```json
 {
   "agent_servers": {
-    "Imperium": {
+    "Echadron": {
       "type": "custom",
-      "command": "kimi",
+      "command": "echadron",
       "args": ["acp"],
       "env": {}
     }
@@ -91,24 +90,19 @@ For Zed, add this to `~/.config/zed/settings.json`:
 }
 ```
 
-Then open a new conversation in Zed's Agent panel. See [Using in IDEs](https://moonshotai.github.io/kimi-code/en/guides/ides) for JetBrains setup and troubleshooting, and the [`kimi acp` reference](https://moonshotai.github.io/kimi-code/en/reference/kimi-acp) for the full capability matrix.
+Then open a new conversation in Zed's Agent panel.
 
 ## Docs
 
-- [Getting Started](https://moonshotai.github.io/kimi-code/en/guides/getting-started)
-- [Interaction and approvals](https://moonshotai.github.io/kimi-code/en/guides/interaction)
-- [Sessions](https://moonshotai.github.io/kimi-code/en/guides/sessions)
-- [Using in IDEs (ACP)](https://moonshotai.github.io/kimi-code/en/guides/ides)
-- [Configuration](https://moonshotai.github.io/kimi-code/en/configuration/config-files)
-- [Command reference](https://moonshotai.github.io/kimi-code/en/reference/kimi-command)
+- [Documentation](https://github.com/YaseenHQ/kimi/tree/main/docs)
 
 ## Develop
 
 Requirements: Node.js ≥ 24.15.0, pnpm 10.33.0.
 
 ```sh
-git clone https://github.com/MoonshotAI/kimi-code.git
-cd kimi-code
+git clone https://github.com/YaseenHQ/kimi.git
+cd kimi
 pnpm install
 ```
 
@@ -124,7 +118,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the full contribution guide.
 
 ## Community
 
-- [Issues](https://github.com/MoonshotAI/kimi-code/issues)
+- [Issues](https://github.com/YaseenHQ/kimi/issues)
 - For security vulnerabilities, see [SECURITY.md](SECURITY.md).
 
 ## Acknowledgements

@@ -108,7 +108,7 @@ On first launch you need to configure an API source. In the interactive UI, ente
 To sign out, enter `/logout` to clear the current credentials.
 
 ::: tip Using other AI providers
-To connect Anthropic, OpenAI, Google, or another provider, run `/login` and choose an account (OAuth) or API-key route. You can also edit `~/.kimi-code/config.toml` directly. See [Providers and models](../configuration/providers.md) for details.
+To connect Anthropic, OpenAI API, Google, or another provider, use the API-key route in `/login` or edit `~/.kimi-code/config.toml` directly. Interactive subscription OAuth currently covers Kimi, xAI, and OpenAI Codex (ChatGPT). See [Providers and models](../configuration/providers.md) for details.
 :::
 
 ## Your first conversation

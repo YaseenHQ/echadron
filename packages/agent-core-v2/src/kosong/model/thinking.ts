@@ -169,8 +169,15 @@ function isCapabilityList(
   return Array.isArray(capabilities);
 }
 
-function middleOf(values: readonly string[]): string {
-  return values[Math.floor(values.length / 2)]!;
+function preferredEffort(values: readonly string[]): string {
+  // models.dev does not declare a default tier. Prefer conventional
+  // medium/high tiers when present; never invent a value or select `max`
+  // solely because a provider exposes `[high, max]`.
+  for (const target of ['medium', 'high']) {
+    const match = values.find((value) => value.trim().toLowerCase() === target);
+    if (match !== undefined) return match;
+  }
+  return values[Math.floor((values.length - 1) / 2)]!;
 }
 
 function effortsFor(model: ModelThinkingMetadata | undefined): readonly string[] {
@@ -194,9 +201,12 @@ export function defaultThinkingEffortForModel(
   const efforts = effortsFor(model);
   if (efforts.length > 0) {
     const declaredDefault = nonEmpty(model.defaultEffort);
-    return (declaredDefault !== undefined && efforts.includes(declaredDefault)
-      ? declaredDefault
-      : middleOf(efforts)) as ThinkingEffort;
+    const declared = declaredDefault?.trim().toLowerCase();
+    const declaredMatch =
+      declared === undefined
+        ? undefined
+        : efforts.find((effort) => effort.trim().toLowerCase() === declared);
+    return (declaredMatch ?? preferredEffort(efforts)) as ThinkingEffort;
   }
   return 'on';
 }

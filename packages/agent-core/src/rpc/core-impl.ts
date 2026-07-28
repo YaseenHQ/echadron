@@ -1,6 +1,8 @@
 import { randomUUID } from 'node:crypto';
 import { homedir } from 'node:os';
 
+import { applyEchadronEnvironmentAliases } from '@moonshot-ai/kimi-code-oauth';
+
 import { ErrorCodes, KimiError } from '#/errors';
 import { getRootLogger, log } from '#/logging/logger';
 import { PluginManager } from '#/plugin';
@@ -232,6 +234,7 @@ export class KimiCore implements PromisableMethods<CoreAPI> {
     protected readonly rpcClient: CoreRPCClient,
     options: KimiCoreOptions = {},
   ) {
+    applyEchadronEnvironmentAliases();
     this.homeDir = resolveKimiHome(options.homeDir);
     this.userHomeDir = homedir();
     this.configPath = resolveConfigPath({

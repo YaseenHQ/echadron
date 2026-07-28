@@ -143,6 +143,8 @@ export interface ManagedKimiModelAliasOverrides {
   reasoningKey?: string | undefined;
   adaptiveThinking?: boolean | undefined;
   supportEfforts?: readonly string[] | undefined;
+  thinkingBudgetMin?: number | undefined;
+  thinkingBudgetMax?: number | undefined;
   defaultEffort?: string | undefined;
   readonly [key: string]: unknown;
 }
@@ -153,6 +155,8 @@ export interface ManagedKimiModelAlias {
   maxContextSize: number;
   capabilities?: string[] | undefined;
   supportEfforts?: readonly string[] | undefined;
+  thinkingBudgetMin?: number | undefined;
+  thinkingBudgetMax?: number | undefined;
   defaultEffort?: string | undefined;
   displayName?: string | undefined;
   protocol?: ManagedKimiCodeProtocol;

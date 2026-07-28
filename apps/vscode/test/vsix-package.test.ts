@@ -172,11 +172,11 @@ describe('Extension Development Host setup (isolated local state)', () => {
 
     expect(result.status).toBe(0);
     await expect(readFile(join(baseDir, 'workspace', 'README.md'), 'utf8')).resolves.toContain(
-      'Isolated Kimi Code extension development workspace',
+      'Isolated Echadron extension development workspace',
     );
     await expect(directoryExists(join(baseDir, 'user-data'))).resolves.toBe(true);
     await expect(directoryExists(join(baseDir, 'extensions'))).resolves.toBe(true);
-    await expect(directoryExists(join(baseDir, 'kimi-home'))).resolves.toBe(true);
+    await expect(directoryExists(join(baseDir, 'echadron-home'))).resolves.toBe(true);
   });
 
   it('refuses to clear a directory without the dedicated safety suffix', async () => {

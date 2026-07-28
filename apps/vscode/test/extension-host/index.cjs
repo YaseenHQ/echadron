@@ -4,7 +4,7 @@ const os = require("node:os");
 const path = require("node:path");
 const vscode = require("vscode");
 
-const EXTENSION_ID = "moonshot-ai.kimi-code";
+const EXTENSION_ID = "yaseenhq.echadron-code";
 const EXPECTED_COMMANDS = [
   "kimi.clearAllState",
   "kimi.focusInput",
@@ -36,7 +36,7 @@ exports.run = async function run() {
   );
   assert.equal(extension.packageJSON.version, sourceManifest.version);
   assert.equal(extension.packageJSON.main, "./dist/extension.js");
-  assert.ok(process.env.KIMI_CODE_HOME, "KIMI_CODE_HOME must point at the isolated test home");
+  assert.ok(process.env.ECHADRON_HOME, "ECHADRON_HOME must point at the isolated test home");
   assert.equal(process.env.HOME, isolatedHome);
   assert.equal(process.env.USERPROFILE, isolatedHome);
   assert.equal(os.homedir(), isolatedHome);
@@ -49,7 +49,7 @@ exports.run = async function run() {
     assert.ok(commands.has(command), `missing registered command: ${command}`);
   }
 
-  const config = vscode.workspace.getConfiguration("kimi");
+  const config = vscode.workspace.getConfiguration("echadron");
   assert.equal(config.get("autosave"), true);
   assert.equal(config.get("executablePath"), undefined, "removed Python CLI setting is still contributed");
   assert.equal(config.get("environmentVariables"), undefined, "removed global CLI env setting is still contributed");

@@ -15,8 +15,16 @@ function supportsThinking(model: ModelAlias | undefined): boolean {
   );
 }
 
-function middleOf(efforts: readonly string[]): string {
-  return efforts[Math.floor(efforts.length / 2)]!;
+function preferredEffort(efforts: readonly string[]): string {
+  // models.dev does not declare a default tier. Prefer the conventional
+  // medium/high tiers when present; this avoids selecting `max` merely because
+  // a provider only exposes `[high, max]` while still never inventing a value.
+  const preferred = ['medium', 'high'];
+  for (const target of preferred) {
+    const match = efforts.find((effort) => effort.trim().toLowerCase() === target);
+    if (match !== undefined) return match;
+  }
+  return efforts[Math.floor((efforts.length - 1) / 2)]!;
 }
 
 function effortsFor(model: ModelAlias | undefined): readonly string[] {
@@ -40,9 +48,12 @@ export function defaultThinkingEffortFor(model: ModelAlias | undefined): Thinkin
   const efforts = effortsFor(effective);
   if (efforts.length > 0) {
     const declaredDefault = effective?.defaultEffort;
-    return declaredDefault !== undefined && efforts.includes(declaredDefault)
-      ? declaredDefault
-      : middleOf(efforts);
+    const declared = declaredDefault?.trim().toLowerCase();
+    const declaredMatch =
+      declared === undefined
+        ? undefined
+        : efforts.find((effort) => effort.trim().toLowerCase() === declared);
+    return declaredMatch ?? preferredEffort(efforts);
   }
   return 'on';
 }

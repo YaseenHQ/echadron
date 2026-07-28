@@ -17,6 +17,7 @@ import { mkdirSync } from 'node:fs';
 import { homedir } from 'node:os';
 
 import { join } from 'pathe';
+import { applyEchadronEnvironmentAliases } from '@moonshot-ai/kimi-code-oauth';
 
 import { SyncDescriptor } from '#/_base/di/descriptors';
 import { createDecorator, type ServiceIdentifier } from '#/_base/di/instantiation';
@@ -93,6 +94,7 @@ export interface BootstrapInput {
 
 export function resolveBootstrapOptions(input: BootstrapInput = {}): IBootstrapOptions {
   const env = input.env ?? process.env;
+  applyEchadronEnvironmentAliases(env);
   const osHomeDir = input.osHomeDir ?? homedir();
   const homeDir = resolveKimiHome(input.homeDir, env, osHomeDir);
   const configPath = input.configPath ?? join(homeDir, 'config.toml');
@@ -150,7 +152,15 @@ export function resolveKimiHome(
   env: NodeJS.ProcessEnv = process.env,
   osHomeDir: string = homedir(),
 ): string {
-  return homeDir ?? env['KIMI_CODE_HOME'] ?? join(osHomeDir, '.kimi-code');
+  applyEchadronEnvironmentAliases(env);
+  return (
+    homeDir ??
+    env['ECHADRON_HOME'] ??
+    env['ECHADRON_CODE_HOME'] ??
+    env['IMPERIUM_HOME'] ??
+    env['KIMI_CODE_HOME'] ??
+    join(osHomeDir, '.kimi-code')
+  );
 }
 
 export function resolveConfigPath(input: {

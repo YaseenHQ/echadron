@@ -3,7 +3,17 @@ import { EventSink } from './sink';
 import { SystemMetricsCollector } from './systemMetrics';
 import { AsyncTransport } from './transport';
 
-export const TELEMETRY_DISABLE_ENV = 'KIMI_DISABLE_TELEMETRY';
+/**
+ * Primary host-facing opt-out variable. The legacy Kimi name remains
+ * accepted so existing installations can opt out while migrating to Echadron.
+ */
+export const TELEMETRY_DISABLE_ENV = 'ECHADRON_DISABLE_TELEMETRY';
+export const LEGACY_TELEMETRY_DISABLE_ENV = 'KIMI_DISABLE_TELEMETRY';
+
+const TELEMETRY_DISABLE_ENVS = [
+  TELEMETRY_DISABLE_ENV,
+  LEGACY_TELEMETRY_DISABLE_ENV,
+] as const;
 
 const TRUE_ENV_VALUES = new Set(['1', 'true', 't', 'yes', 'y']);
 
@@ -23,8 +33,10 @@ export interface TelemetryBootstrapOptions {
 }
 
 export function isTelemetryDisabledByEnv(env: NodeJS.ProcessEnv = process.env): boolean {
-  const value = env[TELEMETRY_DISABLE_ENV];
-  return value !== undefined && TRUE_ENV_VALUES.has(value.trim().toLowerCase());
+  return TELEMETRY_DISABLE_ENVS.some((name) => {
+    const value = env[name];
+    return value !== undefined && TRUE_ENV_VALUES.has(value.trim().toLowerCase());
+  });
 }
 
 export function shouldEnableTelemetry(

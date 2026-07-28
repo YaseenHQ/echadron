@@ -212,7 +212,7 @@ function maybeNotifyCompletion(sid: string, ctx: NotifyCompletionCtx): void {
     notifyOnComplete.value,
     ctx,
     completionNotificationCopy(ctx.sessionTitle),
-    `kimi-complete-${sid}-${ctx.promptId ?? Date.now()}`,
+    `echadron-complete-${sid}-${ctx.promptId ?? Date.now()}`,
   );
 }
 
@@ -223,7 +223,7 @@ function maybeNotifyQuestion(ctx: NotifyQuestionCtx): void {
     notifyOnQuestion.value,
     ctx,
     questionNotificationCopy(ctx.sessionTitle, ctx.questionPreview),
-    `kimi-question-${ctx.questionId}`,
+    `echadron-question-${ctx.questionId}`,
   );
 }
 
@@ -234,7 +234,7 @@ function maybeNotifyApproval(ctx: NotifyApprovalCtx): void {
     notifyOnApproval.value,
     ctx,
     approvalNotificationCopy(ctx.sessionTitle, ctx.toolName),
-    `kimi-approval-${ctx.approvalId}`,
+    `echadron-approval-${ctx.approvalId}`,
   );
 }
 

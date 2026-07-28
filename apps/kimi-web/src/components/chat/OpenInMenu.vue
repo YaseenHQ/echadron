@@ -1,6 +1,6 @@
 <!-- apps/kimi-web/src/components/chat/OpenInMenu.vue -->
 <!-- "Open" button group for the chat header: workspace path label + quick-open
-     (last used target) + dropdown caret, matching the kimi-cli/web pattern.
+     (last used target) + dropdown caret, matching the Echadron CLI/web pattern.
      Falls back to a simple icon+text "Open" button on non-mac platforms. -->
 <script setup lang="ts">
 import { computed, nextTick, onUnmounted, ref } from 'vue';

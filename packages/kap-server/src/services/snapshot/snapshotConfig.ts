@@ -3,9 +3,10 @@
  *
  * Mirrors v1 (`packages/server/src/services/snapshot/snapshotConfig.ts`):
  *
- *   KIMI_SNAPSHOT_READER       'auto' (default) | 'legacy'
- *   KIMI_SNAPSHOT_TIMEOUT_MS   integer ms hard ceiling on the auto path (default 4000)
- *   KIMI_SNAPSHOT_CACHE_LIMIT  transcript LRU entries (default 32)
+ *   ECHADRON_SNAPSHOT_READER       'auto' (default) | 'legacy'
+ *   ECHADRON_SNAPSHOT_TIMEOUT_MS   integer ms hard ceiling on the auto path (default 4000)
+ *   ECHADRON_SNAPSHOT_CACHE_LIMIT  transcript LRU entries (default 32)
+ * The KIMI-prefixed spellings remain accepted for existing installations.
  */
 
 export type SnapshotReaderMode = 'auto' | 'legacy';
@@ -27,11 +28,19 @@ function parseInteger(value: string | undefined, fallback: number, min: number):
 }
 
 export function loadSnapshotConfig(env: NodeJS.ProcessEnv = process.env): SnapshotConfig {
-  const rawMode = env['KIMI_SNAPSHOT_READER']?.trim().toLowerCase();
+  const rawMode = (env['ECHADRON_SNAPSHOT_READER'] ?? env['KIMI_SNAPSHOT_READER'])?.trim().toLowerCase();
   const mode: SnapshotReaderMode = rawMode === 'legacy' ? 'legacy' : 'auto';
   return {
     mode,
-    timeoutMs: parseInteger(env['KIMI_SNAPSHOT_TIMEOUT_MS'], DEFAULT_TIMEOUT_MS, 100),
-    cacheLimit: parseInteger(env['KIMI_SNAPSHOT_CACHE_LIMIT'], DEFAULT_CACHE_LIMIT, 1),
+    timeoutMs: parseInteger(
+      env['ECHADRON_SNAPSHOT_TIMEOUT_MS'] ?? env['KIMI_SNAPSHOT_TIMEOUT_MS'],
+      DEFAULT_TIMEOUT_MS,
+      100,
+    ),
+    cacheLimit: parseInteger(
+      env['ECHADRON_SNAPSHOT_CACHE_LIMIT'] ?? env['KIMI_SNAPSHOT_CACHE_LIMIT'],
+      DEFAULT_CACHE_LIMIT,
+      1,
+    ),
   };
 }

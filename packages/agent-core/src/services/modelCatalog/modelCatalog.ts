@@ -67,6 +67,8 @@ export function toProtocolModel(
     max_context_size: effective.maxContextSize,
     capabilities: effective.capabilities,
     support_efforts: effective.supportEfforts,
+    thinking_budget_min: effective.thinkingBudgetMin,
+    thinking_budget_max: effective.thinkingBudgetMax,
     default_effort: effective.defaultEffort,
   };
 }

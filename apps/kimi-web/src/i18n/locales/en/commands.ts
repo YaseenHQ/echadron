@@ -1,7 +1,7 @@
 export default {
   new: { desc: 'Create a new session' },
   clear: { desc: 'Clear and start a new session' },
-  login: { desc: 'Sign in to Kimi in the browser' },
+  login: { desc: 'Sign in to Echadron in the browser' },
   plan: { desc: 'Toggle plan mode on/off' },
   swarm: { desc: 'Toggle swarm mode; /swarm <task> runs a task in swarm' },
   goal: { desc: 'Create/control a goal: /goal <objective>, /goal pause|resume|cancel' },

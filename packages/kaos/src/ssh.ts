@@ -427,6 +427,43 @@ function clientExec(client: Client, command: string): Promise<ClientChannel> {
   });
 }
 
+async function probeRemoteEnvironment(client: Client): Promise<Environment> {
+  const channel = await clientExec(
+    client,
+    "printf '%s\\n' \"$(uname -s 2>/dev/null)\" \"$(uname -m 2>/dev/null)\" \"$(uname -r 2>/dev/null)\" \"${SHELL:-}\"",
+  );
+  return new Promise<Environment>((resolve) => {
+    const chunks: Buffer[] = [];
+    channel.on('data', (chunk: Buffer | string) => {
+      chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+    });
+    channel.once('close', () => {
+      const [rawKind = '', rawArch = '', rawVersion = '', rawShell = ''] = Buffer.concat(chunks)
+        .toString('utf8')
+        .split(/\r?\n/)
+        .map((line) => line.trim());
+      const kind = rawKind.toLowerCase();
+      const osKind = kind === 'darwin' ? 'macOS' : kind === 'linux' ? 'Linux' : rawKind || 'unknown';
+      const shellPath = rawShell.startsWith('/') ? rawShell : '/bin/sh';
+      resolve({
+        osKind,
+        osArch: rawArch || 'unknown',
+        osVersion: rawVersion || 'unknown',
+        shellName: shellPath.endsWith('/bash') || shellPath.endsWith('/bash.exe') ? 'bash' : 'sh',
+        shellPath,
+      });
+    });
+  });
+}
+
+const FALLBACK_REMOTE_ENVIRONMENT: Environment = {
+  osKind: 'unknown',
+  osArch: 'unknown',
+  osVersion: 'unknown',
+  shellName: 'sh',
+  shellPath: '/bin/sh',
+};
+
 // ── SSHKaos ────────────────────────────────────────────────────────────
 
 /**
@@ -439,14 +476,11 @@ export class SSHKaos implements Kaos {
   private _sftp: SFTPWrapper;
   private _home: string;
   private _cwd: string;
+  private readonly _osEnv: Environment;
   private readonly _envLayers: readonly Record<string, string>[];
 
-  // Stub: real wiring (probing the remote host via `uname` / `$SHELL` over the
-  // SSH transport) is deferred.
   get osEnv(): Environment {
-    throw new KaosError(
-      'SSHKaos.osEnv is not yet wired — remote environment probing is not implemented.',
-    );
+    return this._osEnv;
   }
 
   private constructor(
@@ -454,21 +488,26 @@ export class SSHKaos implements Kaos {
     sftp: SFTPWrapper,
     home: string,
     cwd: string,
+    osEnv: Environment,
     envLayers: readonly Record<string, string>[] = [],
   ) {
     this._client = client;
     this._sftp = sftp;
     this._home = home;
     this._cwd = cwd;
+    this._osEnv = osEnv;
     this._envLayers = envLayers;
   }
 
   withCwd(cwd: string): SSHKaos {
-    return new SSHKaos(this._client, this._sftp, this._home, cwd, this._envLayers);
+    return new SSHKaos(this._client, this._sftp, this._home, cwd, this._osEnv, this._envLayers);
   }
 
   withEnv(env: Record<string, string>): SSHKaos {
-    return new SSHKaos(this._client, this._sftp, this._home, this._cwd, [...this._envLayers, env]);
+    return new SSHKaos(this._client, this._sftp, this._home, this._cwd, this._osEnv, [
+      ...this._envLayers,
+      env,
+    ]);
   }
 
   private _resolvePath(path: string): string {
@@ -535,7 +574,8 @@ export class SSHKaos implements Kaos {
         }
       }
 
-      return new SSHKaos(client, sftp, home, cwd);
+      const osEnv = await probeRemoteEnvironment(client).catch(() => FALLBACK_REMOTE_ENVIRONMENT);
+      return new SSHKaos(client, sftp, home, cwd, osEnv);
     } catch (error) {
       client.end();
       throw error;

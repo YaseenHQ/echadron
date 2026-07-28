@@ -1,5 +1,5 @@
 /**
- * `kimi web` — run the local server in the foreground and open the web UI.
+ * `echadron web` — run the local server in the foreground and open the web UI.
  *
  * The server always runs in the current process, attached to the terminal,
  * and shuts down cleanly on SIGINT/SIGTERM. `--no-open` skips the browser.
@@ -16,7 +16,7 @@ import { shutdownTelemetry, track } from '@moonshot-ai/kimi-telemetry';
 import chalk from 'chalk';
 import { type Command } from 'commander';
 
-import { CLI_SHUTDOWN_TIMEOUT_MS } from '#/constant/app';
+import { CLI_SHUTDOWN_TIMEOUT_MS, PRODUCT_NAME } from '#/constant/app';
 import { getNativeWebAssetsDir } from '#/native/web-assets';
 import { darkColors } from '#/tui/theme/colors';
 import { openUrl as defaultOpenUrl } from '#/utils/open-url';
@@ -200,7 +200,7 @@ function formatReadyLine(
   const notice = dangerousBypassAuth
     ? `${formatDangerNoticeLines().join('\n')}\n`
     : '';
-  return `${notice}Kimi server: ${buildOpenableUrl(origin, token)}\n`;
+  return `${notice}Echadron server: ${buildOpenableUrl(origin, token)}\n`;
 }
 
 /**
@@ -219,7 +219,7 @@ function formatDangerNoticeLines(): string[] {
 }
 
 /**
- * `kimi web` — runs the local server in-process, attached to the current
+ * `echadron web` — runs the local server in-process, attached to the current
  * terminal. Resolves only via `process.exit` (SIGINT/SIGTERM).
  */
 export async function startServerForeground(
@@ -269,9 +269,14 @@ async function runServerInProcess(
   const v2 = await startServer({
     host: options.host,
     port: options.port,
+    // Keep the in-process server on Echadron's isolated home. This is also
+    // where `update --models` writes the shared models.dev snapshot, so the
+    // v2 browser can consume it without falling back to ~/.kimi-code.
+    homeDir: getDataDir(),
     // Report the CLI's product version as `server_version` (/meta, web UI)
     // rather than kap-server's private package version.
     version,
+    hostIdentity: { productName: PRODUCT_NAME },
     logLevel: options.logLevel,
     logger,
     debugEndpoints: options.debugEndpoints,
@@ -280,6 +285,10 @@ async function runServerInProcess(
     allowRemoteTerminals: options.allowRemoteTerminals,
     allowedHosts: options.allowedHosts,
     disableAuth: options.dangerousBypassAuth,
+    // Engine events are emitted inside kap-server; attach its appender before
+    // the first web session is created. Config and environment toggles still
+    // gate delivery.
+    telemetry: true,
     // Seed the CLI's Kimi identity headers so the engine's outbound
     // requests (model, WebSearch, FetchURL) carry the same User-Agent +
     // X-Msh-* identity as direct CLI runs.
@@ -349,12 +358,12 @@ export function formatReadyBanner(
   };
 
   const port = Number(new URL(origin).port);
-  // Borderless header: the Kimi sprite (the little mascot with eyes) sits next
+  // Borderless header: the Echadron sprite sits next
   // to the title, keeping the brand without the enclosing box.
   const logo = ['▐█▛█▛█▌', '▐█████▌'] as const;
   const lines: string[] = [
     '',
-    `  ${primary(logo[0])}  ${title('Kimi server ready')}  ${dim(getVersion())}`,
+    `  ${primary(logo[0])}  ${title('Echadron server ready')}  ${dim(getVersion())}`,
     `  ${primary(logo[1])}  ${dim('Local web UI is available from this machine.')}`,
     '',
   ];

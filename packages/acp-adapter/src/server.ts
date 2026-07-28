@@ -112,7 +112,7 @@ function toResolvedSlashCommands(
 }
 
 /**
- * Inline auth gate — moved out of `KimiAuthFacade.hasUsableToken()` so
+ * Inline auth gate — moved out of the SDK auth facade so
  * the SDK doesn't have to carry an ACP-specific convenience method.
  * OAuth tokens still count as authed, but ACP can also start when the
  * active model resolves to a provider with config-file credentials.
@@ -127,7 +127,10 @@ async function hasUsableConfiguredDefaultModel(harness: KimiHarness): Promise<bo
   if (typeof harness.getConfig !== 'function') return false;
   let config: KimiConfig;
   try {
-    config = await harness.getConfig();
+    // Auth may have been completed by the terminal-auth subprocess since the
+    // harness was constructed. Reload the runtime snapshot so configured
+    // provider credentials and the model catalog are observed immediately.
+    config = await harness.getConfig({ reload: true });
   } catch (error) {
     log.warn('acp: harness.getConfig threw during auth gate; requiring terminal auth', {
       error: error instanceof Error ? error.message : String(error),
@@ -320,6 +323,7 @@ export class AcpServer implements Agent {
       sessionCapabilities: {
         list: {},
         resume: {},
+        additionalDirectories: {},
       },
     };
 
@@ -384,6 +388,7 @@ export class AcpServer implements Agent {
       // (agent-core `CreateSessionPayload`) the SDK transparently
       // forwards via spread. See block comment above.
       mcpServers,
+      additionalDirs: params.additionalDirectories,
     });
     const currentModelId = await this.resolveCurrentModelId();
     const currentThinkingEffort = await this.resolveCurrentThinkingEffort(session);
@@ -450,6 +455,7 @@ export class AcpServer implements Agent {
       cwd: params.cwd,
       sessionId: params.sessionId,
       mcpServers: params.mcpServers,
+      additionalDirectories: params.additionalDirectories,
       mode: 'load',
     });
     // Synchronously replay history — the response must not settle
@@ -486,6 +492,7 @@ export class AcpServer implements Agent {
       cwd: params.cwd,
       sessionId: params.sessionId,
       mcpServers: params.mcpServers,
+      additionalDirectories: params.additionalDirectories,
       mode: 'resume',
     });
     this.scheduleAvailableCommandsUpdate(session.id);
@@ -519,6 +526,7 @@ export class AcpServer implements Agent {
     cwd: string;
     sessionId: string;
     mcpServers?: ReadonlyArray<McpServer>;
+    additionalDirectories?: ReadonlyArray<string>;
     mode: 'load' | 'resume';
   }): Promise<{
     session: Session;
@@ -553,6 +561,7 @@ export class AcpServer implements Agent {
         // @ts-expect-error — see block comment above; mcpServers is a
         // kernel-only field that the SDK forwards via spread.
         mcpServers,
+        additionalDirs: params.additionalDirectories,
       });
     } catch (err) {
       // Surface unknown-session as invalid_params so the JSON-RPC layer
@@ -661,6 +670,13 @@ export class AcpServer implements Agent {
     }
     if (!(await harnessIsAuthed(this.harness))) {
       throw RequestError.authRequired();
+    }
+    // A terminal-auth subprocess writes the credential and exits outside this
+    // harness process. Refresh the provider manager even when auth.status()
+    // already reports a token so the next session sees the newly provisioned
+    // provider/model aliases immediately.
+    if (typeof this.harness.getConfig === 'function') {
+      await this.harness.getConfig({ reload: true });
     }
     // void = empty success body (ACP allows AuthenticateResponse | void).
   }
@@ -888,7 +904,7 @@ export class AcpServer implements Agent {
     // stubs don't fire spurious "no models" warnings.
     if (typeof this.harness.getConfig !== 'function') return '';
     try {
-      const config = await this.harness.getConfig();
+      const config = await this.harness.getConfig({ reload: true });
       const declared = config.defaultModel;
       if (typeof declared === 'string' && declared.length > 0) {
         return declared;
@@ -952,7 +968,7 @@ export class AcpServer implements Agent {
 
     if (typeof this.harness.getConfig !== 'function') return 'off';
     try {
-      const config = await this.harness.getConfig();
+      const config = await this.harness.getConfig({ reload: true });
       const thinking = (config as { thinking?: { enabled?: unknown; effort?: unknown } })
         .thinking;
       if (thinking?.enabled === false) return 'off';
@@ -1205,5 +1221,8 @@ function sessionSummaryToSessionInfo(summary: SessionSummary): SessionInfo {
     cwd: summary.workDir,
     title,
     updatedAt,
+    ...(summary.additionalDirs !== undefined && summary.additionalDirs.length > 0
+      ? { additionalDirectories: [...summary.additionalDirs] }
+      : {}),
   };
 }

@@ -385,7 +385,7 @@ const rawState: ExtendedState = reactive({
   serverVersion: '',
   dangerousBypassAuth: false,
   backend: 'v1',
-  workspaceName: 'kimi-web',
+  workspaceName: 'echadron-web',
   connection: 'disconnected' as ConnectionState,
   permission: loadPermissionFromStorage(),
   // Resolved per session/model once the catalog/session is known (loadModels
@@ -1293,7 +1293,7 @@ function pushOperationFailure(
 ): void {
   // Always-on logging: a surfaced failure must be diagnosable from the console
   // and from the exported web log (session export), not just from the toast.
-  console.error(`[kimi-web] operation failed: ${operation}`, err);
+  console.error(`[echadron-web] operation failed: ${operation}`, err);
   const api = isDaemonApiError(err);
   const network = isDaemonNetworkError(err);
   traceKeyEvent('operation:failed', {

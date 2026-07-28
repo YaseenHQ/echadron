@@ -12,12 +12,31 @@ describe('bootstrap path helpers', () => {
       expect(resolveKimiHome('/tmp/kimi')).toBe('/tmp/kimi');
     });
 
-    it('falls back to KIMI_CODE_HOME env', () => {
+    it('prefers IMPERIUM_HOME over the KIMI_CODE_HOME compatibility env', () => {
+      const previousLegacyHome = process.env['IMPERIUM_HOME'];
       const prev = process.env['KIMI_CODE_HOME'];
+      process.env['IMPERIUM_HOME'] = '/env/echadron';
+      process.env['KIMI_CODE_HOME'] = '/env/kimi';
+      try {
+        expect(resolveKimiHome()).toBe('/env/echadron');
+      } finally {
+        if (previousLegacyHome === undefined) delete process.env['IMPERIUM_HOME'];
+        else process.env['IMPERIUM_HOME'] = previousLegacyHome;
+        if (prev === undefined) delete process.env['KIMI_CODE_HOME'];
+        else process.env['KIMI_CODE_HOME'] = prev;
+      }
+    });
+
+    it('falls back to KIMI_CODE_HOME env', () => {
+      const previousLegacyHome = process.env['IMPERIUM_HOME'];
+      const prev = process.env['KIMI_CODE_HOME'];
+      delete process.env['IMPERIUM_HOME'];
       process.env['KIMI_CODE_HOME'] = '/env/kimi';
       try {
         expect(resolveKimiHome()).toBe('/env/kimi');
       } finally {
+        if (previousLegacyHome === undefined) delete process.env['IMPERIUM_HOME'];
+        else process.env['IMPERIUM_HOME'] = previousLegacyHome;
         if (prev === undefined) delete process.env['KIMI_CODE_HOME'];
         else process.env['KIMI_CODE_HOME'] = prev;
       }

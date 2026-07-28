@@ -1,9 +1,9 @@
-// apps/kimi-web/src/debug/trace.ts
+// apps/echadron-web/src/debug/trace.ts
 // KAP/daemon trace — a side-channel recording of low-frequency client
 // lifecycle events plus opt-in REST/WS/console diagnostics.
 //
 // Full diagnostics are opt-in via `?debug=1` or
-// `localStorage["kimi-web.debug"]="1"`; key lifecycle metadata is always on.
+// `localStorage["echadron-web.debug"]="1"`; key lifecycle metadata is always on.
 // Recording NEVER changes request/WS behavior: callers pass data in, errors
 // here must not propagate. Session exports use a separate metadata-only ring;
 // full REST/WS/console diagnostics never enter the archive.
@@ -614,7 +614,7 @@ export function downloadTraceLog(list: readonly TraceEntry[] = entries): void {
   try {
     anchor = document.createElement('a');
     anchor.href = url;
-    anchor.download = `kimi-web-log-${new Date().toISOString().replaceAll(/[:.]/g, '-')}.jsonl`;
+    anchor.download = `echadron-web-log-${new Date().toISOString().replaceAll(/[:.]/g, '-')}.jsonl`;
     document.body.append(anchor);
     anchor.click();
   } finally {

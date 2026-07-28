@@ -1,3 +1,5 @@
+import spinners, { type BrailleSpinnerName } from 'unicode-animations';
+
 // Continuation indent for transcript rows that use a two-cell leading marker.
 export const MESSAGE_INDENT = '  ';
 
@@ -13,5 +15,33 @@ export const THINKING_PREVIEW_LINES = 2;
 export const COMMAND_PREVIEW_LINES = 10;
 
 // Animation frames are shared by the login/update loaders and live thinking.
-export const BRAILLE_SPINNER_FRAMES = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
-export const BRAILLE_SPINNER_INTERVAL_MS = 80;
+// Keep the animation catalogue in one place so every TUI surface uses the same
+// timing and can be tuned without introducing ad-hoc frame arrays.
+export type UnicodeAnimationName = BrailleSpinnerName;
+
+// The palette is semantic on purpose: call sites describe the state being
+// rendered, while this table owns the visual language and can be tuned later
+// without touching the session or transcript controllers.
+export const TUI_ANIMATIONS = {
+  default: 'braille',
+  retry: 'scanline',
+  progress: 'pulse',
+  composing: 'breathe',
+  tool: 'orbit',
+  subagent: 'dna',
+  mcp: 'helix',
+} as const satisfies Record<string, UnicodeAnimationName>;
+
+export const BRAILLE_SPINNER_FRAMES = [...spinners.braille.frames];
+export const BRAILLE_SPINNER_INTERVAL_MS = spinners.braille.interval;
+
+export const SUBAGENT_SPINNER_FRAMES = [...spinners[TUI_ANIMATIONS.subagent].frames];
+export const SUBAGENT_SPINNER_INTERVAL_MS = spinners[TUI_ANIMATIONS.subagent].interval;
+
+export function animationFrames(name: UnicodeAnimationName = 'braille'): string[] {
+  return [...spinners[name].frames];
+}
+
+export function animationInterval(name: UnicodeAnimationName = 'braille'): number {
+  return spinners[name].interval;
+}

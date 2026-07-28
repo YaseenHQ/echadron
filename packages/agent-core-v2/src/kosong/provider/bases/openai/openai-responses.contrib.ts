@@ -34,6 +34,7 @@ registerProtocolBase({
         defaultHeaders: traitDefaultHeaders(traits),
         maxOutputTokens: config.providerOptions?.defaultMaxTokens,
         offEffort: config.providerOptions?.offEffort,
+        generationKwargs: config.providerOptions?.requestBody,
       }),
     });
   },

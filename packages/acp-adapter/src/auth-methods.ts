@@ -8,7 +8,7 @@
 //      honor the first-class field (Zed without `AcpBetaFeatureFlag`,
 //      current JetBrains plugin, etc.) read `{command,args,env,label}`
 //      from `_meta` and spawn `<command> <args>` directly. Mirrors
-//      kimi-cli `acp/server.py:77-96`.
+//      ACP's terminal-auth compatibility path.
 //
 // Most clients will hit path 1; path 2 is required for Zed today
 // because the first-class handler is beta-gated.
@@ -19,8 +19,8 @@ import type { AuthMethod } from '@agentclientprotocol/sdk';
  * Build the `terminal-auth` method advertised to ACP clients.
  *
  * Optional inputs:
- *  - `env`: extra env vars forwarded to the spawned `kimi login`
- *    subprocess (e.g. `{ KIMI_CODE_HOME: '/tmp/sandbox' }` for tests).
+ *  - `env`: extra env vars forwarded to the spawned `echadron acp --login`
+ *    subprocess (e.g. the legacy `{ IMPERIUM_HOME: '/tmp/sandbox' }` interface for tests).
  *  - `legacyCommand`: absolute path of the agent binary, used to
  *    populate `_meta['terminal-auth'].command` so legacy clients can
  *    spawn `<binary> login` (top-level subcommand). When omitted, the
@@ -36,11 +36,11 @@ export function buildTerminalAuthMethod(
   const method: AuthMethod = {
     id: 'login',
     type: 'terminal',
-    name: 'Login with Kimi account',
-    description: 'Open the device-code login flow in a terminal.',
+    name: 'Login with Echadron (OAuth)',
+    description: 'Open the Echadron OAuth login flow in a terminal.',
     // Appended to the agent's configured args by spec-compliant clients
     // (e.g. `args:['acp']` + `args:['--login']` → `acp --login`). The
-    // `--login` flag on `kimi acp` pivots into the login flow before
+    // `--login` flag on `echadron acp` pivots into the login flow before
     // touching stdio.
     args: ['--login'],
     env: { ...env },
@@ -49,14 +49,13 @@ export function buildTerminalAuthMethod(
     (method as AuthMethod & { _meta: { 'terminal-auth': unknown } })._meta = {
       'terminal-auth': {
         type: 'terminal',
-        label: 'Login with Kimi account',
+        label: 'Login with Echadron (OAuth)',
         // Legacy clients use this verbatim as the executable path, NOT
         // combined with the agent server's configured command (per Zed's
         // `meta_terminal_auth_task` in `agent_servers/src/acp.rs`).
         command: opts.legacyCommand,
-        // `<command> login` runs the top-level `kimi login` subcommand,
-        // skipping the `acp` subprocess entirely. Same behaviour the
-        // `kimi-cli` Python reference advertises.
+        // `<command> login` runs the top-level `echadron login` subcommand,
+        // skipping the `acp` subprocess entirely.
         args: ['login'],
         env: { ...env },
       },

@@ -74,7 +74,7 @@ function prependSystemContext(content: string | ContentPart[], context: string):
 const streamChat: Handler<StreamChatParams, { done: boolean }> = async (params, ctx) => {
   if (!ctx.workDir) {
     emitPreflightError(ctx, "NO_WORKSPACE", "Please open a folder to start.");
-    void vscode.window.showWarningMessage("Kimi: Please open a folder first.", "Open Folder").then((action) => {
+    void vscode.window.showWarningMessage("Echadron: Please open a folder first.", "Open Folder").then((action) => {
       if (action) void vscode.commands.executeCommand("vscode.openFolder");
     });
     return { done: false };

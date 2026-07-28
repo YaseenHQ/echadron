@@ -17,9 +17,9 @@ const LEGACY_REAUTH_NOTICE_KEY = "kimi.legacyMigration.reauthNotice.v1";
 const LEGACY_WARNING_NOTICE_KEY = "kimi.legacyMigration.warningNotice.v1";
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
-  outputChannel = vscode.window.createOutputChannel("Kimi Code");
+  outputChannel = vscode.window.createOutputChannel("Echadron");
   const remoteInfo = vscode.env.remoteName ? ` (remote: ${vscode.env.remoteName})` : "";
-  log(`Kimi Code ${VSCodeSettings.getExtensionConfig().version} activating${remoteInfo}`);
+  log(`Echadron ${VSCodeSettings.getExtensionConfig().version} activating${remoteInfo}`);
 
   provider = new KimiWebviewProvider(
     context.extensionUri,
@@ -90,7 +90,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       await context.globalState.update("kimi.config", undefined);
       await context.globalState.update("kimi.mcpServers", undefined);
       await context.workspaceState.update("kimi.mcpEnabled", undefined);
-      await vscode.window.showInformationMessage("Kimi: Extension UI state cleared.");
+      await vscode.window.showInformationMessage("Echadron: Extension UI state cleared.");
     },
     "kimi.openInTab": () => {
       provider?.createPanel();
@@ -121,7 +121,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     "kimi.resetKimi": () => provider?.resetAllWebviews(),
     "kimi.logout": async () => {
       await vscode.commands.executeCommand("kimi.webview.focus");
-      await vscode.window.showInformationMessage("Use the logout button in Kimi settings.");
+      await vscode.window.showInformationMessage("Use the logout button in Echadron settings.");
     },
     "kimi.migrateLegacyData": () => runMigration(true),
   };
@@ -138,11 +138,11 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   ).catch((error) => {
     logError("Unable to check for legacy Kimi data", error);
   });
-  log("Kimi Code activated");
+  log("Echadron activated");
 }
 
 export async function deactivate(): Promise<void> {
-  log("Kimi Code deactivating");
+  log("Echadron deactivating");
   await provider?.shutdown();
   provider = undefined;
 }
@@ -168,7 +168,7 @@ async function offerLegacyMigration(
   const warningNotice =
     discovery.warnings.length === 0
       ? null
-      : "Some legacy Kimi data could not be inspected. Use “Kimi Code: Migrate Legacy Data” to retry.";
+      : "Some legacy Kimi data could not be inspected. Use “Echadron: Migrate Legacy Data” to retry.";
   if (discovery.prompt === null) {
     if (reauthNotice !== null && !globalState.get<boolean>(LEGACY_REAUTH_NOTICE_KEY, false)) {
       await vscode.window.showWarningMessage(reauthNotice);
@@ -207,10 +207,10 @@ function legacyReauthNotice(
   const mcpLogins = discovery.notices.mcpOauthServersRequiringReauth.length;
   if (kimiLogins === 0 && mcpLogins === 0) return null;
   if (kimiLogins > 0 && mcpLogins > 0) {
-    return "Legacy OAuth credentials are not copied. Sign in to Kimi Code and authorize your MCP servers again.";
+    return "Legacy OAuth credentials are not copied. Sign in to Echadron and authorize your MCP servers again.";
   }
   return kimiLogins > 0
-    ? "Legacy OAuth credentials are not copied. Sign in to Kimi Code again."
+    ? "Legacy OAuth credentials are not copied. Sign in to Echadron again."
     : "Legacy MCP OAuth credentials are not copied. Authorize those MCP servers again.";
 }
 
@@ -218,7 +218,7 @@ async function performMigration(
   manager: LegacyMigrationManager,
   retry: boolean,
 ): Promise<void> {
-  log(`${retry ? "Retrying" : "Starting"} legacy Kimi data migration`);
+  log(`${retry ? "Retrying" : "Starting"} legacy Kimi data migration for Echadron`);
   const result = retry ? await manager.retry() : await manager.migrateNow();
   logMigrationResult(result);
 

@@ -16,10 +16,14 @@
  *    `provider.registry_import_invalid`.
  */
 
+import { mkdtempSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { createScopedTestHost } from '#/_base/di/test';
 import { Error2, isError2 } from '#/_base/errors/errors';
+import { IBootstrapService } from '#/app/bootstrap/bootstrap';
 import { IConfigService } from '#/app/config/config';
 import {
   resetModelsDevUpstreamForTest,
@@ -138,6 +142,13 @@ function createHost(sections: Record<string, unknown> = {}): {
 } {
   const config = new StubConfigService(sections);
   const host = createScopedTestHost([
+    [
+      IBootstrapService,
+      {
+        _serviceBrand: undefined,
+        homeDir: mkdtempSync(`${tmpdir()}/models-dev-test-`),
+      },
+    ],
     [IConfigService, config],
     [IKosongConfigService, stubKosongConfig()],
     [IModelCatalog, stubModelCatalog()],
@@ -221,6 +232,13 @@ describe('IModelsDevImportService', () => {
       type: 'openai',
       baseUrl: 'https://api.openai.com/v1',
       apiKey: 'sk-test',
+      source: {
+        kind: 'modelsDev',
+        url: 'https://models.dev/api.json',
+        catalogId: 'openai',
+        npm: '@ai-sdk/openai',
+        api: 'https://api.openai.com/v1',
+      },
     });
     const models = config.inspect<ModelsSection>(MODELS_SECTION).userValue ?? {};
     expect(models['openai/gpt-4.1']).toMatchObject({

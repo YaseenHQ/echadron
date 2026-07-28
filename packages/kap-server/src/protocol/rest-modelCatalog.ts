@@ -62,6 +62,8 @@ export const createProviderModelSchema = z.object({
   capabilities: z.array(z.string()).optional(),
   max_output_size: z.number().int().min(1).optional(),
   support_efforts: z.array(z.string().min(1)).optional(),
+  thinking_budget_min: z.number().finite().nonnegative().optional(),
+  thinking_budget_max: z.number().finite().nonnegative().optional(),
   adaptive_thinking: z.boolean().optional(),
 });
 export type CreateProviderModel = z.infer<typeof createProviderModelSchema>;

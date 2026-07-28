@@ -2,7 +2,7 @@
 
 ## Supported Versions
 
-Currently, Kimi Code only provides security support for the latest released version.
+Echadron provides security support for the latest released version.
 
 ## Reporting a Vulnerability
 
@@ -10,16 +10,16 @@ We take security seriously. **Please do not open a public issue for security vul
 
 Preferred channel:
 
-- GitHub Security Advisories — https://github.com/MoonshotAI/kimi-code/security/advisories/new
+- GitHub Security Advisories — https://github.com/YaseenHQ/kimi/security/advisories/new
   (private disclosure, tracked with the codebase)
 
 Alternative channel:
 
-- Email: code@moonshot.ai (please include "[security]" in the subject)
+- Email: use the private contact listed in the repository's GitHub security settings.
 
 ## What to Include
 
-- Affected version (output of `kimi --version`)
+- Affected version (output of `echadron --version`)
 - Reproduction steps
 - Impact assessment
 - Any suggested mitigation

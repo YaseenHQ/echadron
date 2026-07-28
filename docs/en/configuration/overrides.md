@@ -1,6 +1,9 @@
 # Config overrides
 
-Kimi Code CLI has three places where runtime parameters can be influenced: the config file, command-line options, and environment variables. They are not a simple "whoever has higher priority wins" relationship — the three serve different scenarios and have non-overlapping scopes:
+Echadron has three places where runtime parameters can be influenced: the
+config file, command-line options, and environment variables. They are not a
+simple "whoever has higher priority wins" relationship — the three serve
+different scenarios and have non-overlapping scopes:
 
 - **Config file** stores long-term preferences (model, keys, loop control, etc.); takes effect on every startup
 - **Command-line options** make one-off changes for the current startup; discarded after exit
@@ -12,8 +15,8 @@ This distinction matters: many users run `export KIMI_API_KEY=xxx` in the shell 
 
 Environment variables fall into three categories by function and cannot be collapsed into a single linear priority order:
 
-1. **Locating the config file**: `KIMI_CODE_HOME` sets the data root directory, making the config file path `$KIMI_CODE_HOME/config.toml`. This step runs before all other resolution and is not a fallback for individual parameters.
-2. **Runtime switches**: A small set of variables like `KIMI_DISABLE_TELEMETRY` directly shut down the corresponding subsystem — even if `config.toml` has `telemetry = true`, setting this variable to a truthy value disables telemetry. The semantics are "additionally disable", not "ordinary override".
+1. **Locating the config file**: `ECHADRON_HOME` sets the data root directory, making the config file path `$ECHADRON_HOME/config.toml`. `IMPERIUM_HOME` and `KIMI_CODE_HOME` remain legacy aliases. This step runs before all other resolution and is not a fallback for individual parameters.
+2. **Runtime switches**: A small set of variables like `ECHADRON_DISABLE_TELEMETRY` directly shut down the corresponding subsystem — even if `config.toml` has `telemetry = true`, setting this variable to a truthy value disables telemetry. The legacy `KIMI_DISABLE_TELEMETRY` alias is also accepted. The semantics are "additionally disable", not "ordinary override".
 3. **Runtime endpoints and diagnostics**: Variables like `KIMI_CODE_OAUTH_HOST`, `KIMI_CODE_BASE_URL`, and `KIMI_LOG_LEVEL` are read when the OAuth or logging subsystems initialize. For the full list, see [Environment variables](./env-vars.md).
 
 ## Priority for ordinary runtime parameters
@@ -29,7 +32,7 @@ A small number of environment variables explicitly override specific config file
 **Ordinary runtime parameters do not fall back to shell environment variables.** Provider `api_key` / `base_url` are read only from `config.toml` (including the `[providers.<name>.env]` sub-table) and do not fall back to `export`-ed shell variables. The only exception is the explicit `KIMI_MODEL_*` channel — see [Define a model from environment variables](./env-vars.md#define-a-model-from-environment-variables-kimi-model).
 :::
 
-The CLI currently reads a single user-level config file and has no project-level config file mechanism. To isolate config between different projects, point `KIMI_CODE_HOME` at different data directories — see [Common scenarios](#common-scenarios) below.
+The CLI currently reads a single user-level config file and has no project-level config file mechanism. To isolate config between different projects, point `ECHADRON_HOME` at different data directories — see [Common scenarios](#common-scenarios) below.
 
 ## Provider credentials
 

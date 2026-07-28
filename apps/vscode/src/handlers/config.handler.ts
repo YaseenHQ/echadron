@@ -146,6 +146,8 @@ function toWebviewModel(id: string, model: ModelAlias): ModelConfig {
     adaptive_thinking: effective.adaptiveThinking,
     support_efforts:
       effective.supportEfforts === undefined ? undefined : [...effective.supportEfforts],
+    thinking_budget_min: effective.thinkingBudgetMin,
+    thinking_budget_max: effective.thinkingBudgetMax,
     default_effort: effective.defaultEffort,
   };
 }

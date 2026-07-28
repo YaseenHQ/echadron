@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 import { spawn } from 'node:child_process';
 import { createRequire } from 'node:module';
-import { dirname, resolve } from 'node:path';
+import { homedir } from 'node:os';
+import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import { startPluginMarketplaceServer } from './dev-plugin-marketplace-server.mjs';
@@ -19,6 +20,8 @@ const EXTERNAL_MARKETPLACE_ENV = 'KIMI_CODE_DEV_MARKETPLACE_URL';
 
 let marketplaceServer;
 const env = { ...process.env };
+env.IMPERIUM_HOME ??= join(homedir(), '.imperium');
+env.KIMI_CODE_HOME = env.IMPERIUM_HOME;
 
 const externalUrl = process.env[EXTERNAL_MARKETPLACE_ENV]?.trim();
 if (externalUrl !== undefined && externalUrl.length > 0) {
@@ -65,7 +68,7 @@ const child = spawn(
 );
 
 child.on('error', async (error) => {
-  console.error(`Failed to start Kimi Code dev CLI: ${error.message}`);
+  console.error(`Failed to start Echadron dev CLI: ${error.message}`);
   await marketplaceServer?.close();
   process.exit(1);
 });

@@ -121,10 +121,11 @@ export interface AnthropicOptions {
    * keeps the standard endpoint + header behavior.
    */
   betaApi?: boolean | undefined;
+  generationKwargs?: AnthropicGenerationKwargs | undefined;
   clientFactory?: (auth: ProviderRequestAuth) => Anthropic;
 }
 
-interface AnthropicGenerationKwargs {
+export interface AnthropicGenerationKwargs {
   max_tokens?: number | undefined;
   temperature?: number | undefined;
   top_k?: number | undefined;
@@ -133,6 +134,7 @@ interface AnthropicGenerationKwargs {
   output_config?: MessageCreateParams['output_config'] | undefined;
   betaFeatures?: string[] | undefined;
   contextManagement?: AnthropicContextManagement | undefined;
+  [key: string]: unknown;
 }
 
 /**
@@ -920,6 +922,7 @@ export class AnthropicChatProvider implements ChatProvider {
     this._client = this._apiKey === undefined ? undefined : this._buildClient(this._apiKey);
     this._explicitMaxTokens = options.defaultMaxTokens !== undefined;
     this._generationKwargs = {
+      ...options.generationKwargs,
       max_tokens: options.defaultMaxTokens ?? resolveDefaultMaxTokens(options.model),
       betaFeatures: options.betaFeatures ?? [INTERLEAVED_THINKING_BETA],
     };
@@ -1008,7 +1011,8 @@ export class AnthropicChatProvider implements ChatProvider {
     injectCacheControlOnLastBlock(messages);
 
     // Build generation kwargs (excluding betaFeatures)
-    const kwargs: Record<string, unknown> = {};
+    const kwargs: Record<string, unknown> = { ...this._generationKwargs };
+    delete kwargs['betaFeatures'];
     if (this._generationKwargs.max_tokens !== undefined) {
       kwargs['max_tokens'] = this._generationKwargs.max_tokens;
     }
@@ -1032,6 +1036,7 @@ export class AnthropicChatProvider implements ChatProvider {
     if (this._generationKwargs.contextManagement !== undefined) {
       kwargs['context_management'] = this._generationKwargs.contextManagement;
     }
+    delete kwargs['contextManagement'];
 
     // Build the beta feature list. On the standard Messages API these travel
     // via the `anthropic-beta` header; on the beta Messages API (`betaApi`) the
@@ -1054,9 +1059,9 @@ export class AnthropicChatProvider implements ChatProvider {
 
     // Build the create params
     const createParams: Record<string, unknown> = {
+      ...kwargs,
       model: this._model,
       messages,
-      ...kwargs,
     };
 
     if (system !== undefined) {

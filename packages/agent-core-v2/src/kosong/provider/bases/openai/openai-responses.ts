@@ -368,6 +368,7 @@ export interface OpenAIResponsesOptions {
   thinkingEffort?: ThinkingEffort | undefined;
   httpClient?: unknown;
   defaultHeaders?: Record<string, string>;
+  generationKwargs?: OpenAIResponsesGenerationKwargs | undefined;
   toolMessageConversion?: ToolMessageConversion | undefined;
   clientFactory?: (auth: ProviderRequestAuth) => OpenAI;
 }
@@ -1189,7 +1190,7 @@ export class OpenAIResponsesChatProvider implements ChatProvider {
     this._stream = true;
     this._thinkingEffort = options.thinkingEffort;
     this._offEffort = options.offEffort;
-    this._generationKwargs = {};
+    this._generationKwargs = { ...options.generationKwargs };
     this._toolMessageConversion = options.toolMessageConversion ?? null;
     this._httpClient = options.httpClient;
     this._clientFactory = options.clientFactory;
@@ -1298,12 +1299,12 @@ export class OpenAIResponsesChatProvider implements ChatProvider {
     try {
       const client = this._createClient(options?.auth);
       const createParams: Record<string, unknown> = {
+        ...kwargs,
         model: this._model,
         input,
         tools: tools.map((t) => convertTool(t)),
         store: false,
         stream: this._stream,
-        ...kwargs,
       };
       if (systemPrompt) {
         createParams['instructions'] = systemPrompt;

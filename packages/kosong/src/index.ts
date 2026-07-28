@@ -43,12 +43,15 @@ export {
   catalogModelToCapability,
   catalogProviderModels,
   inferWireType,
+  normalizeCatalog,
   resolveCatalogImport,
 } from './catalog';
 export type {
   Catalog,
   CatalogModel,
   CatalogModelEntry,
+  CatalogModelExperimentalMode,
+  CatalogThinkingBudget,
   CatalogProviderEntry,
   CatalogImportInvalidReason,
   CatalogImportResolution,

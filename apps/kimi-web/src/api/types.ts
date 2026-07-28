@@ -618,6 +618,8 @@ export interface AppModel {
   /** Effort levels this model supports for extended thinking (e.g. ["low", "high", "max"]).
       Sourced from the model catalog (managed) or config [models.<id>.overrides]. */
   supportEfforts?: readonly string[];
+  thinkingBudgetMin?: number;
+  thinkingBudgetMax?: number;
   /** Catalog-declared default effort for extended thinking. */
   defaultEffort?: string;
 }

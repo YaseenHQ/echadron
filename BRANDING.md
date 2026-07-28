@@ -1,12 +1,21 @@
-# Imperium branding
+# Echadron branding
 
-Imperium is the fork-owned product name for this multi-provider agent harness.
+Echadron is the fork-owned product name for this multi-provider agent harness.
 
-The npm package currently exposes both `imperium` (preferred) and `kimi`
-(compatibility). Native artifacts still use the upstream `kimi` executable until
-their packaging path grows an equivalent alias.
+The Echadron package exposes `echadron`, `chad`, and `maker` aliases. It must
+never install an upstream executable: Kimi Code can be installed alongside
+Echadron. The `ec` alias is
+intentionally not
+installed by default because it is a plausible user-defined/editor command and
+an npm `bin` entry could overwrite it during a global install.
 
-The `@moonshot-ai/*` package scopes, `KIMI_*` environment variables, provider
-identifiers, storage paths, and OAuth keys remain compatibility interfaces. They
-must not be renamed as part of a surface rebrand: changing them would break
-existing installations and make upstream synchronization unnecessarily costly.
+The `@moonshot-ai/*` package scopes, provider identifiers, storage paths, and
+OAuth keys remain compatibility interfaces. Runtime `KIMI_*` and `IMPERIUM_*`
+environment names are accepted as legacy aliases, but new documentation and
+hosts should use the `ECHADRON_*` spelling. Provider credential keys inside
+`config.toml` remain protocol-specific and are not renamed by this migration.
+
+The model directory is different: Echadron owns its persisted model catalog
+snapshot and refreshes it with `echadron update --models`. The inherited Kimi
+release updater is disabled
+until a separate Echadron release channel exists.

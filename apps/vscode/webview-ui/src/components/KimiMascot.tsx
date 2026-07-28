@@ -18,12 +18,12 @@ export function KimiMascot({ className }: { className?: string }) {
     return () => observer.disconnect();
   }, []);
 
-  const imageName = isDark ? "kimi-banner-dark.svg" : "kimi-banner-light.svg";
+  const imageName = isDark ? "echadron-banner-dark.svg" : "echadron-banner-light.svg";
   const logoUrl = useExtensionImageUrl(imageName);
 
   if (!logoUrl) {
     return null;
   }
 
-  return <img src={logoUrl} alt="KIMI" className={className} aria-label="KIMI" />;
+  return <img src={logoUrl} alt="Echadron" className={className} aria-label="Echadron" />;
 }

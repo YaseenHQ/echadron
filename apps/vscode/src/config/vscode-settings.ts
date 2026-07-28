@@ -4,37 +4,54 @@ import type { ExtensionConfig } from "../../shared/types";
 declare const __EXTENSION_VERSION__: string;
 const EXTENSION_VERSION = typeof __EXTENSION_VERSION__ !== "undefined" ? __EXTENSION_VERSION__ : "0.0.0";
 
-function getConfig() {
-  return vscode.workspace.getConfiguration("kimi");
+const CONFIG_NAMESPACES = ["echadron", "kimi"] as const;
+
+function getConfigValue<T>(key: string, fallback: T): T {
+  const modern = vscode.workspace.getConfiguration(CONFIG_NAMESPACES[0]);
+  const legacy = vscode.workspace.getConfiguration(CONFIG_NAMESPACES[1]);
+  // Prefer explicitly configured Echadron values, then explicitly configured
+  // legacy Kimi values. This keeps existing settings working even though the
+  // manifest now exposes the Echadron namespace as the primary one.
+  for (const config of [modern, legacy]) {
+    const inspected = config.inspect<T>(key);
+    for (const value of [
+      inspected?.workspaceFolderValue,
+      inspected?.workspaceValue,
+      inspected?.globalValue,
+    ]) {
+      if (value !== undefined) return value;
+    }
+  }
+  return modern.get<T>(key, legacy.get<T>(key, fallback));
 }
 
 export const VSCodeSettings = {
   get yoloMode(): boolean {
-    return getConfig().get<boolean>("yoloMode", false);
+    return getConfigValue("yoloMode", false);
   },
 
   get autosave(): boolean {
-    return getConfig().get<boolean>("autosave", true);
+    return getConfigValue("autosave", true);
   },
 
   get enableNewConversationShortcut(): boolean {
-    return getConfig().get<boolean>("enableNewConversationShortcut", false);
+    return getConfigValue("enableNewConversationShortcut", false);
   },
 
   get useCtrlEnterToSend(): boolean {
-    return getConfig().get<boolean>("useCtrlEnterToSend", false);
+    return getConfigValue("useCtrlEnterToSend", false);
   },
 
   get showThinkingContent(): boolean {
-    return getConfig().get<boolean>("showThinkingContent", false);
+    return getConfigValue("showThinkingContent", false);
   },
 
   get showThinkingExpanded(): boolean {
-    return getConfig().get<boolean>("showThinkingExpanded", false);
+    return getConfigValue("showThinkingExpanded", false);
   },
 
   get editorContext(): "never" | "onConversationStart" | "onFileChange" {
-    return getConfig().get<"never" | "onConversationStart" | "onFileChange">("editorContext", "never");
+    return getConfigValue<"never" | "onConversationStart" | "onFileChange">("editorContext", "never");
   },
 
   getExtensionConfig(): ExtensionConfig {
@@ -52,11 +69,13 @@ export const VSCodeSettings = {
 
 export function onSettingsChange(callback: (changedKeys: string[]) => void): vscode.Disposable {
   return vscode.workspace.onDidChangeConfiguration((e) => {
-    if (!e.affectsConfiguration("kimi")) {
+    if (!e.affectsConfiguration("echadron") && !e.affectsConfiguration("kimi")) {
       return;
     }
     const keys = ["yoloMode", "autosave", "enableNewConversationShortcut", "useCtrlEnterToSend", "showThinkingContent", "showThinkingExpanded", "editorContext"];
-    const changedKeys = keys.filter((key) => e.affectsConfiguration(`kimi.${key}`));
+    const changedKeys = keys.filter(
+      (key) => e.affectsConfiguration(`echadron.${key}`) || e.affectsConfiguration(`kimi.${key}`),
+    );
     if (changedKeys.length > 0) {
       callback(changedKeys);
     }

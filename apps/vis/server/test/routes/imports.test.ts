@@ -46,7 +46,7 @@ describe('imports + logs routes', () => {
   afterEach(async () => { if (home) await rm(home, { recursive: true, force: true }); home = null; });
 
   it('imports a zip and surfaces it in the session list tagged imported', async () => {
-    home = await mkdtemp(join(tmpdir(), 'vis-imp-route-'));
+    home = await mkdtemp(join(tmpdir(), 'vis-import-route-'));
     const importId = await importBundle(home);
 
     const list = sessionsRoute(home);
@@ -59,7 +59,7 @@ describe('imports + logs routes', () => {
   });
 
   it('serves the imported session wire through the existing wire route', async () => {
-    home = await mkdtemp(join(tmpdir(), 'vis-imp-route-'));
+    home = await mkdtemp(join(tmpdir(), 'vis-import-route-'));
     const importId = await importBundle(home);
     const res = await wireRoute(home).request(`/${importId}/wire?agent=main`);
     expect(res.status).toBe(200);
@@ -70,7 +70,7 @@ describe('imports + logs routes', () => {
   });
 
   it('parses the imported session log', async () => {
-    home = await mkdtemp(join(tmpdir(), 'vis-imp-route-'));
+    home = await mkdtemp(join(tmpdir(), 'vis-import-route-'));
     const importId = await importBundle(home);
     const res = await logsRoute(home).request(`/${importId}/logs`);
     expect(res.status).toBe(200);
@@ -82,20 +82,20 @@ describe('imports + logs routes', () => {
   });
 
   it('rejects a non-zip upload with 400', async () => {
-    home = await mkdtemp(join(tmpdir(), 'vis-imp-route-'));
+    home = await mkdtemp(join(tmpdir(), 'vis-import-route-'));
     const res = await importsRoute(home).request('/', { method: 'POST', body: Buffer.from('not a zip') });
     expect(res.status).toBe(400);
     expect(await res.json()).toMatchObject({ code: 'BAD_REQUEST' });
   });
 
   it('rejects an empty upload with 400', async () => {
-    home = await mkdtemp(join(tmpdir(), 'vis-imp-route-'));
+    home = await mkdtemp(join(tmpdir(), 'vis-import-route-'));
     const res = await importsRoute(home).request('/', { method: 'POST', body: Buffer.alloc(0) });
     expect(res.status).toBe(400);
   });
 
   it('falls back to disk agent discovery when an imported bundle state omits agents', async () => {
-    home = await mkdtemp(join(tmpdir(), 'vis-imp-route-'));
+    home = await mkdtemp(join(tmpdir(), 'vis-import-route-'));
     // Readable state.json, but no `agents` map (best-effort bundle). The main
     // wire is present on disk, so the agent must still be discoverable.
     const noAgents: Record<string, string> = {
@@ -114,7 +114,7 @@ describe('imports + logs routes', () => {
   });
 
   it('falls back to disk discovery when an imported agents map is type-corrupt', async () => {
-    home = await mkdtemp(join(tmpdir(), 'vis-imp-route-'));
+    home = await mkdtemp(join(tmpdir(), 'vis-import-route-'));
     // state.json present, agents map non-empty but the entry is null — must not
     // 500; the on-disk main wire should still be discoverable.
     const corruptAgents: Record<string, string> = {
@@ -130,7 +130,7 @@ describe('imports + logs routes', () => {
   });
 
   it('sanitizes type-corrupt manifest fields so the session list cannot crash', async () => {
-    home = await mkdtemp(join(tmpdir(), 'vis-imp-route-'));
+    home = await mkdtemp(join(tmpdir(), 'vis-import-route-'));
     const corrupt: Record<string, string> = {
       // workspaceDir / kimiCodeVersion are the wrong type — must not reach workDir.
       'manifest.json': JSON.stringify({ sessionId: 'session_orig', workspaceDir: 123, kimiCodeVersion: 7, title: 'demo' }),

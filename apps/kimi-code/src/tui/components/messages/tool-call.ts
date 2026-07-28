@@ -19,10 +19,10 @@ import type { Component, TUI } from '@moonshot-ai/pi-tui';
 import { highlightLines, langFromPath } from '#/tui/components/media/code-highlight';
 import { renderDiffLinesClustered } from '#/tui/components/media/diff-preview';
 import {
-  BRAILLE_SPINNER_FRAMES,
-  BRAILLE_SPINNER_INTERVAL_MS,
   COMMAND_PREVIEW_LINES,
   RESULT_PREVIEW_LINES,
+  SUBAGENT_SPINNER_FRAMES,
+  SUBAGENT_SPINNER_INTERVAL_MS,
   THINKING_PREVIEW_LINES,
 } from '#/tui/constant/rendering';
 import {
@@ -1083,14 +1083,15 @@ export class ToolCallComponent extends Container {
         this.stopSubagentElapsedTimer();
         return;
       }
-      // Drives both the braille spinner in the header and the elapsed-seconds
+      // Drives both the unicode spinner in the header and the elapsed-seconds
       // refresh. Only the header text changes on a tick, so we avoid rebuilding
       // the body (which would defeat the per-component render caches).
-      this.subagentSpinnerFrame = (this.subagentSpinnerFrame + 1) % BRAILLE_SPINNER_FRAMES.length;
+      this.subagentSpinnerFrame =
+        (this.subagentSpinnerFrame + 1) % SUBAGENT_SPINNER_FRAMES.length;
       this.headerText.setText(this.buildHeader());
       this.notifySnapshotChange();
       this.ui?.requestRender();
-    }, BRAILLE_SPINNER_INTERVAL_MS);
+    }, SUBAGENT_SPINNER_INTERVAL_MS);
   }
 
   private stopSubagentElapsedTimer(): void {
@@ -1839,9 +1840,10 @@ export class ToolCallComponent extends Container {
     if (phase === 'failed') return currentTheme.fg('error', '✗ ');
     if (phase === 'done') return currentTheme.fg('success', STATUS_BULLET);
     if (phase === 'backgrounded') return currentTheme.dim('◐ ');
-    // Active (queued / spawning / running): a braille spinner reads as alive
+    // Active (queued / spawning / running): an animated unicode mark reads as alive
     // where a static bullet looked frozen.
-    const frame = BRAILLE_SPINNER_FRAMES[this.subagentSpinnerFrame] ?? BRAILLE_SPINNER_FRAMES[0];
+    const frame =
+      SUBAGENT_SPINNER_FRAMES[this.subagentSpinnerFrame] ?? SUBAGENT_SPINNER_FRAMES[0];
     return currentTheme.fg('primary', `${frame} `);
   }
 

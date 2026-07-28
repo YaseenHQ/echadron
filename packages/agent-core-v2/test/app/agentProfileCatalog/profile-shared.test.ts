@@ -34,6 +34,8 @@ describe('systemPromptVars', () => {
     );
 
     expect(vars['role_additional']).toBe('');
+    expect(vars['product_name']).toBe('Kimi Code CLI');
+    expect(vars['reply_style_guide']).toContain('render as Markdown');
     expect(vars['os']).toBe('macOS');
     expect(vars['windows_notes']).toBe('');
     expect(vars['shell']).toBe('zsh (`/bin/zsh`)');
@@ -76,6 +78,19 @@ describe('systemPromptVars', () => {
     const vars = systemPromptVars({ skills: 'SKILLS', skillActive: true }, { skillActive: false });
 
     expect(vars['skills']).toBe('SKILLS');
+  });
+
+  it('uses host identity overrides for the system prompt', () => {
+    const vars = systemPromptVars(
+      { productName: 'Echadron', replyStyleGuide: 'Use Echadron style.' },
+      { skillActive: true },
+    );
+
+    expect(vars['product_name']).toBe('Echadron');
+    expect(vars['reply_style_guide']).toBe('Use Echadron style.');
+    expect(renderSystemPrompt('', { productName: 'Echadron' }, { skillActive: true })).toContain(
+      'You are Echadron,',
+    );
   });
 
   it('composes Windows notes only on Windows', () => {

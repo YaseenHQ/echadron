@@ -210,7 +210,10 @@ export class SessionLifecycleService extends Disposable implements ISessionLifec
       LifecycleScope.Session,
       opts.sessionId,
       {
-        extra: [...sessionContextSeed(ctx)],
+        extra: [
+          ...sessionContextSeed(ctx),
+          [ITelemetryService, this.telemetry.withContext({ sessionId: opts.sessionId })],
+        ],
       },
     ) as ISessionScopeHandle;
     if (additionalDirs.length > 0) {
@@ -257,8 +260,9 @@ export class SessionLifecycleService extends Disposable implements ISessionLifec
   private async announceCreated(event: SessionCreatedEvent): Promise<void> {
     await this.hooks.onDidCreateSession.run(event);
     this._onDidCreateSession.fire(event);
-    this.telemetry.setContext({ sessionId: event.sessionId });
-    this.telemetry.track2('session_started', { resumed: event.source === 'resume' });
+    event.handle.accessor
+      .get(ITelemetryService)
+      .track2('session_started', { resumed: event.source === 'resume' });
   }
 
   get(sessionId: string): ISessionScopeHandle | undefined {
@@ -273,8 +277,7 @@ export class SessionLifecycleService extends Disposable implements ISessionLifec
     if (live !== undefined) return Promise.resolve(live);
     const promise = this.doResume(sessionId)
       .catch((error: unknown) => {
-        this.telemetry.setContext({ sessionId });
-        this.telemetry.track2('session_load_failed', {
+        this.telemetry.withContext({ sessionId }).track2('session_load_failed', {
           reason: isError2(error) ? error.code : error instanceof Error ? error.name : 'unknown',
         });
         throw error;

@@ -58,10 +58,13 @@ function deferred<T>(): {
 describe('findExistingRg', () => {
   let fakeShare: string;
   let savedPath: string | undefined;
+  let savedVendor: string | undefined;
   beforeEach(() => {
     fakeShare = join(tmpdir(), `kimi-rg-${String(Date.now())}-${String(Math.random()).slice(2)}`);
     mkdirSync(join(fakeShare, 'bin'), { recursive: true });
     savedPath = process.env['PATH'];
+    savedVendor = process.env['ECHADRON_RG_PATH'];
+    delete process.env['ECHADRON_RG_PATH'];
     process.env['PATH'] = '';
   });
   afterEach(() => {
@@ -71,6 +74,8 @@ describe('findExistingRg', () => {
     } else {
       process.env['PATH'] = savedPath;
     }
+    if (savedVendor === undefined) delete process.env['ECHADRON_RG_PATH'];
+    else process.env['ECHADRON_RG_PATH'] = savedVendor;
   });
 
   it('returns undefined when no rg anywhere', async () => {
@@ -86,6 +91,14 @@ describe('findExistingRg', () => {
 
     expect(result).toEqual({ path: cached, source: 'share-bin-cached' });
     expect(probe.exec).not.toHaveBeenCalled();
+  });
+
+  it('resolves an explicitly configured vendor binary before the cache', async () => {
+    const vendor = join(fakeShare, 'vendor-rg');
+    writeFileSync(vendor, 'fake vendor rg');
+    process.env['ECHADRON_RG_PATH'] = vendor;
+    const result = await findExistingRg(noRgProbe(), fakeShare);
+    expect(result).toEqual({ path: vendor, source: 'vendor' });
   });
 
   it('prefers system PATH over share-dir when both are available', async () => {

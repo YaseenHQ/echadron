@@ -126,9 +126,9 @@ export function LoginScreen({ onLoginSuccess, onSkip }: LoginScreenProps) {
         <div className="max-w-sm w-full text-center space-y-6">
           <KimiMascot className="h-12 mx-auto" />
           <div className="space-y-2">
-            <h1 className="text-lg font-semibold">Welcome to Kimi Code</h1>
+            <h1 className="text-lg font-semibold">Welcome to Echadron</h1>
             <div className="text-left space-y-2">
-              <p className="text-xs leading-5">Use Kimi Code with your Kimi account subscription or your existing API setup.</p>
+              <p className="text-xs leading-5">Use Echadron with a managed account subscription or your existing API setup.</p>
             </div>
           </div>
 
@@ -146,9 +146,9 @@ export function LoginScreen({ onLoginSuccess, onSkip }: LoginScreenProps) {
                 }}
                 className="w-full justify-center gap-2"
               >
-                Sign in with Kimi Account
+                Sign in with Managed Account
               </Button>
-              <p className="text-[11px] text-muted-foreground leading-4">Use your Kimi account and Kimi Code subscription.</p>
+              <p className="text-[11px] text-muted-foreground leading-4">Use your managed account subscription.</p>
             </div>
 
             <div className="text-left space-y-1">
@@ -167,7 +167,7 @@ export function LoginScreen({ onLoginSuccess, onSkip }: LoginScreenProps) {
           <AlertDialogHeader>
             <AlertDialogTitle>Subscription Required</AlertDialogTitle>
             <AlertDialogDescription>
-              Your account does not have an active Kimi Code subscription. Please subscribe to continue using Kimi Code with your account.
+              Your account does not have an active managed subscription. Please subscribe to continue using Echadron with your account.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

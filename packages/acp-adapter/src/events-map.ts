@@ -9,6 +9,7 @@ import type {
 } from '@agentclientprotocol/sdk';
 import type {
   AssistantDeltaEvent,
+  AgentStatusUpdatedEvent,
   ThinkingDeltaEvent,
   ToolCallDeltaEvent,
   ToolCallStartedEvent,
@@ -40,6 +41,43 @@ export function assistantDeltaToSessionUpdate(
     update: {
       sessionUpdate: 'agent_message_chunk',
       content: { type: 'text', text: event.delta },
+    },
+  };
+}
+
+/**
+ * Project Echadron's live context-window status into ACP's unstable
+ * `usage_update` notification. The standard fields deliberately contain only
+ * token counts; provider/model details stay in `_meta` so clients that know
+ * the Echadron extension can display them without making the core wire shape
+ * provider-specific.
+ */
+export function agentStatusToUsageUpdate(
+  sessionId: string,
+  event: AgentStatusUpdatedEvent,
+): SessionNotification | null {
+  if (
+    typeof event.contextTokens !== 'number' ||
+    typeof event.maxContextTokens !== 'number' ||
+    !Number.isFinite(event.contextTokens) ||
+    !Number.isFinite(event.maxContextTokens) ||
+    event.maxContextTokens <= 0
+  ) {
+    return null;
+  }
+  const used = Math.max(0, Math.floor(event.contextTokens));
+  const size = Math.max(used, Math.floor(event.maxContextTokens));
+  return {
+    sessionId,
+    update: {
+      sessionUpdate: 'usage_update',
+      used,
+      size,
+      _meta: {
+        ...(event.model !== undefined ? { model: event.model } : {}),
+        ...(event.thinkingEffort !== undefined ? { thinkingEffort: event.thinkingEffort } : {}),
+        ...(event.contextUsage !== undefined ? { contextUsage: event.contextUsage } : {}),
+      },
     },
   };
 }

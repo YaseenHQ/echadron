@@ -5,7 +5,7 @@ import { join, resolve } from 'node:path';
 
 import { getHostPackageRoot } from '#/cli/version';
 
-import { NPM_PACKAGE_NAME, type InstallSource } from './types';
+import { LEGACY_NPM_PACKAGE_NAME, NPM_PACKAGE_NAME, type InstallSource } from './types';
 
 const nodeRequire = createRequire(import.meta.url);
 
@@ -107,13 +107,14 @@ function candidateGlobalPackageDirs(
   globalPrefix: string,
   platform: NodeJS.Platform,
 ): readonly string[] {
+  const packageNames = [NPM_PACKAGE_NAME, LEGACY_NPM_PACKAGE_NAME];
   if (platform === 'win32') {
-    return [join(globalPrefix, 'node_modules', NPM_PACKAGE_NAME)];
+    return packageNames.map((name) => join(globalPrefix, 'node_modules', name));
   }
-  return [
-    join(globalPrefix, 'lib', 'node_modules', NPM_PACKAGE_NAME),
-    join(globalPrefix, 'node_modules', NPM_PACKAGE_NAME),
-  ];
+  return packageNames.flatMap((name) => [
+    join(globalPrefix, 'lib', 'node_modules', name),
+    join(globalPrefix, 'node_modules', name),
+  ]);
 }
 
 export function classifyInstallSource(

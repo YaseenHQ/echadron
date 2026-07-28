@@ -89,6 +89,8 @@ export interface Model {
   readonly displayName?: string;
   readonly reasoningKey?: string;
   readonly supportEfforts?: readonly string[];
+  readonly thinkingBudgetMin?: number;
+  readonly thinkingBudgetMax?: number;
   readonly defaultEffort?: string;
   readonly alwaysThinking: boolean;
   readonly providerType?: string;
@@ -122,6 +124,8 @@ export const modelCatalogItemSchema = z.object({
   max_context_size: z.number().int().min(1),
   capabilities: z.array(z.string()).optional(),
   support_efforts: z.array(z.string()).optional(),
+  thinking_budget_min: z.number().finite().nonnegative().optional(),
+  thinking_budget_max: z.number().finite().nonnegative().optional(),
   default_effort: z.string().optional(),
 });
 export type ModelCatalogItem = z.infer<typeof modelCatalogItemSchema>;
@@ -176,6 +180,8 @@ export function toProtocolModel(
     max_context_size: model.maxContextSize,
     capabilities: effectiveModelConfig(record, providerType ?? model.providerType).capabilities,
     support_efforts: model.supportEfforts === undefined ? undefined : [...model.supportEfforts],
+    thinking_budget_min: record.thinkingBudgetMin,
+    thinking_budget_max: record.thinkingBudgetMax,
     default_effort: model.defaultEffort,
   };
 }
@@ -197,6 +203,8 @@ export function toProtocolModelFallback(
     max_context_size: effective.maxContextSize ?? 0,
     capabilities: effective.capabilities,
     support_efforts: effective.supportEfforts,
+    thinking_budget_min: effective.thinkingBudgetMin,
+    thinking_budget_max: effective.thinkingBudgetMax,
     default_effort: effective.defaultEffort,
   };
 }

@@ -66,7 +66,7 @@ function makeSink(transport: TelemetryTransport, flushThreshold = 10): EventSink
   return new EventSink({
     transport,
     context: {
-      appName: 'kimi-code-cli',
+      appName: 'echadron-cli',
       version: '1.2.3',
       uiMode: 'shell',
       model: 'kimi-k2',
@@ -387,7 +387,7 @@ describe('EventSink', () => {
 
     expect('context' in event).toBe(false);
     expect(transport.saved[0]?.[0]?.context).toMatchObject({
-      app_name: 'kimi-code-cli',
+      app_name: 'echadron-cli',
       version: '1.2.3',
       runtime: 'node',
       ui_mode: 'shell',
@@ -796,9 +796,13 @@ describe('AsyncTransport', () => {
 });
 
 describe('telemetry bootstrap', () => {
-  it('matches the KIMI_DISABLE_TELEMETRY true-value semantics', () => {
+  it('matches the Echadron and legacy Kimi disable-env true-value semantics', () => {
+    expect(isTelemetryDisabledByEnv({ ECHADRON_DISABLE_TELEMETRY: '1' })).toBe(true);
+    expect(isTelemetryDisabledByEnv({ ECHADRON_DISABLE_TELEMETRY: 'yes' })).toBe(true);
     expect(isTelemetryDisabledByEnv({ KIMI_DISABLE_TELEMETRY: '1' })).toBe(true);
     expect(isTelemetryDisabledByEnv({ KIMI_DISABLE_TELEMETRY: 'yes' })).toBe(true);
+    expect(isTelemetryDisabledByEnv({ ECHADRON_DISABLE_TELEMETRY: '0' })).toBe(false);
+    expect(isTelemetryDisabledByEnv({ ECHADRON_DISABLE_TELEMETRY: 'false' })).toBe(false);
     expect(isTelemetryDisabledByEnv({ KIMI_DISABLE_TELEMETRY: '0' })).toBe(false);
     expect(isTelemetryDisabledByEnv({ KIMI_DISABLE_TELEMETRY: 'false' })).toBe(false);
   });
@@ -806,20 +810,23 @@ describe('telemetry bootstrap', () => {
   it('disables the singleton without attaching a sink when opted out', async () => {
     const fetchImpl = vi.fn(async () => new Response('', { status: 200 }));
     vi.stubGlobal('fetch', fetchImpl);
-    const saved = process.env['KIMI_DISABLE_TELEMETRY'];
+    const savedEchadron = process.env['ECHADRON_DISABLE_TELEMETRY'];
+    const savedKimi = process.env['KIMI_DISABLE_TELEMETRY'];
     try {
-      process.env['KIMI_DISABLE_TELEMETRY'] = 'true';
+      process.env['ECHADRON_DISABLE_TELEMETRY'] = 'true';
       initializeTelemetry({
         homeDir: await tempHome(),
         deviceId: 'dev',
-        appName: 'kimi-code-cli',
+        appName: 'echadron-cli',
         version: '1.2.3',
       });
       track('dropped');
       await shutdownTelemetry();
     } finally {
-      if (saved === undefined) delete process.env['KIMI_DISABLE_TELEMETRY'];
-      else process.env['KIMI_DISABLE_TELEMETRY'] = saved;
+      if (savedEchadron === undefined) delete process.env['ECHADRON_DISABLE_TELEMETRY'];
+      else process.env['ECHADRON_DISABLE_TELEMETRY'] = savedEchadron;
+      if (savedKimi === undefined) delete process.env['KIMI_DISABLE_TELEMETRY'];
+      else process.env['KIMI_DISABLE_TELEMETRY'] = savedKimi;
     }
 
     expect(fetchImpl).not.toHaveBeenCalled();
@@ -834,7 +841,7 @@ describe('telemetry bootstrap', () => {
       homeDir: await tempHome(),
       deviceId: 'dev',
       sessionId: 'ses',
-      appName: 'kimi-code-cli',
+      appName: 'echadron-cli',
       version: '1.2.3',
     });
 
@@ -857,7 +864,7 @@ describe('telemetry bootstrap', () => {
       homeDir,
       deviceId: 'dev',
       sessionId: 'ses',
-      appName: 'kimi-code-cli',
+      appName: 'echadron-cli',
       version: '1.2.3',
     });
     track('sync_flush');
@@ -876,7 +883,7 @@ describe('telemetry bootstrap', () => {
       homeDir,
       deviceId: 'dev',
       sessionId: 'ses',
-      appName: 'kimi-code-cli',
+      appName: 'echadron-cli',
       version: '1.2.3',
     });
 

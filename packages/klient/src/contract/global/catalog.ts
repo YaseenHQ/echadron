@@ -18,6 +18,8 @@ export const modelCatalogItemSchema = z.object({
   max_context_size: z.number(),
   capabilities: z.array(z.string()).optional(),
   support_efforts: z.array(z.string()).optional(),
+  thinking_budget_min: z.number().finite().nonnegative().optional(),
+  thinking_budget_max: z.number().finite().nonnegative().optional(),
   default_effort: z.string().optional(),
 });
 

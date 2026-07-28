@@ -9,10 +9,12 @@ import { createKimiHarness } from '@moonshot-ai/kimi-code-sdk';
 
 import { createKimiCodeHostIdentity } from '#/cli/version';
 import { openUrl } from '#/utils/open-url';
+import { getDataDir } from '#/utils/paths';
 
 export async function runLoginFlow(): Promise<never> {
   const identity = createKimiCodeHostIdentity();
   const harness = createKimiHarness({
+    homeDir: getDataDir(),
     identity,
     uiMode: 'cli',
   });

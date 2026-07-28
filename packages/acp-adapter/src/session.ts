@@ -42,6 +42,7 @@ import { listModelsFromHarness } from './model-catalog';
 import { acpBlocksToPromptParts, compressPromptImageParts } from './convert';
 import {
   acpToolCallId,
+  agentStatusToUsageUpdate,
   assistantDeltaToSessionUpdate,
   configOptionUpdateNotification,
   planFromDisplayBlock,
@@ -1044,6 +1045,18 @@ export class AcpSession {
           isFromMainAgent(event)
         ) {
           this.currentTurnId = event.turnId;
+        }
+        if (event.type === 'agent.status.updated') {
+          if (!isFromMainAgent(event)) return;
+          const note = agentStatusToUsageUpdate(sessionId, event);
+          if (note === null) return;
+          conn.sessionUpdate(note).catch((err) => {
+            log.warn('acp: failed to push usage_update', {
+              sessionId,
+              error: err instanceof Error ? err.message : String(err),
+            });
+          });
+          return;
         }
         if (event.type === 'error') {
           if (settled) return;

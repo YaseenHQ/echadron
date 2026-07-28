@@ -1,5 +1,5 @@
 <!-- apps/kimi-web/src/debug/DebugPanel.vue
-     KAP/daemon debug panel — opt-in (?debug=1 or localStorage kimi-web.debug=1).
+     KAP/daemon debug panel — opt-in (?debug=1 or localStorage echadron-web.debug=1).
      This is the CONTROLLER: it pops the panel out into a real, separate browser
      window. The panel app is created from THIS window's JS context, so it shares
      the live trace ring buffer (reactivity flows across the window boundary). We

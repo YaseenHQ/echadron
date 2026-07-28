@@ -44,6 +44,14 @@ export interface AcpModelEntry {
   readonly id: string;
   readonly name: string;
   readonly description?: string | undefined;
+  /** Provider/model metadata imported from models.dev or config.toml. */
+  readonly providerId?: string | undefined;
+  readonly model?: string | undefined;
+  readonly protocol?: string | undefined;
+  readonly maxContextSize?: number | undefined;
+  readonly maxInputSize?: number | undefined;
+  readonly maxOutputSize?: number | undefined;
+  readonly capabilities?: readonly string[] | undefined;
   readonly thinkingSupported: boolean;
   /** Declared 'always_thinking' capability — thinking cannot be turned off. */
   readonly alwaysThinking?: boolean;
@@ -142,7 +150,11 @@ export async function listModelsFromHarness(
   if (typeof harness.getConfig !== 'function') return [];
   let config: Awaited<ReturnType<KimiHarness['getConfig']>>;
   try {
-    config = await harness.getConfig();
+    // ACP clients can start a terminal-auth subprocess or refresh the model
+    // catalog while the server is alive. Always project a fresh runtime
+    // snapshot at this boundary so model/context changes are visible without
+    // restarting the ACP process.
+    config = await harness.getConfig({ reload: true });
   } catch {
     return [];
   }
@@ -155,6 +167,17 @@ export async function listModelsFromHarness(
     out.push({
       id,
       name: effective.displayName ?? effective.model ?? id,
+      ...(effective.provider !== undefined ? { providerId: effective.provider } : {}),
+      ...(effective.model !== undefined ? { model: effective.model } : {}),
+      ...(effective.protocol !== undefined ? { protocol: effective.protocol } : {}),
+      ...(effective.maxContextSize !== undefined
+        ? { maxContextSize: effective.maxContextSize }
+        : {}),
+      ...(effective.maxInputSize !== undefined ? { maxInputSize: effective.maxInputSize } : {}),
+      ...(effective.maxOutputSize !== undefined
+        ? { maxOutputSize: effective.maxOutputSize }
+        : {}),
+      ...(effective.capabilities !== undefined ? { capabilities: effective.capabilities } : {}),
       thinkingSupported: deriveThinkingSupported(alias, providerType),
       alwaysThinking: deriveAlwaysThinking(alias, providerType),
       supportEfforts: deriveSupportEfforts(alias, providerType),

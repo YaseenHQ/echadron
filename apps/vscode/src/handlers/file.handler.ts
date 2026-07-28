@@ -89,7 +89,7 @@ const openFileDiff: Handler<FilePathParams, { ok: boolean }> = async ({ filePath
     "vscode.diff",
     baselineUri,
     resolved.uri,
-    `${path.basename(resolved.relativePath)} (changes from Kimi)`,
+    `${path.basename(resolved.relativePath)} (changes from Echadron)`,
   );
   return { ok: true };
 };

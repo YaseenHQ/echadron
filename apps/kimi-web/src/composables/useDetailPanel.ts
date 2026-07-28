@@ -12,7 +12,7 @@ import { clampPanelWidth, panelMaxWidth, useViewportWidth } from './useViewportW
 
 type KimiWebClient = ReturnType<typeof useKimiWebClient>;
 
-const PREVIEW_WIDTH_KEY = 'kimi-web.file-preview-width';
+const PREVIEW_WIDTH_KEY = 'echadron-web.file-preview-width';
 export const PREVIEW_MIN = 320;
 
 export interface UseDetailPanelOptions {

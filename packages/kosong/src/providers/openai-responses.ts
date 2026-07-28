@@ -1303,14 +1303,14 @@ export class OpenAIResponsesChatProvider implements ChatProvider {
 
     try {
       const client = this._createClient(options?.auth);
-      const createParams: Record<string, unknown> = {
-        model: this._model,
-        input,
-        tools: tools.map((t) => convertTool(t)),
-        store: false,
-        stream: this._stream,
-        ...kwargs,
-      };
+    const createParams: Record<string, unknown> = {
+      ...kwargs,
+      model: this._model,
+      input,
+      tools: tools.map((t) => convertTool(t)),
+      store: false,
+      stream: this._stream,
+    };
       if (systemPrompt) {
         createParams['instructions'] = systemPrompt;
       }

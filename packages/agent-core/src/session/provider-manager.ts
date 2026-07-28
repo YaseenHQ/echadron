@@ -133,6 +133,7 @@ export class ProviderManager implements ModelProvider {
       alias.wire,
       alias.baseUrl,
       this.options.kimiRequestHeaders,
+      effectiveAlias.requestHeaders,
       effectiveAlias.maxOutputSize,
       effectiveAlias.reasoningKey,
       this.options.promptCacheKey,
@@ -140,6 +141,7 @@ export class ProviderManager implements ModelProvider {
       effectiveAlias.offEffort,
       effectiveAlias.adaptiveThinking,
       alias.betaApi,
+      effectiveAlias.requestBody,
     );
 
     return {
@@ -270,6 +272,7 @@ function toKosongProviderConfig(
   modelWire: ModelAlias['wire'],
   modelBaseUrl: string | undefined,
   kimiRequestHeaders: Record<string, string> | undefined,
+  modelRequestHeaders: Record<string, string> | undefined,
   maxOutputSize: number | undefined,
   reasoningKey: string | undefined,
   promptCacheKey: string | undefined,
@@ -277,6 +280,7 @@ function toKosongProviderConfig(
   offEffort: string | undefined,
   adaptiveThinking: boolean | undefined,
   betaApi: boolean | undefined,
+  requestBody: Record<string, unknown> | undefined,
 ): KosongProviderConfig {
   const effectiveType = modelWire ?? (modelProtocol === 'anthropic' ? 'anthropic' : provider.type);
   const envCustomHeaders = parseKimiCodeCustomHeaders();
@@ -295,6 +299,7 @@ function toKosongProviderConfig(
             : baseUrl,
         apiKey: providerApiKey(provider),
         ...(maxOutputSize !== undefined ? { defaultMaxTokens: maxOutputSize } : {}),
+        ...(requestBody !== undefined ? { generationKwargs: requestBody } : {}),
         supportEfforts,
         ...(adaptiveThinking !== undefined ? { adaptiveThinking } : {}),
         ...(provider.type === 'kimi' ? { kimiThinking: true } : {}),
@@ -311,8 +316,18 @@ function toKosongProviderConfig(
         // still win on conflict.
         ...defaultHeadersField(
           provider.type === 'kimi' && modelProtocol === 'anthropic'
-            ? { ...envCustomHeaders, ...kimiRequestHeaders, ...provider.customHeaders }
-            : { ...envCustomHeaders, ...kimiUserAgentHeader(kimiRequestHeaders), ...provider.customHeaders },
+            ? {
+                ...envCustomHeaders,
+                ...kimiRequestHeaders,
+                ...provider.customHeaders,
+                ...modelRequestHeaders,
+              }
+            : {
+                ...envCustomHeaders,
+                ...kimiUserAgentHeader(kimiRequestHeaders),
+                ...provider.customHeaders,
+                ...modelRequestHeaders,
+              },
         ),
       };
     }
@@ -331,11 +346,12 @@ function toKosongProviderConfig(
         // same provider-side prompt cache (the OpenAI analog of Anthropic
         // `metadata.user_id` above). Undefined values are stripped at
         // generate time, matching the `kimi` branch below.
-        generationKwargs: { prompt_cache_key: promptCacheKey },
+        generationKwargs: { ...requestBody, prompt_cache_key: promptCacheKey },
         ...defaultHeadersField({
           ...envCustomHeaders,
           ...kimiUserAgentHeader(kimiRequestHeaders),
           ...provider.customHeaders,
+          ...modelRequestHeaders,
         }),
       };
     case 'kimi':
@@ -344,11 +360,12 @@ function toKosongProviderConfig(
         model,
         baseUrl: modelBaseUrl ?? providerValue(provider.baseUrl, provider.env, 'KIMI_BASE_URL'),
         apiKey: providerApiKey(provider),
-        generationKwargs: { prompt_cache_key: promptCacheKey },
+        generationKwargs: { ...requestBody, prompt_cache_key: promptCacheKey },
         ...defaultHeadersField({
           ...envCustomHeaders,
           ...kimiRequestHeaders,
           ...provider.customHeaders,
+          ...modelRequestHeaders,
         }),
       };
     case 'google-genai':
@@ -358,10 +375,12 @@ function toKosongProviderConfig(
         baseUrl:
           modelBaseUrl ?? providerValue(provider.baseUrl, provider.env, 'GOOGLE_GEMINI_BASE_URL'),
         apiKey: providerApiKey(provider),
+        ...(requestBody !== undefined ? { generationKwargs: requestBody } : {}),
         ...defaultHeadersField({
           ...envCustomHeaders,
           ...kimiUserAgentHeader(kimiRequestHeaders),
           ...provider.customHeaders,
+          ...modelRequestHeaders,
         }),
       };
     case 'openai_responses':
@@ -374,11 +393,12 @@ function toKosongProviderConfig(
         offEffort,
         // Session affinity: same `prompt_cache_key` intent as the `openai`
         // branch; the Responses API accepts it as a top-level request field.
-        generationKwargs: { prompt_cache_key: promptCacheKey },
+        generationKwargs: { ...requestBody, prompt_cache_key: promptCacheKey },
         ...defaultHeadersField({
           ...envCustomHeaders,
           ...kimiUserAgentHeader(kimiRequestHeaders),
           ...provider.customHeaders,
+          ...modelRequestHeaders,
         }),
       };
     case 'vertexai': {
@@ -402,6 +422,7 @@ function toKosongProviderConfig(
           ...envCustomHeaders,
           ...kimiUserAgentHeader(kimiRequestHeaders),
           ...provider.customHeaders,
+          ...modelRequestHeaders,
         }),
       };
     }

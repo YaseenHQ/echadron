@@ -203,7 +203,9 @@ describe('updateActivityPane terminal progress', () => {
       expect(setProgress).toHaveBeenLastCalledWith(true);
       expect(state.activitySpinner).not.toBeNull();
       expect(state.activityContainer.children).toHaveLength(0);
-      expect(strip(progress.render(80).join('\n'))).toContain('⠋ Working...');
+      // Animation frames advance even with fake timers; assert the spinner
+      // glyph and stable label rather than a particular frame.
+      expect(strip(progress.render(80).join('\n'))).toMatch(/[\u2800-\u28ff] Working\.\.\./);
 
       state.activitySpinner?.stop();
       driver.sessionEventHandler.clearAgentSwarmProgress();

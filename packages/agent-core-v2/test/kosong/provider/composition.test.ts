@@ -1311,6 +1311,20 @@ describe('Anthropic max-tokens profile', () => {
 });
 
 describe('OpenAI reasoning_effort path (issue #1616)', () => {
+  it('preserves models.dev mode body fields while protecting generated request fields', async () => {
+    const provider = new OpenAILegacyChatProvider({
+      model: 'gpt-5.4',
+      apiKey: 'sk-probe',
+      stream: false,
+      generationKwargs: { service_tier: 'priority', model: 'must-not-win' },
+    });
+
+    const body = await captureOpenAIBody(provider);
+
+    expect(body['service_tier']).toBe('priority');
+    expect(body['model']).toBe('gpt-5.4');
+  });
+
   it('auto-enables reasoning_effort=medium from think-part history when no withThinking hook exists', async () => {
     const provider = new OpenAILegacyChatProvider({
       model: 'gpt-4.1',

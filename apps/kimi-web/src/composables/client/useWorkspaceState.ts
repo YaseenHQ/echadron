@@ -803,7 +803,7 @@ export function useWorkspaceState(rawState: ExtendedState, deps: UseWorkspaceSta
   async function loadAllSessions(): Promise<void> {
     if (rawState.sessionsFullyLoaded) return;
     const result = await listAllSessionsGlobal().catch((err) => {
-      console.warn('[kimi-web] loadAllSessions failed; search covers only loaded sessions', err);
+      console.warn('[echadron-web] loadAllSessions failed; search covers only loaded sessions', err);
       return null;
     });
     if (result === null) return;
@@ -1281,7 +1281,7 @@ export function useWorkspaceState(rawState: ExtendedState, deps: UseWorkspaceSta
       return true;
     } catch (err) {
       // The caller shows an inline error in the picker; keep the cause in the log.
-      console.warn('[kimi-web] addWorkspaceByPath failed for', trimmed, err);
+      console.warn('[echadron-web] addWorkspaceByPath failed for', trimmed, err);
       return false;
     }
   }
@@ -2348,7 +2348,7 @@ export function useWorkspaceState(rawState: ExtendedState, deps: UseWorkspaceSta
       await getKimiWebApi().deleteWorkspace(id);
     } catch (err) {
       // registry delete is optional — the sidebar hide is what the user sees.
-      console.warn('[kimi-web] deleteWorkspace registry cleanup failed for', id, err);
+      console.warn('[echadron-web] deleteWorkspace registry cleanup failed for', id, err);
     }
     rawState.workspaces = rawState.workspaces.filter((w) => w.id !== id && w.root !== root);
     if (removingActiveWorkspace || activeSessionInRemovedWorkspace) {
@@ -2489,7 +2489,7 @@ export function useWorkspaceState(rawState: ExtendedState, deps: UseWorkspaceSta
     });
   }
 
-  /** Logout from the managed Kimi provider. Re-checks auth and reloads sessions. */
+  /** Logout from the managed Kimi provider (OAuth). Re-checks auth and reloads sessions. */
   async function logout(): Promise<void> {
     try {
       const api = getKimiWebApi();
@@ -2643,7 +2643,7 @@ export function useWorkspaceState(rawState: ExtendedState, deps: UseWorkspaceSta
         lineCount: result.lineCount,
       };
     } catch (err) {
-      console.warn('[kimi-web] readFileContent failed for', path, err);
+      console.warn('[echadron-web] readFileContent failed for', path, err);
       return null;
     }
   }

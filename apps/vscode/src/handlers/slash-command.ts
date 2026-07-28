@@ -210,7 +210,7 @@ async function exportContext(
     `Exported ${String(context.history.length)} messages to ${outputPath}\n\n` +
     "Note: The exported file may contain sensitive information. Please be cautious when sharing it externally.",
   );
-  void vscode.window.showInformationMessage("Kimi: Session exported.", "Open File").then((action) => {
+  void vscode.window.showInformationMessage("Echadron: Session exported.", "Open File").then((action) => {
     if (action !== "Open File") return;
     void vscode.window.showTextDocument(vscode.Uri.file(outputPath));
   });

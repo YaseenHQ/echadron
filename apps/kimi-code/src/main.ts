@@ -6,20 +6,15 @@
  */
 
 import {
-  createKimiHarness,
   flushDiagnosticLogs,
   installGlobalProxyDispatcher,
   log,
   resolveGlobalLogPath,
-  resolveKimiHome,
-  type TelemetryClient,
 } from '@moonshot-ai/kimi-code-sdk';
+import { applyEchadronEnvironmentAliases } from '@moonshot-ai/kimi-code-oauth';
 import {
   installCrashHandlers,
-  setTelemetryContext,
-  shutdownTelemetry,
   track,
-  withTelemetryContext,
 } from '@moonshot-ai/kimi-telemetry';
 
 import { createProgram } from './cli/commands';
@@ -30,20 +25,23 @@ import { runPrompt } from './cli/run-prompt';
 import { runShell } from './cli/run-shell';
 import { formatStartupError } from './cli/startup-error';
 import { runPluginNodeEntry } from './cli/sub/plugin-run-node';
-import { handleUpgrade } from './cli/sub/upgrade';
-import { createCliTelemetryBootstrap, initializeCliTelemetry } from './cli/telemetry';
 import { runUpdatePreflight } from './cli/update/preflight';
-import { createKimiCodeHostIdentity, getVersion } from './cli/version';
-import { CLI_SHUTDOWN_TIMEOUT_MS, CLI_UI_MODE, PROCESS_NAME } from './constant/app';
+import { getVersion } from './cli/version';
+import { refreshModelsDevCatalog } from './cli/models/catalog-cache';
+import {
+  ECHADRON_SELF_UPDATE_ENABLED,
+  PROCESS_NAME,
+} from './constant/app';
 import { cleanupStaleNativeCacheForCurrent } from './native/native-assets';
 import { installNativeModuleHook } from './native/module-hook';
 import { runNativeAssetSmokeIfRequested } from './native/smoke';
+import { getDataDir } from './utils/paths';
 
 /**
  * Outcome of a CLI command run, reported back to the process entrypoint.
  *
  * `handleMainCommand` is a reusable, unit-tested handler — it must not terminate
- * the process itself. It reports here whether a headless (`kimi -p`) run
+ * the process itself. It reports here whether a headless (`echadron -p`) run
  * completed so the entrypoint (the only place that owns the process) can arm the
  * force-exit fallback.
  */
@@ -66,12 +64,14 @@ export async function handleMainCommand(
     throw error;
   }
 
-  const preflightResult = await runUpdatePreflight(
-    version,
-    validated.uiMode === 'print' ? { track, isTTY: false } : { track },
-  );
-  if (preflightResult === 'exit') {
-    process.exit(0);
+  if (ECHADRON_SELF_UPDATE_ENABLED) {
+    const preflightResult = await runUpdatePreflight(
+      version,
+      validated.uiMode === 'print' ? { track, isTTY: false } : { track },
+    );
+    if (preflightResult === 'exit') {
+      process.exit(0);
+    }
   }
 
   if (validated.uiMode === 'print') {
@@ -83,40 +83,40 @@ export async function handleMainCommand(
   return { headlessCompleted: false };
 }
 
-/** `kimi migrate`: launch the migration screen only, then exit. */
+/** `echadron migrate`: launch the migration screen only, then exit. */
 async function handleMigrateCommand(version: string): Promise<void> {
   await runShell(MIGRATE_CLI_OPTIONS, version, { migrateOnly: true });
 }
 
 export async function handleUpgradeCommand(version: string): Promise<void> {
-  const telemetryBootstrap = createCliTelemetryBootstrap();
-  const telemetryClient: TelemetryClient = {
-    track,
-    withContext: withTelemetryContext,
-    setContext: setTelemetryContext,
-  };
-  const harness = createKimiHarness({
-    homeDir: telemetryBootstrap.homeDir,
-    identity: createKimiCodeHostIdentity(version),
-    telemetry: telemetryClient,
-  });
-  let exitCode = 1;
+  void version;
+  process.stdout.write(
+    'Echadron self-update is not configured yet. Install updates with the Echadron package manager or release channel.\n',
+  );
+}
+
+/** Refresh Echadron's persisted models.dev metadata without touching auth/config. */
+export async function handleModelsUpdateCommand(version = getVersion()): Promise<void> {
   try {
-    await harness.ensureConfigFile();
-    const config = await harness.getConfig();
-    initializeCliTelemetry({
-      harness,
-      bootstrap: telemetryBootstrap,
-      config,
-      version,
-      uiMode: CLI_UI_MODE,
+    const result = await refreshModelsDevCatalog({
+      force: true,
+      userAgent: `echadron-cli/${version}`,
     });
-    exitCode = await handleUpgrade(version, { track, logger: log });
-  } finally {
-    await shutdownTelemetry({ timeoutMs: CLI_SHUTDOWN_TIMEOUT_MS }).catch(() => {});
-    await harness.close().catch(() => {});
+    const providerCount = Object.keys(result.cache.catalog).length;
+    const modelCount = Object.values(result.cache.catalog).reduce((total, provider) => {
+      const models = provider.models;
+      return total + (models === undefined ? 0 : Object.keys(models).length);
+    }, 0);
+    process.stdout.write(
+      `Echadron model catalog ${result.status} (${String(providerCount)} providers, ` +
+        `${String(modelCount)} models).\n`,
+    );
+  } catch (error) {
+    process.exitCode = 1;
+    process.stderr.write(
+      `Failed to refresh Echadron model catalog: ${error instanceof Error ? error.message : String(error)}\n`,
+    );
   }
-  process.exit(exitCode);
 }
 
 /** A neutral CLIOptions value — `kimi migrate` never opens a chat session. */
@@ -135,6 +135,7 @@ const MIGRATE_CLI_OPTIONS: CLIOptions = {
 };
 
 export function main(): void {
+  applyEchadronEnvironmentAliases();
   process.title = PROCESS_NAME;
   installCrashHandlers();
   // Route all outbound fetch through HTTP_PROXY/HTTPS_PROXY (honoring NO_PROXY)
@@ -163,7 +164,7 @@ export function main(): void {
           // Only the process entrypoint disposes of the process. Print mode
           // relies on the event loop draining to exit; flush any buffered output
           // and then arm an unref'd fallback so a stray ref'd handle left over
-          // from the run can't wedge a completed `kimi -p` until an external
+          // from the run can't wedge a completed `echadron -p` until an external
           // timeout. A healthy run drains and exits before the fallback fires.
           if (outcome.headlessCompleted) {
             await finalizeHeadlessRun(
@@ -180,7 +181,7 @@ export function main(): void {
           // await, the failed run's `finally` cleanup has already torn down its
           // ref'd handles (sockets, timers, background tasks). If the event loop
           // drains during the await, Node exits on its own with the DEFAULT code
-          // 0 and `process.exit(1)` never runs — headless (`kimi -p`) failures
+          // 0 and `process.exit(1)` never runs — headless (`echadron -p`) failures
           // would then exit 0 nondeterministically. Setting `process.exitCode`
           // up front makes that drain-exit report failure too.
           process.exitCode = 1;
@@ -191,7 +192,7 @@ export function main(): void {
               operation,
             }),
           );
-          process.stderr.write(`See log: ${resolveGlobalLogPath(resolveKimiHome())}\n`);
+          process.stderr.write(`See log: ${resolveGlobalLogPath(getDataDir())}\n`);
           process.exit(1);
         });
     },
@@ -199,7 +200,7 @@ export function main(): void {
       void handleMigrateCommand(version).catch(async (error: unknown) => {
         await logStartupFailure('run migration', error);
         process.stderr.write(formatStartupError(error, { operation: 'run migration' }));
-        process.stderr.write(`See log: ${resolveGlobalLogPath(resolveKimiHome())}\n`);
+        process.stderr.write(`See log: ${resolveGlobalLogPath(getDataDir())}\n`);
         process.exit(1);
       });
     },
@@ -214,9 +215,12 @@ export function main(): void {
       void handleUpgradeCommand(version).catch(async (error: unknown) => {
         await logStartupFailure('upgrade', error);
         process.stderr.write(formatStartupError(error, { operation: 'upgrade' }));
-        process.stderr.write(`See log: ${resolveGlobalLogPath(resolveKimiHome())}\n`);
+        process.stderr.write(`See log: ${resolveGlobalLogPath(getDataDir())}\n`);
         process.exit(1);
       });
+    },
+    () => {
+      void handleModelsUpdateCommand(version);
     },
   );
 

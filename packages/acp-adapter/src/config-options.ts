@@ -60,11 +60,31 @@ export function buildModelOption(
   models: readonly AcpModelEntry[],
   currentBaseModelId: string,
 ): SessionConfigOption {
-  const options: SessionConfigSelectOption[] = models.map((model) => ({
-    value: model.id,
-    name: model.name,
-    ...(model.description !== undefined ? { description: model.description } : {}),
-  }));
+  const options: SessionConfigSelectOption[] = models.map((model) => {
+    const metadata = {
+      ...(model.providerId !== undefined ? { provider: model.providerId } : {}),
+      ...(model.model !== undefined ? { model: model.model } : {}),
+      ...(model.protocol !== undefined ? { protocol: model.protocol } : {}),
+      ...(model.maxContextSize !== undefined
+        ? { max_context_tokens: model.maxContextSize }
+        : {}),
+      ...(model.maxInputSize !== undefined ? { max_input_tokens: model.maxInputSize } : {}),
+      ...(model.maxOutputSize !== undefined ? { max_output_tokens: model.maxOutputSize } : {}),
+      ...(model.capabilities !== undefined ? { capabilities: [...model.capabilities] } : {}),
+    };
+    return {
+      value: model.id,
+      name: model.name,
+      ...(model.description !== undefined ? { description: model.description } : {}),
+      ...(Object.keys(metadata).length > 0
+        ? {
+            // Echadron is canonical; retain the former namespace so existing
+            // ACP clients can continue reading model metadata during the rebrand.
+            _meta: { 'echadron:model': metadata, 'imperium:model': metadata },
+          }
+        : {}),
+    };
+  });
   return {
     type: 'select',
     id: 'model',

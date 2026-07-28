@@ -102,11 +102,25 @@ describe('applyCatalogProvider', () => {
       apiKey: 'sk',
       models: [model],
       selectedModelId: 'm1',
+      source: {
+        kind: 'modelsDev',
+        url: 'https://models.dev/api.json',
+        catalogId: 'anthropic',
+        api: 'https://api.anthropic.com',
+        baseUrl: 'https://api.anthropic.com',
+      },
       thinking: true,
     });
 
     expect(result.defaultModel).toBe('anthropic/m1');
     expect(config.providers['anthropic']).toMatchObject({ type: 'anthropic', apiKey: 'sk' });
+    expect(config.providers['anthropic']?.source).toEqual({
+      kind: 'modelsDev',
+      url: 'https://models.dev/api.json',
+      catalogId: 'anthropic',
+      api: 'https://api.anthropic.com',
+      baseUrl: 'https://api.anthropic.com',
+    });
     expect(config.models?.['anthropic/m1']).toMatchObject({
       provider: 'anthropic',
       model: 'm1',
@@ -150,6 +164,26 @@ describe('applyCatalogProvider', () => {
     });
   });
 
+  it('keeps a mode alias keyed separately while sending the base wire model id', () => {
+    const mode = catalogProviderModels({
+      id: 'gateway',
+      models: {
+        'gpt-5.4': {
+          id: 'gpt-5.4',
+          limit: { context: 1000 },
+          experimental: {
+            modes: { fast: { provider: { body: { service_tier: 'priority' } } } },
+          },
+        },
+      },
+    }).find((model) => model.mode === 'fast');
+    expect(mode).toBeDefined();
+    expect(catalogModelToAlias('gateway', mode!)).toMatchObject({
+      model: 'gpt-5.4',
+      requestBody: { service_tier: 'priority' },
+    });
+  });
+
   it('writes declared effort levels from reasoning_options into the model alias', () => {
     // The models.dev `kimi-for-coding` provider shape for `k3`.
     const models = catalogProviderModels({
@@ -187,6 +221,40 @@ describe('applyCatalogProvider', () => {
       capabilities: ['image_in', 'video_in', 'thinking', 'tool_use'],
       supportEfforts: ['low', 'high', 'max'],
     });
+  });
+
+  it('preserves budget-token bounds without pretending they are effort names', () => {
+    const [model] = catalogProviderModels({
+      id: 'budget-provider',
+      models: {
+        thinker: {
+          id: 'thinker',
+          reasoning: true,
+          reasoning_options: [
+            { type: 'toggle' },
+            { type: 'budget_tokens', min: 1024, max: 32768 },
+          ],
+          limit: { context: 1000 },
+        },
+      },
+    });
+    expect(model?.supportEfforts).toBeUndefined();
+    expect(catalogModelToAlias('budget-provider', model!)).toMatchObject({
+      thinkingBudgetMin: 1024,
+      thinkingBudgetMax: 32768,
+    });
+  });
+
+  it('does not force a global thinking toggle when it is omitted', () => {
+    const config = { providers: {}, thinking: { effort: 'medium' } } as KimiConfig;
+    applyCatalogProvider(config, {
+      providerId: 'custom',
+      wire: 'openai',
+      apiKey: 'sk',
+      models: [model],
+      selectedModelId: 'm1',
+    });
+    expect(config.thinking).toEqual({ effort: 'medium' });
   });
 
   it('writes per-model protocol/baseUrl overrides and the input-limited context size', () => {

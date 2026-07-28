@@ -3,7 +3,15 @@ import { homedir } from 'node:os';
 import { join } from 'pathe';
 
 export function resolveKimiHome(homeDir?: string | undefined): string {
-  return homeDir ?? process.env['KIMI_CODE_HOME'] ?? join(homedir(), '.kimi-code');
+  // Echadron runs beside upstream Kimi Code and therefore has its own home
+  // namespace. Keep KIMI_CODE_HOME as the compatibility fallback for hosts
+  // that still use the upstream variable.
+  return (
+    homeDir ??
+    process.env['IMPERIUM_HOME'] ??
+    process.env['KIMI_CODE_HOME'] ??
+    join(homedir(), '.kimi-code')
+  );
 }
 
 export function resolveConfigPath(input: {

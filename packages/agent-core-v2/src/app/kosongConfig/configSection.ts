@@ -208,8 +208,12 @@ const ModelBaseSchema = z.object({
   adaptiveThinking: z.boolean().optional(),
   betaApi: z.boolean().optional(),
   supportEfforts: z.array(z.string()).optional(),
+  thinkingBudgetMin: z.number().finite().nonnegative().optional(),
+  thinkingBudgetMax: z.number().finite().nonnegative().optional(),
   defaultEffort: z.string().optional(),
   offEffort: z.string().optional(),
+  requestHeaders: StringRecordSchema.optional(),
+  requestBody: z.record(z.string(), z.unknown()).optional(),
 });
 
 export const ModelOverrideSchema = ModelBaseSchema.omit({

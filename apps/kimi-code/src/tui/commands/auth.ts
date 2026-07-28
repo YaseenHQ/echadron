@@ -1,7 +1,10 @@
 import type { ChoiceOption } from '../components/dialogs/choice-picker';
 import type { SlashCommandHost } from './dispatch';
 import { handleProviderAdd } from './provider';
-import { OAUTH_PROVIDERS } from './provider-login';
+import {
+  LEGACY_OAUTH_PROVIDERS,
+  OAUTH_PROVIDERS,
+} from './provider-login';
 import {
   promptConfirmProviderConfigurationRemoval,
   promptLogoutProviderSelection,
@@ -18,9 +21,10 @@ export async function handleLoginCommand(host: SlashCommandHost): Promise<void> 
 
 export async function handleLogoutCommand(host: SlashCommandHost): Promise<void> {
   const config = await host.harness.getConfig();
-  const oauthIds = new Set(OAUTH_PROVIDERS.map((provider) => provider.id));
+  const logoutOAuthProviders = [...OAUTH_PROVIDERS, ...LEGACY_OAUTH_PROVIDERS];
+  const oauthIds = new Set(logoutOAuthProviders.map((provider) => provider.id));
   const oauthTargets: CredentialTarget[] = [];
-  for (const provider of OAUTH_PROVIDERS) {
+  for (const provider of logoutOAuthProviders) {
     const status = await host.harness.auth.status(provider.id);
     const hasToken = status.providers.some(
       (entry) => entry.providerName === provider.id && entry.hasToken,
@@ -31,6 +35,7 @@ export async function handleLogoutCommand(host: SlashCommandHost): Promise<void>
         value: `oauth:${provider.id}`,
         label: `${provider.label} (OAuth)`,
         kind: 'oauth',
+        legacy: provider.legacy === true,
       });
     }
   }
@@ -100,6 +105,7 @@ interface CredentialTarget {
   readonly value: string;
   readonly label: string;
   readonly kind: 'oauth' | 'api-key';
+  readonly legacy?: boolean;
 }
 
 interface ProviderRemovalGroup {
@@ -116,7 +122,12 @@ function credentialLogoutOptions(
   const options: ChoiceOption[] = [...oauthTargets, ...apiKeyTargets].map((target) => ({
     value: target.value,
     label: target.label,
-    description: target.kind === 'oauth' ? 'OAuth account' : 'API key',
+    description:
+      target.kind === 'oauth'
+        ? target.legacy === true
+          ? 'Legacy OAuth credential (login unavailable)'
+          : 'OAuth account'
+        : 'API key',
   }));
   if (oauthTargets.length > 1) {
     options.push(bundleOption(ALL_OAUTH, 'All OAuth accounts', oauthTargets));
@@ -279,7 +290,10 @@ async function handleProviderConfigurationRemoval(
 
 function providerLabel(id: string, oauthIds: ReadonlySet<string>): string {
   if (!oauthIds.has(id)) return id;
-  return OAUTH_PROVIDERS.find((provider) => provider.id === id)?.label ?? id;
+  return (
+    [...OAUTH_PROVIDERS, ...LEGACY_OAUTH_PROVIDERS].find((provider) => provider.id === id)
+      ?.label ?? id
+  );
 }
 
 function registryLabel(url: string): string {

@@ -28,9 +28,9 @@ import {
 
 const REQUIRED_WEBVIEW_FILES = [
   'dist/webview.js',
-  'dist/kimi-banner-dark.svg',
-  'dist/kimi-banner-light.svg',
-  'dist/kimi-logo.png',
+  'dist/echadron-banner-dark.svg',
+  'dist/echadron-banner-light.svg',
+  'dist/echadron-icon-storefront.png',
 ];
 const FORBIDDEN_PATH_SEGMENTS = new Set([
   '.kimi',
@@ -98,7 +98,7 @@ const CONTRIBUTE_FIELDS = [
 ];
 
 export async function verifyVsix(vsixPath, target, options = {}) {
-  const extractionRoot = await mkdtemp(join(tmpdir(), 'kimi-vsix-audit-'));
+    const extractionRoot = await mkdtemp(join(tmpdir(), 'echadron-vsix-audit-'));
   try {
     await extractZip(vsixPath, extractionRoot);
     return await auditExtractedVsix(extractionRoot, target, options);

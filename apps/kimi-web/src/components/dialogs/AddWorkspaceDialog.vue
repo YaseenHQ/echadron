@@ -1,6 +1,6 @@
 <!-- apps/kimi-web/src/components/dialogs/AddWorkspaceDialog.vue -->
 <!-- Daemon-driven folder browser for adding a workspace: starts at the path -->
-<!-- kimi-web is working in, with a clickable breadcrumb and the folder list -->
+<!-- Echadron Web is working in, with a clickable breadcrumb and the folder list -->
 <!-- (fs:browse). "Open this folder" adds the current path. The search box -->
 <!-- doubles as an absolute-path entry: absolute-looking input (POSIX, "~", -->
 <!-- Windows drive or UNC) is validated live and the browser follows valid -->
@@ -30,7 +30,7 @@ const { t } = useI18n();
 const props = defineProps<{
   browseFs: (path?: string) => Promise<FsBrowseResult>;
   getFsHome: () => Promise<{ home: string; recentRoots: string[] }>;
-  /** Where the browser opens by default — the path kimi-web is working in. */
+  /** Where the browser opens by default — the path Echadron Web is working in. */
   defaultPath?: string;
   /** Inline error from a failed add attempt (e.g. daemon rejected the path). */
   error?: string | null;
@@ -332,7 +332,7 @@ onMounted(async () => {
     // $HOME up-front: needed for "~" expansion and as the browse fallback.
     const home = await props.getFsHome().catch(() => ({ home: '', recentRoots: [] as string[] }));
     if (home.home) homePath.value = home.home;
-    // Default to the path kimi-web is working in; fall back to $HOME.
+    // Default to the path Echadron Web is working in; fall back to $HOME.
     if (props.defaultPath) {
       await navigate(props.defaultPath);
       if (!browseFailed.value) return;

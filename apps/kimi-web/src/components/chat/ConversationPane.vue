@@ -83,7 +83,7 @@ const props = defineProps<{
   workspaceName?: string;
   /** Absolute workspace root path. */
   workspaceRoot?: string;
-  /** Git diff line stats for the header diff counter (mirrors kimi-cli/web). */
+  /** Git diff line stats for the header diff counter (mirrors Echadron CLI/web). */
   gitDiffStats?: { totalAdditions: number; totalDeletions: number } | null;
   /** Workspaces for the empty-composer picker (start a conversation elsewhere). */
   workspaces?: WorkspaceView[];
@@ -282,7 +282,7 @@ function tocTitle(turn: ChatTurn): string {
   const text = (turn.text || turn.thinking || '').trim().replaceAll(/\s+/g, ' ');
   if (text.length > 0) return text;
   if ((turn.tools?.length ?? 0) > 0) return `${turn.tools!.length} tools`;
-  return 'kimi';
+  return 'echadron';
 }
 
 // The TOC is keyed by user query: one entry per user turn, not per turn/block.

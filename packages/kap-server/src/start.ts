@@ -9,6 +9,7 @@
 
 import {
   bootstrap,
+  hostIdentitySeed,
   hostRequestHeadersSeed,
   IConfigService,
   IProviderDiscoveryService,
@@ -18,9 +19,11 @@ import {
   resolveKimiHome,
   resolveLoggingConfig,
   skillCatalogRuntimeOptionsSeed,
+  type HostIdentityOverrides,
   type Scope,
   type ScopeSeed,
 } from '@moonshot-ai/agent-core-v2';
+import { applyEchadronEnvironmentAliases } from '@moonshot-ai/kimi-code-oauth';
 import { createAsyncApiDocument } from './protocol/asyncapi';
 import Fastify, { type FastifyInstance } from 'fastify';
 
@@ -61,6 +64,11 @@ import { createSecurityHeadersHook } from './middleware/securityHeaders';
 import { createAuthHook } from './middleware/auth';
 import { GuiStoreService } from './services/guiStore/guiStoreService';
 import { loadSnapshotConfig, SnapshotReader } from './services/snapshot';
+import {
+  initializeServerTelemetry,
+  type ServerTelemetry,
+  shutdownServerTelemetry,
+} from './services/telemetry';
 import { TranscriptService } from './services/transcript/transcriptService';
 import { ModelCatalogRefreshScheduler } from './services/modelCatalog/modelCatalogRefreshScheduler';
 import { createAuthFailureLimiter } from './middleware/rateLimit';
@@ -102,6 +110,8 @@ export interface ServerStartOptions {
    * unset unless a second, distinct RPC credential is genuinely needed.
    */
   readonly rpcToken?: string;
+  /** Host product identity used by the engine's base system prompt. */
+  readonly hostIdentity?: HostIdentityOverrides;
   /** Extra scope seeds applied at bootstrap (e.g. a host-provided `ISessionModelResolver`). */
   readonly seeds?: ScopeSeed;
   /**
@@ -112,7 +122,7 @@ export interface ServerStartOptions {
    */
   readonly skillDirs?: readonly string[];
   /**
-   * Directory of the built Kimi web UI (`dist-web`). When set, `GET /` and the
+   * Directory of the built Echadron web UI (`dist-web`). When set, `GET /` and the
    * `/*` SPA fallback serve these assets (auth-exempt, matching v1). Omit to run
    * the API server without the web UI.
    */
@@ -124,6 +134,8 @@ export interface ServerStartOptions {
    * embedding hosts (the CLI) should pass their own version.
    */
   readonly version?: string;
+  /** Attach the v2 cloud telemetry appender for web-hosted sessions. */
+  readonly telemetry?: boolean;
 }
 
 export interface RunningServer {
@@ -140,12 +152,16 @@ const DEFAULT_HOST = '127.0.0.1';
 const DEFAULT_PORT = 58627;
 
 export async function startServer(opts: ServerStartOptions = {}): Promise<RunningServer> {
+  // Normalize the public Echadron env spelling before any host-level reads
+  // (password, allowed hosts, logging, model-catalog refresh) happen. The
+  // underlying SDK still reads legacy Kimi keys for wire compatibility.
+  applyEchadronEnvironmentAliases();
   const host = opts.host ?? DEFAULT_HOST;
   const port = opts.port ?? DEFAULT_PORT;
   const homeDir = resolveKimiHome(opts.homeDir);
   // Instance discovery: every server registers itself under
   // `<home>/server/instances/<serverId>.json`, so multiple servers can share
-  // one homeDir and consumers (the CLI's `server ps/kill`, `kimi web`, dev
+  // one homeDir and consumers (the CLI's `server ps/kill`, `echadron web`, dev
   // tooling) can discover the live instances. Port conflicts between siblings
   // are resolved by the `port + 1` retry below. The registration is released
   // on close and on any boot refusal below.
@@ -202,16 +218,29 @@ export async function startServer(opts: ServerStartOptions = {}): Promise<Runnin
   // rooted at `homeDir`, so the Store facades above it (append-log, atomic
   // document, blob) — and in turn session metadata, wire records, blobs, and
   // the session index — all persist to disk.
-  const { app: core } = bootstrap({ homeDir, configPath }, [
+  const { app: core } = bootstrap({ homeDir, configPath, clientVersion: hostVersion }, [
     ...logSeed(logging),
     // Default host identity so outbound requests (model, WebSearch, registry
     // refresh) carry a product User-Agent even when the embedding host did not
     // seed its own headers. Hosts like the CLI pass full Kimi identity headers
     // through `opts.seeds`, which override this entry (last seed wins).
-    ...hostRequestHeadersSeed({ 'User-Agent': `kimi-code-cli/${hostVersion}` }),
+    ...hostRequestHeadersSeed({ 'User-Agent': `echadron-cli/${hostVersion}` }),
     ...skillCatalogRuntimeOptionsSeed(opts.skillDirs),
+    ...hostIdentitySeed(opts.hostIdentity),
     ...(opts.seeds ?? []),
   ]);
+
+  let telemetry: ServerTelemetry = {};
+  if (opts.telemetry === true) {
+    try {
+      telemetry = await initializeServerTelemetry(core, homeDir);
+    } catch (error) {
+      logger.warn(
+        { err: error instanceof Error ? error.message : String(error) },
+        'telemetry initialization failed; continuing without telemetry',
+      );
+    }
+  }
 
   if (exposureClass !== 'loopback') {
     logger.warn(
@@ -221,7 +250,7 @@ export async function startServer(opts: ServerStartOptions = {}): Promise<Runnin
     if (!passwordConfigured) {
       logger.warn(
         { host, exposureClass },
-        'binding non-loopback host with token-only auth (no KIMI_CODE_PASSWORD) — the bearer token printed in the startup banner is the only credential protecting this server',
+        'binding non-loopback host with token-only auth (no ECHADRON_CODE_PASSWORD) — the bearer token printed in the startup banner is the only credential protecting this server',
       );
     }
   }
@@ -292,8 +321,19 @@ export async function startServer(opts: ServerStartOptions = {}): Promise<Runnin
     await app.close();
     authFailureLimiter?.dispose();
     modelCatalogRefreshScheduler.dispose();
-    core.dispose();
-    await registration.release();
+    try {
+      await shutdownServerTelemetry(telemetry);
+    } catch (error) {
+      logger.warn(
+        { err: error instanceof Error ? error.message : String(error) },
+        'telemetry shutdown failed; continuing server cleanup',
+      );
+    }
+    try {
+      core.dispose();
+    } finally {
+      await registration.release();
+    }
   };
 
   const connectionRegistry = new ConnectionRegistry();
@@ -321,9 +361,9 @@ export async function startServer(opts: ServerStartOptions = {}): Promise<Runnin
     await app.register(swagger, {
       openapi: {
         info: {
-          title: 'Kimi Code Server API',
+          title: 'Echadron Server API',
           description:
-            'REST API for the Kimi Code local server. All JSON responses are wrapped in a uniform envelope `{ code, msg, data, request_id }`.',
+            'REST API for the Echadron local server. All JSON responses are wrapped in a uniform envelope `{ code, msg, data, request_id }`.',
           version: serverVersion,
         },
         tags: [

@@ -613,10 +613,10 @@ export class OpenAILegacyChatProvider implements ChatProvider {
 
     // Build the create params
     const createParams: Record<string, unknown> = {
+      ...kwargs,
       model: this._model,
       messages,
       stream: this._stream,
-      ...kwargs,
     };
     if (options?.responseFormat !== undefined) {
       createParams['response_format'] = responseFormatToOpenAI(options.responseFormat);

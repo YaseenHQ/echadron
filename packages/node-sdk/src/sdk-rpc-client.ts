@@ -14,7 +14,11 @@ import {
   type TelemetryClient,
 } from '@moonshot-ai/agent-core';
 import type { Kaos } from '@moonshot-ai/kaos';
-import { assertKimiHostIdentity, createKimiDefaultHeaders } from '@moonshot-ai/kimi-code-oauth';
+import {
+  applyEchadronEnvironmentAliases,
+  assertKimiHostIdentity,
+  createKimiDefaultHeaders,
+} from '@moonshot-ai/kimi-code-oauth';
 
 import { KimiAuthFacade } from '#/auth';
 import { KimiHarness } from '#/kimi-harness';
@@ -57,6 +61,7 @@ export class SDKRpcClient extends SDKRpcClientBase {
 
   constructor(options: SDKRpcClientOptions = {}) {
     super();
+    applyEchadronEnvironmentAliases();
     this.identity =
       options.identity === undefined ? undefined : assertKimiHostIdentity(options.identity);
     this.homeDir = resolveKimiHome(options.homeDir);

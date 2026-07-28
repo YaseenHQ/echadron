@@ -2,8 +2,9 @@ import { Text, visibleWidth } from '@moonshot-ai/pi-tui';
 import type { TUI } from '@moonshot-ai/pi-tui';
 
 import {
-  BRAILLE_SPINNER_FRAMES,
-  BRAILLE_SPINNER_INTERVAL_MS,
+  animationFrames,
+  animationInterval,
+  type UnicodeAnimationName,
 } from '#/tui/constant/rendering';
 import { currentTheme } from '#/tui/theme';
 
@@ -13,6 +14,7 @@ export class MoonLoader extends Text {
   private ui: TUI;
   private frames: string[];
   private interval: number;
+  private animationName: UnicodeAnimationName;
   private colorFn?: (s: string) => string;
   private label: string;
   private displayText = '';
@@ -29,17 +31,20 @@ export class MoonLoader extends Text {
     ui: TUI,
     colorFn?: (s: string) => string,
     label: string = '',
+    animation: UnicodeAnimationName = 'braille',
   ) {
     super('', 1, 0);
     this.ui = ui;
-    this.frames = [...BRAILLE_SPINNER_FRAMES];
-    this.interval = BRAILLE_SPINNER_INTERVAL_MS;
+    this.animationName = animation;
+    this.frames = animationFrames(animation);
+    this.interval = animationInterval(animation);
     this.colorFn = colorFn;
     this.label = label;
     this.start();
   }
 
   start(): void {
+    this.stop();
     this.updateDisplay();
     this.intervalId = setInterval(() => {
       this.currentFrame = (this.currentFrame + 1) % this.frames.length;
@@ -66,6 +71,17 @@ export class MoonLoader extends Text {
   setColorFn(colorFn: ((s: string) => string) | undefined): void {
     this.colorFn = colorFn;
     this.updateDisplay();
+  }
+
+  setAnimation(animation: UnicodeAnimationName): void {
+    if (this.animationName === animation) return;
+    this.animationName = animation;
+    this.frames = animationFrames(animation);
+    this.interval = animationInterval(animation);
+    this.currentFrame = 0;
+    const wasRunning = this.intervalId !== null;
+    if (wasRunning) this.start();
+    else this.updateDisplay();
   }
 
   setTip(tip: string): void {

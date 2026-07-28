@@ -141,6 +141,7 @@ export interface OpenAILegacyOptions {
   thinkingEffort?: ThinkingEffort | undefined;
   httpClient?: unknown;
   defaultHeaders?: Record<string, string>;
+  generationKwargs?: OpenAILegacyGenerationKwargs | undefined;
   toolMessageConversion?: ToolMessageConversion | undefined;
   clientFactory?: (auth: ProviderRequestAuth) => OpenAI;
   hooks?: OpenAIChatCompletionsHooks | undefined;
@@ -569,7 +570,12 @@ export class OpenAILegacyChatProvider implements ChatProvider {
     this._offEffort = options.offEffort;
     this._generationKwargs = normalizeGenerationKwargs(
       this._model,
-      options.maxTokens !== undefined ? completionTokenKwargs(this._model, options.maxTokens) : {},
+      {
+        ...options.generationKwargs,
+        ...(options.maxTokens !== undefined
+          ? completionTokenKwargs(this._model, options.maxTokens)
+          : {}),
+      },
     );
     this._toolMessageConversion = options.toolMessageConversion ?? null;
     this._httpClient = options.httpClient;
@@ -645,10 +651,10 @@ export class OpenAILegacyChatProvider implements ChatProvider {
     const finalMessages = merged ?? messages;
 
     const createParams: Record<string, unknown> = {
+      ...kwargs,
       model: this._model,
       messages: finalMessages,
       stream: this._stream,
-      ...kwargs,
     };
 
     if (tools.length > 0) {

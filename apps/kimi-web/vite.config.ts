@@ -13,14 +13,20 @@ const webPort = Number(process.env.WEB_PORT) || 5175;
 // both can run at once) for multi-instance debugging. Override with
 // KIMI_BACKEND_DEFAULT_URL / KIMI_BACKEND_MULTI_URL.
 const backendPresets = {
-  default: process.env.KIMI_BACKEND_DEFAULT_URL || 'http://127.0.0.1:58627',
-  multi: process.env.KIMI_BACKEND_MULTI_URL || 'http://127.0.0.1:58628',
+  default:
+    process.env.ECHADRON_BACKEND_DEFAULT_URL ||
+    process.env.KIMI_BACKEND_DEFAULT_URL ||
+    'http://127.0.0.1:58627',
+  multi:
+    process.env.ECHADRON_BACKEND_MULTI_URL ||
+    process.env.KIMI_BACKEND_MULTI_URL ||
+    'http://127.0.0.1:58628',
 } as const;
 type BackendName = keyof typeof backendPresets;
 // Where the dev proxy forwards server traffic. Defaults to the `default`
 // preset; KIMI_SERVER_URL pins the initial target (and disables nothing — the
 // dev switcher can still move it at runtime).
-const serverTarget = process.env.KIMI_SERVER_URL || backendPresets.default;
+const serverTarget = process.env.ECHADRON_SERVER_URL || process.env.KIMI_SERVER_URL || backendPresets.default;
 // Mutable proxy target. Vite copies its proxy-options object per HTTP request
 // and reads it directly per WS upgrade, so assigning `target` on the captured
 // options repoints the proxy without a dev-server restart (see the plugin).
@@ -33,8 +39,8 @@ const pkg = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 
 /**
  * Dev-only backend switcher. Two endpoints let the web UI read and move the
  * proxy target at runtime (the Sidebar badge menu POSTs here, then reloads):
- *   GET  /__kimi-dev/backend           → { current, presets }
- *   POST /__kimi-dev/backend { name }  → switch to presets[name]
+ *   GET  /__echadron-dev/backend           → { current, presets }
+ *   POST /__echadron-dev/backend { name }  → switch to presets[name]
  * Preview keeps the static proxy below — this only hooks the dev server.
  */
 function backendSwitcherPlugin(): Plugin {
@@ -56,7 +62,7 @@ function backendSwitcherPlugin(): Plugin {
     name: 'kimi-backend-switcher',
     configureServer(server) {
       server.middlewares.use((req: IncomingMessage, res: ServerResponse, next: () => void) => {
-        if (req.url !== '/__kimi-dev/backend') return next();
+        if (req.url !== '/__echadron-dev/backend' && req.url !== '/__kimi-dev/backend') return next();
         if (req.method === 'GET') {
           sendJson(res, state());
           return;
@@ -137,6 +143,12 @@ export default defineConfig({
   // show which server it is connected to (the browser otherwise only sees its
   // own same-origin URL). Unused by the same-origin production build.
   define: {
+    __ECHADRON_DEV_PROXY_TARGET__: JSON.stringify(serverTarget),
+    __ECHADRON_DEV_BACKENDS__: JSON.stringify(backendPresets),
+    __ECHADRON_WEB_VERSION__: JSON.stringify(pkg.version),
+    __ECHADRON_WEB_DESKTOP__: JSON.stringify(
+      process.env.ECHADRON_WEB_DESKTOP === '1' || process.env.KIMI_WEB_DESKTOP === '1',
+    ),
     __KIMI_DEV_PROXY_TARGET__: JSON.stringify(serverTarget),
     // Named backend presets for the Sidebar switcher menu (dev only).
     __KIMI_DEV_BACKENDS__: JSON.stringify(backendPresets),

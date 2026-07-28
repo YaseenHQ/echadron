@@ -820,7 +820,7 @@ body {
   from { opacity: 0; transform: translateY(8px) scale(0.995); }
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
-@keyframes kimi-check-in {
+@keyframes echadron-check-in {
   from { opacity: 0; transform: scale(0.4); }
   60% { opacity: 1; transform: scale(1.15); }
   to { opacity: 1; transform: scale(1); }
@@ -834,20 +834,20 @@ body {
     transition-duration: 0.001ms !important;
   }
 }
-/* ---- Kimi Code logo (sidebar header): lively eyes — glance left/right + the
+/* ---- Echadron logo (sidebar header): lively eyes — glance left/right + the
    occasional blink. The two bars are mask cutouts, so animating them moves /
    squishes the transparent holes (adapts to whatever's behind the logo). The
    look (6s) and blink (5.4s) run on different periods so they drift in and out
    of sync, which reads as more organic. ---- */
 .ch-eyes {
-  animation: kimi-eye-look 16s ease-in-out infinite;
+  animation: echadron-eye-look 16s ease-in-out infinite;
 }
 .ch-eye {
   transform-box: fill-box;
   transform-origin: center;
-  animation: kimi-eye-blink 11s ease-in-out infinite;
+  animation: echadron-eye-blink 11s ease-in-out infinite;
 }
-@keyframes kimi-eye-look {
+@keyframes echadron-eye-look {
   /* Rest centered most of the time; a quick glance right (~7.5s) then a glance
      left (~13.5s), with long still holds between — calm, not busy. */
   0%, 42% { transform: translateX(0); }

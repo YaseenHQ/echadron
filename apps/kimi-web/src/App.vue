@@ -77,7 +77,7 @@ provide(
 const { t } = useI18n();
 const { confirm } = useConfirmDialog();
 
-// KAP/daemon debug panel — opt-in via ?debug=1 or localStorage kimi-web.debug=1.
+// KAP/daemon debug panel — opt-in via ?debug=1 or localStorage echadron-web.debug=1.
 const debugEnabled = isTraceEnabled();
 
 // Narrow viewports (≤640px) render the single-column mobile shell; desktop is
@@ -687,9 +687,9 @@ function openPr(url: string): void {
     <ServerAuthDialog v-if="showServerAuth" />
     <section v-if="showAuthGate" class="auth-page">
       <div class="auth-page-inner">
-        <svg ref="authLogoRef" class="auth-page-logo ch-logo" viewBox="0 0 32 22" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Kimi Code" @mousedown.prevent @click="blinkAuthLogo">
+        <svg ref="authLogoRef" class="auth-page-logo ch-logo" viewBox="0 0 32 22" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Echadron" @mousedown.prevent @click="blinkAuthLogo">
           <defs>
-            <mask id="authKimiEyes" maskUnits="userSpaceOnUse">
+            <mask id="authEchadronMark" maskUnits="userSpaceOnUse">
               <rect x="0" y="0" width="32" height="22" fill="#fff" />
               <g class="ch-eyes" fill="#000">
                 <rect class="ch-eye" x="11.8" y="7" width="2.8" height="8" rx="1.4" />
@@ -697,7 +697,7 @@ function openPr(url: string): void {
               </g>
             </mask>
           </defs>
-          <rect x="1" y="1" width="30" height="20" rx="6" fill="var(--logo)" mask="url(#authKimiEyes)" />
+            <rect x="1" y="1" width="30" height="20" rx="6" fill="var(--logo)" mask="url(#authEchadronMark)" />
         </svg>
         <div class="auth-page-copy">
           <h1>{{ t('app.authPageTitle') }}</h1>

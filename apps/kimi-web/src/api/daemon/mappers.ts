@@ -734,6 +734,8 @@ export function toAppModel(wire: WireModel): AppModel {
     maxContextSize: wire.max_context_size,
     capabilities: wire.capabilities,
     supportEfforts: wire.support_efforts,
+    thinkingBudgetMin: wire.thinking_budget_min,
+    thinkingBudgetMax: wire.thinking_budget_max,
     defaultEffort: wire.default_effort,
   };
 }

@@ -72,7 +72,7 @@ export async function handleForkCommand(host: SlashCommandHost, args: string): P
   try {
     await host.switchToSession(
       forked,
-      `Session forked (${forked.id}). To return to the original session: kimi -r ${session.id}`,
+      `Session forked (${forked.id}). To return to the original session: echadron -r ${session.id}`,
     );
   } catch (error) {
     const msg = formatErrorMessage(error);
@@ -183,7 +183,7 @@ async function forkFromTreeChoice(
     await host.switchToSession(
       forked,
       `Session forked from turn ${String(choice.turnIndex + 1)} (${forked.id}). ` +
-        `To return to the original session: kimi -r ${source.id}`,
+        `To return to the original session: echadron -r ${source.id}`,
     );
   } catch (error) {
     host.showError(`Failed to switch to forked session: ${formatErrorMessage(error)}`);

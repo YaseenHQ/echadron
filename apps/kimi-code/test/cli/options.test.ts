@@ -549,7 +549,7 @@ describe('CLI options parsing', () => {
         'doctor',
         'vis',
         'migrate',
-        'upgrade',
+        'update',
       ]);
     });
   });

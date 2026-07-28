@@ -1,7 +1,7 @@
 /**
  * Scenario: maintainers run the installed-VSIX smoke from a developer machine or CI.
  * Responsibilities: stable downloads cannot reuse stale caches, and the Extension
- * Host cannot discover the developer's real legacy Kimi home.
+ * Host cannot discover the developer's real legacy Echadron home.
  * Wiring: real smoke orchestration and filesystem; @vscode/test-electron is the
  * external process/download boundary.
  * Run: pnpm --filter kimi-code exec vitest run --config vitest.config.ts test/extension-host-smoke.test.ts
@@ -61,7 +61,7 @@ describe('installed VSIX Extension Host smoke', () => {
     expect(second.vscodeVersion).toBe('1.127.0');
   });
 
-  it('gives the harness separate Kimi and operating-system homes before activation', async () => {
+  it('gives the harness separate Echadron and operating-system homes before activation', async () => {
     const fixture = await makeFixture();
 
     await runExtensionHostSmoke({
@@ -72,7 +72,8 @@ describe('installed VSIX Extension Host smoke', () => {
 
     const options = vscodeTest.runTests.mock.calls[0]?.[0];
     const env = options.extensionTestsEnv;
-    expect(env.KIMI_CODE_HOME).not.toBe(env.KIMI_VSCODE_SMOKE_OS_HOME);
+    expect(env.ECHADRON_HOME).not.toBe(env.KIMI_VSCODE_SMOKE_OS_HOME);
+    expect(env.KIMI_CODE_HOME).toBe(env.ECHADRON_HOME);
     expect(env.KIMI_VSCODE_SMOKE_OS_HOME).toContain('os-home');
   });
 

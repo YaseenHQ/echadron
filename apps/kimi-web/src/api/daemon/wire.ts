@@ -369,6 +369,8 @@ export interface WireModel {
   max_context_size: number;
   capabilities?: string[];
   support_efforts?: string[];
+  thinking_budget_min?: number;
+  thinking_budget_max?: number;
   default_effort?: string;
 }
 

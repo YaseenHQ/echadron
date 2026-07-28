@@ -29,8 +29,11 @@ export interface OAuthProviderDefinition {
   readonly id: string;
   readonly label: string;
   readonly description: string;
+  /** Existing credentials can be removed, but this provider is not offered for new login. */
+  readonly legacy?: boolean;
 }
 
+/** OAuth providers currently supported by the interactive login flow. */
 export const OAUTH_PROVIDERS: readonly OAuthProviderDefinition[] = [
   {
     id: DEFAULT_OAUTH_PROVIDER_NAME,
@@ -38,24 +41,37 @@ export const OAUTH_PROVIDERS: readonly OAuthProviderDefinition[] = [
     description: 'Use a Kimi Code membership subscription.',
   },
   {
+    id: OPENAI_CODEX_PROVIDER_NAME,
+    label: 'ChatGPT (OpenAI Codex)',
+    description: 'Use a ChatGPT Plus or Pro account with OAuth.',
+  },
+  {
     id: XAI_PROVIDER_NAME,
     label: 'xAI',
     description: 'Use an xAI account with OAuth.',
   },
-  {
-    id: OPENAI_CODEX_PROVIDER_NAME,
-    label: 'OpenAI Codex',
-    description: 'Use a ChatGPT Plus or Pro account with OAuth.',
-  },
+];
+
+/**
+ * OAuth adapters kept for existing installations only.
+ *
+ * Anthropic subscription OAuth is intentionally not advertised because it
+ * cannot be reliably tested by this product, and Copilot is temporarily out
+ * of scope. Keeping these entries in the logout inventory lets users remove
+ * credentials created by an older Echadron build without re-enabling login.
+ */
+export const LEGACY_OAUTH_PROVIDERS: readonly OAuthProviderDefinition[] = [
   {
     id: ANTHROPIC_PROVIDER_NAME,
     label: 'Anthropic',
     description: 'Use a Claude Pro or Max account with OAuth.',
+    legacy: true,
   },
   {
     id: GITHUB_COPILOT_PROVIDER_NAME,
     label: 'GitHub Copilot',
     description: 'Use a GitHub Copilot subscription with device-code OAuth.',
+    legacy: true,
   },
 ];
 
@@ -63,6 +79,13 @@ export async function handleOAuthLogin(
   host: SlashCommandHost,
   provider: OAuthProviderDefinition,
 ): Promise<void> {
+  if (
+    provider.legacy === true ||
+    !OAUTH_PROVIDERS.some((entry) => entry.id === provider.id)
+  ) {
+    host.showError(`${provider.label} OAuth login is not available in this Echadron build.`);
+    return;
+  }
   const status = await host.harness.auth.status(provider.id);
   const alreadyLoggedIn = status.providers.some(
     (entry) => entry.providerName === provider.id && entry.hasToken,

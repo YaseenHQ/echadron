@@ -13,6 +13,8 @@ export interface CatalogModelEntry {
   readonly limit?: { readonly context?: number; readonly input?: number; readonly output?: number };
   readonly tool_call?: boolean;
   readonly reasoning?: boolean;
+  /** Optional private-registry extension naming the provider's default tier. */
+  readonly default_effort?: string;
   /**
    * models.dev reasoning declaration: `[{ type: 'toggle' }, ...]` entries.
    * Only `{ type: 'effort', values: [...] }` maps onto concrete thinking
@@ -28,6 +30,10 @@ export interface CatalogModelEntry {
    * endpoint (`api`) than the provider default.
    */
   readonly provider?: CatalogModelProviderOverride;
+  /** OpenCode/models.dev request modes (for example, `fast`). */
+  readonly experimental?: {
+    readonly modes?: Record<string, CatalogModelExperimentalMode>;
+  };
   /** Accepts message-level tool declarations (`messages[].tools`). Defaults to false. */
   readonly dynamically_loaded_tools?: boolean;
   readonly interleaved?: boolean | { readonly field?: string };
@@ -37,9 +43,23 @@ export interface CatalogModelEntry {
   };
 }
 
+export interface CatalogModelExperimentalMode {
+  readonly provider?: {
+    readonly headers?: Record<string, string>;
+    readonly body?: Record<string, unknown>;
+  };
+}
+
 export interface CatalogReasoningOption {
   readonly type?: string;
   readonly values?: unknown;
+  readonly min?: unknown;
+  readonly max?: unknown;
+}
+
+export interface CatalogThinkingBudget {
+  readonly min?: number;
+  readonly max?: number;
 }
 
 export interface CatalogModelProviderOverride {
@@ -64,14 +84,53 @@ export interface CatalogProviderEntry {
 /** Top-level catalog: `{ [providerId]: ProviderEntry }` (e.g. models.dev/api.json). */
 export type Catalog = Record<string, CatalogProviderEntry>;
 
+/**
+ * Runtime boundary for public and private catalogs. The upstream document is
+ * untrusted JSON; keep valid provider objects while ignoring malformed values
+ * instead of allowing one bad entry to break the whole provider picker.
+ */
+export function normalizeCatalog(value: unknown): Catalog {
+  if (!isRecord(value)) return {};
+  const out: Catalog = {};
+  for (const [id, raw] of Object.entries(value)) {
+    if (isSafeObjectKey(id) && isRecord(raw)) out[id] = raw as CatalogProviderEntry;
+  }
+  return out;
+}
+
+function isSafeObjectKey(key: string): boolean {
+  return key !== '__proto__' && key !== 'constructor' && key !== 'prototype';
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function validModelEntries(
+  value: CatalogProviderEntry['models'],
+): readonly [string, CatalogModelEntry][] {
+  if (!isRecord(value)) return [];
+  return Object.entries(value).filter(
+    (entry): entry is [string, CatalogModelEntry] =>
+      isSafeObjectKey(entry[0]) && isRecord(entry[1]),
+  );
+}
+
 /** A normalized catalog model: identity plus its {@link ModelCapability}. */
 export interface CatalogModel {
   readonly id: string;
+  /** Wire-facing model id when this is a materialized request mode. */
+  readonly wireModel?: string;
+  readonly mode?: string;
   readonly name?: string;
   readonly maxOutputSize?: number;
   readonly reasoningKey?: string;
   /** Declared thinking effort levels from `reasoning_options`, when present. */
   readonly supportEfforts?: readonly string[];
+  /** Declared token-budget bounds when the catalog uses `budget_tokens`. */
+  readonly thinkingBudget?: CatalogThinkingBudget;
+  /** Explicit default tier supplied by the catalog/private registry. */
+  readonly defaultEffort?: string;
   /**
    * The effort value that encodes "thinking off" for this model (models.dev
    * declares it as the `'none'` entry in `reasoning_options`). Undefined when
@@ -84,6 +143,9 @@ export interface CatalogModel {
    * some level, so the UI must not offer an off option.
    */
   readonly alwaysThinking?: boolean;
+  /** Request overlays attached to a materialized models.dev mode. */
+  readonly requestHeaders?: Readonly<Record<string, string>>;
+  readonly requestBody?: Readonly<Record<string, unknown>>;
   /**
    * Per-model protocol override from the catalog entry's `provider` field
    * (gateway providers serving this model over the Anthropic protocol).
@@ -102,20 +164,43 @@ const KNOWN_WIRE_TYPES = [
   'openai_responses',
   'vertexai',
 ] as const satisfies readonly ProviderType[];
+/**
+ * models.dev's `npm` is an AI SDK adapter name, not a wire-protocol enum.
+ * These adapters expose an OpenAI-family HTTP boundary that can use kosong's
+ * OpenAI transport for catalog imports. Keep this list explicit:
+ * treating every unknown package as OpenAI would mislabel native adapters.
+ */
+const OPENAI_COMPATIBLE_SDKS = new Set([
+  '@ai-sdk/openai',
+  '@ai-sdk/openai-compatible',
+  '@ai-sdk/azure',
+  '@ai-sdk/xai',
+  '@ai-sdk/mistral',
+  '@ai-sdk/groq',
+  '@ai-sdk/cerebras',
+  '@ai-sdk/deepinfra',
+  '@ai-sdk/togetherai',
+  '@ai-sdk/perplexity',
+  '@ai-sdk/github-copilot',
+  '@openrouter/ai-sdk-provider',
+  'ai-gateway-provider',
+  'venice-ai-sdk-provider',
+]);
+const RESERVED_REQUEST_BODY_KEYS = new Set(['model', 'messages', 'input', 'tools', 'stream']);
 
 function isWireType(value: unknown): value is ProviderType {
   return typeof value === 'string' && (KNOWN_WIRE_TYPES as readonly string[]).includes(value);
 }
 
 function hasEmbeddingMarker(value: string | undefined): boolean {
-  if (value === undefined) return false;
+  if (typeof value !== 'string') return false;
   const lower = value.toLowerCase();
   return lower.includes('embedding') || /(?:^|[-_/])embed(?:$|[-_/])/.test(lower);
 }
 
 function isUsableChatModel(model: CatalogModelEntry): boolean {
   const outputModalities = model.modalities?.output;
-  if (outputModalities !== undefined && !outputModalities.includes('text')) return false;
+  if (Array.isArray(outputModalities) && !outputModalities.includes('text')) return false;
   // Deprecated models are shut down or scheduled for removal upstream, and
   // alpha models are pre-release (the reference consumer hides both by
   // default); do not offer them for new imports. Existing configs are
@@ -225,7 +310,7 @@ function resolveCatalogWire(entry: CatalogProviderEntry): ProviderType | undefin
   if (typeof entry.type === 'string' && entry.type.length > 0) return undefined;
   const declared = inferDeclaredWireType(entry);
   if (declared !== undefined) return declared;
-  const npm = (entry.npm ?? '').toLowerCase();
+  const npm = typeof entry.npm === 'string' ? entry.npm.toLowerCase() : '';
   if (npm.includes('amazon-bedrock') || npm.includes('cohere')) return undefined;
   return 'openai';
 }
@@ -242,8 +327,15 @@ export function inferWireType(entry: CatalogProviderEntry): ProviderType | undef
 
 function inferDeclaredWireType(entry: CatalogProviderEntry): ProviderType | undefined {
   if (isWireType(entry.type)) return entry.type;
-  const npm = (entry.npm ?? '').toLowerCase();
-  const id = (entry.id ?? '').toLowerCase();
+  const npm = typeof entry.npm === 'string' ? entry.npm.toLowerCase() : '';
+  const id = typeof entry.id === 'string' ? entry.id.toLowerCase() : '';
+  // Prefer exact SDK identity before provider-id heuristics. Private
+  // registries may use any provider id while still declaring their adapter.
+  if (npm === '@ai-sdk/google-vertex/anthropic') return 'anthropic';
+  if (npm === '@ai-sdk/google-vertex') return 'vertexai';
+  if (npm === '@ai-sdk/google') return 'google-genai';
+  if (npm === '@ai-sdk/anthropic') return 'anthropic';
+  if (OPENAI_COMPATIBLE_SDKS.has(npm)) return 'openai';
   if (npm.includes('anthropic') || id.includes('anthropic') || id.includes('claude')) {
     return 'anthropic';
   }
@@ -301,7 +393,7 @@ export function adaptBaseUrlForWire(baseUrl: string, wire: ProviderType): string
  */
 function catalogEndpointRequired(entry: CatalogProviderEntry, wire: ProviderType): boolean {
   if (typeof entry.api === 'string' && entry.api.length > 0) return true;
-  const npm = (entry.npm ?? '').toLowerCase();
+  const npm = typeof entry.npm === 'string' ? entry.npm.toLowerCase() : '';
   if (wire === 'openai' || wire === 'openai_responses') return npm !== '@ai-sdk/openai';
   if (wire === 'anthropic') return npm !== '@ai-sdk/anthropic';
   return false;
@@ -313,7 +405,7 @@ export function catalogModelToCapability(model: CatalogModelEntry): CatalogModel
   const context = model.limit?.context;
   if (typeof context !== 'number' || !Number.isInteger(context) || context <= 0) return undefined;
   if (!isUsableChatModel(model)) return undefined;
-  const inputs = model.modalities?.input ?? [];
+  const inputs = Array.isArray(model.modalities?.input) ? model.modalities.input : [];
   const output = model.limit?.output;
   const thinking = catalogThinkingOptions(model.reasoning_options);
   // `limit.input` is the true prompt cap when declared (e.g. gpt-5: 400k
@@ -331,6 +423,8 @@ export function catalogModelToCapability(model: CatalogModelEntry): CatalogModel
     maxOutputSize: typeof output === 'number' && output > 0 ? output : undefined,
     reasoningKey: catalogReasoningKey(model.interleaved),
     supportEfforts: thinking.efforts,
+    thinkingBudget: thinking.budget,
+    defaultEffort: catalogDefaultEffort(model.default_effort, thinking.efforts),
     offEffort: thinking.offEffort,
     alwaysThinking: thinking.alwaysThinking,
     capability: {
@@ -360,19 +454,46 @@ export function catalogModelToCapability(model: CatalogModelEntry): CatalogModel
  */
 function catalogThinkingOptions(options: CatalogModelEntry['reasoning_options']): {
   readonly efforts: readonly string[] | undefined;
+  readonly budget: CatalogThinkingBudget | undefined;
   readonly offEffort: string | undefined;
   readonly hasToggle: boolean;
   readonly alwaysThinking: boolean | undefined;
 } {
   if (!Array.isArray(options)) {
-    return { efforts: undefined, offEffort: undefined, hasToggle: false, alwaysThinking: undefined };
+    return {
+      efforts: undefined,
+      budget: undefined,
+      offEffort: undefined,
+      hasToggle: false,
+      alwaysThinking: undefined,
+    };
   }
   let efforts: readonly string[] | undefined;
+  let budget: CatalogThinkingBudget | undefined;
   let offEffort: string | undefined;
   let hasToggle = false;
   for (const option of options) {
     if (option?.type === 'toggle') {
       hasToggle = true;
+      continue;
+    }
+    if (option?.type === 'budget_tokens') {
+      const min =
+        typeof option.min === 'number' &&
+        Number.isFinite(option.min) &&
+        option.min >= 0
+          ? option.min
+          : undefined;
+      const max =
+        typeof option.max === 'number' &&
+        Number.isFinite(option.max) &&
+        option.max >= 0
+          ? option.max
+          : undefined;
+      budget = {
+        ...(min === undefined ? {} : { min }),
+        ...(max === undefined ? {} : { max }),
+      };
       continue;
     }
     if (option?.type !== 'effort' || !Array.isArray(option.values)) continue;
@@ -381,17 +502,35 @@ function catalogThinkingOptions(options: CatalogModelEntry['reasoning_options'])
     // wire value (`reasoning_effort: 'none'`).
     const hasNullTier = (option.values as unknown[]).some((value) => value === null);
     const levels = (option.values as unknown[]).filter(
-      (value: unknown): value is string => typeof value === 'string' && value.length > 0,
+      (value: unknown): value is string =>
+        typeof value === 'string' && value.trim().length > 0,
     );
     const off = levels.find((value) => value.toLowerCase() === 'none');
     if (off !== undefined) offEffort = off;
     else if (hasNullTier) offEffort = 'none';
-    const selectable = levels.filter((value) => value.toLowerCase() !== 'none');
-    if (selectable.length > 0) efforts = selectable;
+    const selectable = levels.filter(
+      (value) => value.toLowerCase() !== 'none' && value.toLowerCase() !== 'default',
+    );
+    if (selectable.length > 0) {
+      const unique = new Map<string, string>();
+      for (const value of selectable) unique.set(value.toLowerCase(), value.trim());
+      efforts = [...unique.values()];
+    }
   }
   const alwaysThinking =
     efforts !== undefined && offEffort === undefined && !hasToggle ? true : undefined;
-  return { efforts, offEffort, hasToggle, alwaysThinking };
+  return { efforts, budget, offEffort, hasToggle, alwaysThinking };
+}
+
+function catalogDefaultEffort(
+  declared: string | undefined,
+  efforts: readonly string[] | undefined,
+): string | undefined {
+  if (efforts === undefined || efforts.length === 0 || typeof declared !== 'string') {
+    return undefined;
+  }
+  const normalized = declared.trim().toLowerCase();
+  return efforts.find((effort) => effort.toLowerCase() === normalized);
 }
 
 function catalogReasoningKey(interleaved: CatalogModelEntry['interleaved']): string | undefined {
@@ -402,37 +541,132 @@ function catalogReasoningKey(interleaved: CatalogModelEntry['interleaved']): str
   // inbound scan to one field — strictly worse for gateways that answer with
   // one of the other names.
   if (typeof interleaved !== 'object' || interleaved === null) return undefined;
-  const field = interleaved.field?.trim();
+  const field = typeof interleaved.field === 'string' ? interleaved.field.trim() : undefined;
   return field !== undefined && field.length > 0 ? field : undefined;
 }
 
 /** Extracts the valid, normalized models from a catalog provider entry. */
 export function catalogProviderModels(entry: CatalogProviderEntry): CatalogModel[] {
   const providerWire = resolveCatalogWire(entry);
-  return Object.values(entry.models ?? {})
-    .map((raw) => applyModelProviderOverride(catalogModelToCapability(raw), raw, entry, providerWire))
-    .filter((model): model is CatalogModel => model !== undefined)
-    .map((model) => {
-      // The always-thinking inference ("effort levels, no toggle, no 'none'
-      // — reasoning cannot be turned off") must not fire where the wire has
-      // a true protocol-level disable the effort list can never show:
-      // Anthropic and Kimi both encode off as `thinking: {type: 'disabled'}`,
-      // so marking those models always-on would hide a working off. On every
-      // other wire the same catalog shape is exactly the evidence the marker
-      // exists for — gpt-5-class models reject `reasoning_effort: 'none'`,
-      // and Gemini 3's floor is `thinkingLevel: 'MINIMAL'` (still reasoning,
-      // merely with thoughts hidden) — so there the marker keeps the UI from
-      // offering an off that does not exist.
-      const protocol = model.protocol ?? providerWire;
-      if (
-        model.alwaysThinking === true &&
-        (protocol === 'anthropic' || protocol === 'kimi')
-      ) {
-        const { alwaysThinking: _dropped, ...rest } = model;
-        return rest as CatalogModel;
-      }
-      return model;
-    });
+  const result: CatalogModel[] = [];
+  const seenIds = new Set<string>();
+  for (const [, raw] of validModelEntries(entry.models)) {
+    const model = applyModelProviderOverride(
+      catalogModelToCapability(raw),
+      raw,
+      entry,
+      providerWire,
+    );
+    if (model === undefined || seenIds.has(model.id)) continue;
+    seenIds.add(model.id);
+    result.push(model);
+
+    const modes =
+      isRecord(raw.experimental) && isRecord(raw.experimental['modes'])
+        ? raw.experimental['modes']
+        : {};
+    for (const [mode, options] of Object.entries(modes)) {
+      const modeId = mode.trim();
+      if (modeId.length === 0) continue;
+      const id = `${model.id}-${modeId}`;
+      if (seenIds.has(id)) continue;
+      const request = options?.provider;
+      result.push({
+        ...model,
+        id,
+        wireModel: model.id,
+        mode: modeId,
+        name: `${model.name ?? model.id} ${modeId.charAt(0).toUpperCase()}${modeId.slice(1)}`,
+        ...(request?.headers === undefined
+          ? {}
+          : { requestHeaders: normalizeRequestHeaders(request.headers) }),
+        ...(request?.body === undefined
+          ? {}
+          : { requestBody: normalizeRequestBody(request.body) }),
+      });
+      seenIds.add(id);
+    }
+  }
+  return result.map((model) => {
+    // The always-thinking inference ("effort levels, no toggle, no 'none'
+    // — reasoning cannot be turned off") must not fire where the wire has
+    // a true protocol-level disable the effort list can never show:
+    // Anthropic and Kimi both encode off as `thinking: {type: 'disabled'}`,
+    // so marking those models always-on would hide a working off. On every
+    // other wire the same catalog shape is exactly the evidence the marker
+    // exists for — gpt-5-class models reject `reasoning_effort: 'none'`,
+    // and Gemini 3's floor is `thinkingLevel: 'MINIMAL'` (still reasoning,
+    // merely with thoughts hidden) — so there the marker keeps the UI from
+    // offering an off that does not exist.
+    const protocol = model.protocol ?? providerWire;
+    if (model.alwaysThinking === true && (protocol === 'anthropic' || protocol === 'kimi')) {
+      const { alwaysThinking: _dropped, ...rest } = model;
+      return rest as CatalogModel;
+    }
+    return model;
+  });
+}
+
+function normalizeRequestHeaders(value: unknown): Readonly<Record<string, string>> {
+  if (!isRecord(value)) return {};
+  const out: Record<string, string> = {};
+  for (const [name, headerValue] of Object.entries(value)) {
+    const key = name.trim();
+    if (
+      key.length === 0 ||
+      /[\r\n]/.test(key) ||
+      typeof headerValue !== 'string' ||
+      /[\r\n]/.test(headerValue) ||
+      !isSafeRequestHeader(key)
+    ) {
+      continue;
+    }
+    out[key] = headerValue;
+  }
+  return out;
+}
+
+function isSafeRequestHeader(name: string): boolean {
+  switch (name.toLowerCase()) {
+    case 'authorization':
+    case 'x-api-key':
+    case 'api-key':
+    case 'proxy-authorization':
+    case 'cookie':
+    case 'set-cookie':
+    case 'host':
+    case 'content-length':
+      return false;
+    default:
+      return true;
+  }
+}
+
+function normalizeRequestBody(
+  value: unknown,
+): Readonly<Record<string, unknown>> {
+  if (!isRecord(value)) return {};
+  const out: Record<string, unknown> = {};
+  for (const [key, bodyValue] of Object.entries(value)) {
+    if (!isSafeObjectKey(key) || key.trim().length === 0 || isReservedRequestBodyKey(key)) {
+      continue;
+    }
+    if (isJsonValue(bodyValue)) out[key] = bodyValue;
+  }
+  return out;
+}
+
+function isReservedRequestBodyKey(key: string): boolean {
+  return RESERVED_REQUEST_BODY_KEYS.has(key.toLowerCase());
+}
+
+function isJsonValue(value: unknown): boolean {
+  if (value === null || typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+    return true;
+  }
+  if (Array.isArray(value)) return value.every(isJsonValue);
+  if (!isRecord(value)) return false;
+  return Object.entries(value).every(([key, item]) => key.length > 0 && isJsonValue(item));
 }
 
 /**
@@ -455,11 +689,13 @@ function applyModelProviderOverride(
   if (model === undefined) return undefined;
   const override = raw.provider;
   if (override === undefined) return model;
+  if (!isRecord(override)) return model;
   // An api-only override keeps the provider's wire; an npm override points at
   // a (possibly different) one. Known proprietary SDKs are refused like at
   // top level; other unrecognized npm gets the same OpenAI-compatible
   // fallback so a concretely declared endpoint is not silently dropped.
-  const overrideNpm = typeof override.npm === 'string' ? override.npm.toLowerCase() : undefined;
+  const overrideNpm =
+    typeof override['npm'] === 'string' ? override['npm'].toLowerCase() : undefined;
   if (
     overrideNpm !== undefined &&
     (overrideNpm.includes('amazon-bedrock') || overrideNpm.includes('cohere'))
@@ -469,7 +705,7 @@ function applyModelProviderOverride(
   const overrideWire =
     overrideNpm !== undefined ? (inferOverrideWire(overrideNpm) ?? 'openai') : providerWire;
   if (overrideWire === undefined) return model;
-  const rawApi = override.api;
+  const rawApi = override['api'];
   const api = rawApi ?? entry.api;
   const usableApi =
     typeof api === 'string' && api.length > 0 && !api.includes('${') ? api : undefined;
@@ -501,6 +737,11 @@ function applyModelProviderOverride(
 
 function inferOverrideWire(npm: string): ProviderType | undefined {
   const normalized = npm.toLowerCase();
+  if (normalized === '@ai-sdk/google-vertex/anthropic') return 'anthropic';
+  if (normalized === '@ai-sdk/google-vertex') return 'vertexai';
+  if (normalized === '@ai-sdk/google') return 'google-genai';
+  if (normalized === '@ai-sdk/anthropic') return 'anthropic';
+  if (OPENAI_COMPATIBLE_SDKS.has(normalized)) return 'openai';
   if (normalized.includes('anthropic')) return 'anthropic';
   if (normalized.includes('vertex')) return 'vertexai';
   if (normalized.includes('google')) return 'google-genai';
