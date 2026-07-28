@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 
 import { Events } from "../shared/bridge";
-import { KimiWebviewProvider } from "./KimiWebviewProvider";
+import { EchadronWebviewProvider } from "./EchadronWebviewProvider";
 import { onSettingsChange, VSCodeSettings } from "./config/vscode-settings";
 import {
   LegacyMigrationManager,
@@ -11,7 +11,7 @@ import {
 import { updateLoginContext } from "./utils/context";
 
 let outputChannel: vscode.OutputChannel | undefined;
-let provider: KimiWebviewProvider | undefined;
+let provider: EchadronWebviewProvider | undefined;
 
 const LEGACY_REAUTH_NOTICE_KEY = "kimi.legacyMigration.reauthNotice.v1";
 const LEGACY_WARNING_NOTICE_KEY = "kimi.legacyMigration.warningNotice.v1";
@@ -21,7 +21,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   const remoteInfo = vscode.env.remoteName ? ` (remote: ${vscode.env.remoteName})` : "";
   log(`Echadron ${VSCodeSettings.getExtensionConfig().version} activating${remoteInfo}`);
 
-  provider = new KimiWebviewProvider(
+  provider = new EchadronWebviewProvider(
     context.extensionUri,
     context,
     () => outputChannel?.show(),
@@ -37,7 +37,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   }
 
   context.subscriptions.push(
-    vscode.workspace.registerTextDocumentContentProvider("kimi-baseline", {
+    vscode.workspace.registerTextDocumentContentProvider("echadron-baseline", {
       provideTextDocumentContent: async (uri) => {
         const sessionId = new URLSearchParams(uri.query).get("sessionId");
         if (!sessionId || !provider) return "";
@@ -64,7 +64,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
           .catch((error) => logError("Unable to update session permission", error));
       }
     }),
-    vscode.window.registerWebviewViewProvider("kimi.webview", provider, {
+    vscode.window.registerWebviewViewProvider("echadron.webview", provider, {
       webviewOptions: { retainContextWhenHidden: true },
     }),
   );
@@ -86,44 +86,49 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   };
 
   const commands: Record<string, () => void | Promise<void>> = {
-    "kimi.clearAllState": async () => {
+    "echadron.clearAllState": async () => {
+      await context.globalState.update("echadron.config", undefined);
+      await context.globalState.update("echadron.mcpServers", undefined);
+      await context.workspaceState.update("echadron.mcpEnabled", undefined);
+      // Clear the pre-Echadron keys too. They are host-owned compatibility
+      // state, not provider identifiers, and should not survive a reset.
       await context.globalState.update("kimi.config", undefined);
       await context.globalState.update("kimi.mcpServers", undefined);
       await context.workspaceState.update("kimi.mcpEnabled", undefined);
       await vscode.window.showInformationMessage("Echadron: Extension UI state cleared.");
     },
-    "kimi.openInTab": () => {
+    "echadron.openInTab": () => {
       provider?.createPanel();
     },
-    "kimi.openInSideBar": async () => {
-      await vscode.commands.executeCommand("kimi.webview.focus");
+    "echadron.openInSideBar": async () => {
+      await vscode.commands.executeCommand("echadron.webview.focus");
     },
-    "kimi.focusInput": async () => {
-      await vscode.commands.executeCommand("kimi.webview.focus");
+    "echadron.focusInput": async () => {
+      await vscode.commands.executeCommand("echadron.webview.focus");
       provider?.broadcast(Events.FocusInput, {});
     },
-    "kimi.insertMention": async () => {
+    "echadron.insertMention": async () => {
       const editor = vscode.window.activeTextEditor;
       if (!editor) {
         await vscode.window.showWarningMessage("No active editor");
         return;
       }
-      await vscode.commands.executeCommand("kimi.webview.focus");
+      await vscode.commands.executeCommand("echadron.webview.focus");
       if (!(await provider?.insertEditorMention(editor.document.uri, editor.selection))) {
         await vscode.window.showWarningMessage("The active file is outside the selected working directory.");
       }
     },
-    "kimi.newConversation": async () => {
-      await vscode.commands.executeCommand("kimi.webview.focus");
+    "echadron.newConversation": async () => {
+      await vscode.commands.executeCommand("echadron.webview.focus");
       provider?.broadcast(Events.NewConversation, {});
     },
-    "kimi.showLogs": () => outputChannel?.show(),
-    "kimi.resetKimi": () => provider?.resetAllWebviews(),
-    "kimi.logout": async () => {
-      await vscode.commands.executeCommand("kimi.webview.focus");
+    "echadron.showLogs": () => outputChannel?.show(),
+    "echadron.reset": () => provider?.resetAllWebviews(),
+    "echadron.logout": async () => {
+      await vscode.commands.executeCommand("echadron.webview.focus");
       await vscode.window.showInformationMessage("Use the logout button in Echadron settings.");
     },
-    "kimi.migrateLegacyData": () => runMigration(true),
+    "echadron.migrateLegacyData": () => runMigration(true),
   };
 
   for (const [id, handler] of Object.entries(commands)) {

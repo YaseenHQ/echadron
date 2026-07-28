@@ -48,9 +48,9 @@ class Bridge {
     if (typeof acquireVsCodeApi === "function") {
       this.vscode = acquireVsCodeApi();
     } else {
-      console.warn("[Kimi Bridge] Running outside VS Code, using mock");
+      console.warn("[Echadron Bridge] Running outside VS Code, using mock");
       this.vscode = {
-        postMessage: (msg) => console.log("[Kimi Mock]", msg),
+        postMessage: (msg) => console.log("[Echadron Mock]", msg),
         getState: () => undefined,
         setState: () => {},
       };

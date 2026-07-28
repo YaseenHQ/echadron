@@ -31,12 +31,12 @@ describe('VSIX package CLI (target planning and validation)', () => {
 
     expect(result.status).toBe(0);
     expect(result.stdout.match(/Would package /g)).toHaveLength(6);
-    expect(result.stdout).toContain('kimi-code-darwin-x64.vsix');
-    expect(result.stdout).toContain('kimi-code-darwin-arm64.vsix');
-    expect(result.stdout).toContain('kimi-code-linux-x64.vsix');
-    expect(result.stdout).toContain('kimi-code-linux-arm64.vsix');
-    expect(result.stdout).toContain('kimi-code-win32-x64.vsix');
-    expect(result.stdout).toContain('kimi-code-win32-arm64.vsix');
+    expect(result.stdout).toContain('echadron-code-darwin-x64.vsix');
+    expect(result.stdout).toContain('echadron-code-darwin-arm64.vsix');
+    expect(result.stdout).toContain('echadron-code-linux-x64.vsix');
+    expect(result.stdout).toContain('echadron-code-linux-arm64.vsix');
+    expect(result.stdout).toContain('echadron-code-win32-x64.vsix');
+    expect(result.stdout).toContain('echadron-code-win32-arm64.vsix');
   });
 
   it('accepts a Windows ARM target when the output path contains spaces', async () => {
@@ -54,7 +54,7 @@ describe('VSIX package CLI (target planning and validation)', () => {
 
     expect(result.status).toBe(0);
     expect(result.stdout.match(/Would package /g)).toHaveLength(1);
-    expect(result.stdout).toContain('kimi-code-win32-arm64.vsix');
+    expect(result.stdout).toContain('echadron-code-win32-arm64.vsix');
   });
 
   it('rejects an unknown target before a build starts', () => {
@@ -222,11 +222,11 @@ async function makeVsixFixture(target: string): Promise<string> {
       "/** @type {import('../types/index').Extension} */\nimport * as vscode from 'vscode';\nexport function activate() { return vscode; }\n",
     ),
     writeFile(join(distDir, 'webview.js'), 'globalThis.__kimiWebview = true;\n'),
-    writeFile(join(distDir, 'kimi-banner-dark.svg'), '<svg />'),
-    writeFile(join(distDir, 'kimi-banner-light.svg'), '<svg />'),
-    writeFile(join(distDir, 'kimi-logo.png'), 'fixture'),
-    writeFile(join(resourcesDir, 'kimi-icon-storefront.png'), 'fixture'),
-    writeFile(join(resourcesDir, 'kimi-icon.svg'), '<svg />'),
+    writeFile(join(distDir, 'echadron-banner-dark.svg'), '<svg />'),
+    writeFile(join(distDir, 'echadron-banner-light.svg'), '<svg />'),
+    writeFile(join(distDir, 'echadron-icon-storefront.png'), 'fixture'),
+    writeFile(join(resourcesDir, 'echadron-icon-storefront.png'), 'fixture'),
+    writeFile(join(resourcesDir, 'echadron-icon.svg'), '<svg />'),
   ]);
   return root;
 }

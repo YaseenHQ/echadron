@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { IconLoader2, IconCopy, IconCheck, IconExternalLink, IconArrowRight } from "@tabler/icons-react";
 import { Button } from "@/components/ui/button";
-import { KimiMascot } from "./KimiMascot";
+import { EchadronMascot } from "./EchadronMascot";
 import { bridge, Events } from "@/services";
 import {
   AlertDialog,
@@ -85,7 +85,7 @@ export function LoginScreen({ onLoginSuccess, onSkip }: LoginScreenProps) {
     return (
       <div className="h-full flex items-center justify-center p-6">
         <div className="max-w-sm w-full text-center space-y-6">
-          <KimiMascot className="h-12 mx-auto" />
+          <EchadronMascot className="h-12 mx-auto" />
           <div className="space-y-2">
             <div className="inline-flex items-center gap-2 text-blue-500">
               <IconLoader2 className="size-5 animate-spin" />
@@ -124,7 +124,7 @@ export function LoginScreen({ onLoginSuccess, onSkip }: LoginScreenProps) {
     <>
       <div className="h-full flex items-center justify-center p-6">
         <div className="max-w-sm w-full text-center space-y-6">
-          <KimiMascot className="h-12 mx-auto" />
+          <EchadronMascot className="h-12 mx-auto" />
           <div className="space-y-2">
             <h1 className="text-lg font-semibold">Welcome to Echadron</h1>
             <div className="text-left space-y-2">

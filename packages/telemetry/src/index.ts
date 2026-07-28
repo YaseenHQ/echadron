@@ -45,3 +45,8 @@ export { normalizeRemote } from './remote';
 
 export type { TelemetryPrimitive, TelemetryProperties } from './types';
 export type { TelemetryClient, TelemetryContextIds } from './client';
+export {
+  LEGACY_TELEMETRY_ENDPOINT_ENV,
+  TELEMETRY_ENDPOINT,
+  TELEMETRY_ENDPOINT_ENV,
+} from './transport';

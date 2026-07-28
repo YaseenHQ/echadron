@@ -45,7 +45,7 @@ describe('resolveMcpJsonPaths', () => {
 
     expect(paths.user).toBe('/home/user/.kimi-code/mcp.json');
     expect(paths.projectRoot).toBe(join(repoRoot, '.mcp.json'));
-    expect(paths.project).toBe(join(cwd, '.kimi-code', 'mcp.json'));
+    expect(paths.project).toBe(join(cwd, '.echadron', 'mcp.json'));
   });
 });
 

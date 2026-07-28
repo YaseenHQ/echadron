@@ -16,8 +16,9 @@ const scriptDir = dirname(fileURLToPath(import.meta.url));
 const appRoot = resolve(scriptDir, '..');
 const repoRoot = resolve(appRoot, '../..');
 const env = { ...process.env };
-env.IMPERIUM_HOME ??= join(homedir(), '.imperium');
-env.KIMI_CODE_HOME = env.IMPERIUM_HOME;
+env.ECHADRON_HOME ??= join(homedir(), '.echadron');
+env.IMPERIUM_HOME ??= env.ECHADRON_HOME;
+env.KIMI_CODE_HOME ??= env.ECHADRON_HOME;
 
 const child = spawn(
   process.execPath,

@@ -49,6 +49,7 @@ export async function initializeServerTelemetry(
   await config.ready;
   if (config.get('telemetry') === false || isTelemetryDisabledByEnv(core)) return {};
   const service = core.accessor.get(ITelemetryService);
+  const bootstrap = core.accessor.get(IBootstrapService);
 
   const auth = core.accessor.get(IOAuthToolkit);
   const appender = createCloudAppender(core.accessor, {
@@ -58,6 +59,9 @@ export async function initializeServerTelemetry(
     model: config.get<string>('defaultModel') ?? undefined,
     getAccessToken: async () =>
       (await auth.getCachedAccessToken(KIMI_CODE_PROVIDER_NAME)) ?? null,
+    endpoint:
+      bootstrap.getEnv('ECHADRON_TELEMETRY_ENDPOINT') ??
+      bootstrap.getEnv('KIMI_TELEMETRY_ENDPOINT'),
   });
   const registration = service.addAppender(appender);
   try {

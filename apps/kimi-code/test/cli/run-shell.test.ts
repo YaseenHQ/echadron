@@ -20,7 +20,7 @@ const mocks = vi.hoisted(() => {
     readonly fallback: TuiConfigFallback;
 
     constructor(fallback: TuiConfigFallback) {
-      super('Invalid TUI config in ~/.imperium/tui.toml; using defaults.');
+      super('Invalid TUI config in ~/.echadron/tui.toml; using defaults.');
       this.fallback = fallback;
     }
   }
@@ -483,7 +483,7 @@ describe('runShell', () => {
     expect(mocks.detectTerminalTheme).toHaveBeenCalledOnce();
     const [, , startupInput] = mocks.kimiTuiConstructor.mock.calls[0]!;
     expect(startupInput).toMatchObject({
-      startupNotice: 'Invalid TUI config in ~/.imperium/tui.toml; using defaults.',
+      startupNotice: 'Invalid TUI config in ~/.echadron/tui.toml; using defaults.',
       tuiConfig: {
         theme: 'auto',
         editorCommand: 'vim',
@@ -771,7 +771,7 @@ describe('runShell', () => {
     });
     mocks.detectPendingMigration.mockResolvedValue({ totalSessions: 1 });
     mocks.harnessGetConfig.mockRejectedValue(
-      new Error('Invalid configuration in ~/.imperium/config.toml'),
+      new Error('Invalid configuration in ~/.echadron/config.toml'),
     );
 
     // A broken config.toml must fail loudly — `kimi migrate` must not swallow

@@ -13,7 +13,7 @@ import {
 
 import { bridge } from "@/services";
 import { Button } from "@/components/ui/button";
-import { KimiMascot } from "./KimiMascot";
+import { EchadronMascot } from "./EchadronMascot";
 
 interface Props {
   type: "loading" | "runtime-error" | "no-models" | "no-workspace";
@@ -103,7 +103,7 @@ export function ConfigErrorScreen({ type, errorMessage, onRefresh, onBackToLogin
     return (
       <div className="h-full flex items-center justify-center p-6">
         <div className="text-center space-y-4">
-          <KimiMascot className="h-10 mx-auto opacity-50" />
+          <EchadronMascot className="h-10 mx-auto opacity-50" />
           <div className="inline-flex items-center gap-2 text-muted-foreground">
             <IconLoader2 className="size-4 animate-spin" />
             <span className="text-sm">Starting Echadron...</span>
@@ -117,7 +117,7 @@ export function ConfigErrorScreen({ type, errorMessage, onRefresh, onBackToLogin
     return (
       <div className="h-full flex items-center justify-center p-6">
         <div className="max-w-sm text-center space-y-6">
-          <KimiMascot className="h-10 mx-auto opacity-50" />
+          <EchadronMascot className="h-10 mx-auto opacity-50" />
           <div className="space-y-2">
             <div className="inline-flex items-center gap-2 text-amber-500">
               <IconFolderOpen className="size-5" />
@@ -143,7 +143,7 @@ export function ConfigErrorScreen({ type, errorMessage, onRefresh, onBackToLogin
     return (
       <div className="h-full flex items-center justify-center p-6">
         <div className="max-w-sm text-center space-y-6">
-          <KimiMascot className="h-10 mx-auto opacity-50" />
+          <EchadronMascot className="h-10 mx-auto opacity-50" />
           <NoModelsContent onRefresh={onRefresh} onBackToLogin={onBackToLogin} />
         </div>
       </div>
@@ -153,7 +153,7 @@ export function ConfigErrorScreen({ type, errorMessage, onRefresh, onBackToLogin
   return (
     <div className="flex-1 min-h-0 overflow-y-auto p-6">
       <div className="max-w-sm mx-auto text-center space-y-6">
-        <KimiMascot className="h-10 mx-auto opacity-50" />
+        <EchadronMascot className="h-10 mx-auto opacity-50" />
         <div className="space-y-2">
           <div className="inline-flex items-center gap-2 text-red-500">
             <IconAlertTriangle className="size-5" />

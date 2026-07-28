@@ -81,7 +81,7 @@ const openFileDiff: Handler<FilePathParams, { ok: boolean }> = async ({ filePath
   if (!sessionId || resolved === undefined) return { ok: false };
 
   const baselineUri = vscode.Uri.from({
-    scheme: "kimi-baseline",
+    scheme: "echadron-baseline",
     path: `/${resolved.relativePath}`,
     query: new URLSearchParams({ sessionId }).toString(),
   });

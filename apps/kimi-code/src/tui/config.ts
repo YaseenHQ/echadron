@@ -15,7 +15,7 @@ import { z } from 'zod';
 import { getDataDir } from '#/utils/paths';
 
 export const INVALID_TUI_CONFIG_MESSAGE =
-  'Invalid TUI config in ~/.imperium/tui.toml; using defaults.';
+  'Invalid TUI config in ~/.echadron/tui.toml; using defaults.';
 
 export const TuiThemeSchema = z.string();
 
@@ -149,9 +149,9 @@ export function normalizeTuiConfig(config: TuiConfigFileShape): TuiConfig {
 }
 
 export function renderTuiConfig(config: TuiConfig): string {
-  return `# ~/.imperium/tui.toml
+  return `# ~/.echadron/tui.toml
 # Client preferences for Echadron.
-# Agent/runtime settings stay in ~/.imperium/config.toml.
+# Agent/runtime settings stay in ~/.echadron/config.toml.
 
 theme = "${escapeTomlBasicString(config.theme)}" # "auto" | "dark" | "light" | custom theme name
 disable_paste_burst = ${String(config.disablePasteBurst)} # true disables non-bracketed paste-burst fallback

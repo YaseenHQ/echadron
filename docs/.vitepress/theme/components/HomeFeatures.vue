@@ -59,7 +59,7 @@ const features = computed<Feature[]>(() => isZh.value
       {
         icon: '🧩',
         title: 'Agent Skills',
-        desc: '把团队的工作流程封装成 Kimi 随时调用的技能，不必每次都重新解释。',
+        desc: '把团队的工作流程封装成 Echadron 随时调用的技能，不必每次都重新解释。',
         href: '/zh/customization/skills',
       },
       {
@@ -85,7 +85,7 @@ const features = computed<Feature[]>(() => isZh.value
       {
         icon: '🧩',
         title: 'Agent Skills',
-        desc: "Package your team's workflows into skills Kimi can invoke on demand.",
+        desc: "Package your team's workflows into skills Echadron can invoke on demand.",
         href: '/en/customization/skills',
       },
       {
@@ -122,36 +122,36 @@ const ctaText = computed(() => isZh.value ? '了解' : 'Learn more')
 </script>
 
 <template>
-  <section class="KimiHome__section KimiHighlights">
-    <h2 class="KimiHome__sectionTitle">{{ highlightsTitle }}</h2>
-    <p class="KimiHome__sectionLede">{{ highlightsLede }}</p>
-    <div class="KimiHighlights__grid">
+  <section class="EchadronHome__section EchadronHighlights">
+    <h2 class="EchadronHome__sectionTitle">{{ highlightsTitle }}</h2>
+    <p class="EchadronHome__sectionLede">{{ highlightsLede }}</p>
+    <div class="EchadronHighlights__grid">
       <div
         v-for="h in highlights"
         :key="h.title"
-        class="KimiHighlights__card"
+        class="EchadronHighlights__card"
       >
-        <div class="KimiHighlights__icon" aria-hidden="true">{{ h.icon }}</div>
-        <h3 class="KimiHighlights__title">{{ h.title }}</h3>
-        <p class="KimiHighlights__desc">{{ h.desc }}</p>
+        <div class="EchadronHighlights__icon" aria-hidden="true">{{ h.icon }}</div>
+        <h3 class="EchadronHighlights__title">{{ h.title }}</h3>
+        <p class="EchadronHighlights__desc">{{ h.desc }}</p>
       </div>
     </div>
   </section>
 
-  <section class="KimiHome__section KimiFeatures">
-    <h2 class="KimiHome__sectionTitle">{{ featuresTitle }}</h2>
-    <p class="KimiHome__sectionLede">{{ featuresLede }}</p>
-    <div class="KimiFeatures__grid">
+  <section class="EchadronHome__section EchadronFeatures">
+    <h2 class="EchadronHome__sectionTitle">{{ featuresTitle }}</h2>
+    <p class="EchadronHome__sectionLede">{{ featuresLede }}</p>
+    <div class="EchadronFeatures__grid">
       <a
         v-for="f in features"
         :key="f.title"
-        class="KimiFeatures__card"
+        class="EchadronFeatures__card"
         :href="withBase(f.href)"
       >
-        <div class="KimiFeatures__icon" aria-hidden="true">{{ f.icon }}</div>
-        <h3 class="KimiFeatures__title">{{ f.title }}</h3>
-        <p class="KimiFeatures__desc">{{ f.desc }}</p>
-        <span class="KimiFeatures__cta">
+        <div class="EchadronFeatures__icon" aria-hidden="true">{{ f.icon }}</div>
+        <h3 class="EchadronFeatures__title">{{ f.title }}</h3>
+        <p class="EchadronFeatures__desc">{{ f.desc }}</p>
+        <span class="EchadronFeatures__cta">
           {{ ctaText }}
           <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
             <path d="M6 3l5 5-5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
@@ -164,41 +164,41 @@ const ctaText = computed(() => isZh.value ? '了解' : 'Learn more')
 
 <style scoped>
 /* === Highlights (top section: non-clickable product attributes) === */
-.KimiHighlights__grid {
+.EchadronHighlights__grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
 }
 
 @media (max-width: 720px) {
-  .KimiHighlights__grid {
+  .EchadronHighlights__grid {
     grid-template-columns: 1fr;
   }
 }
 
-.KimiHighlights__card {
+.EchadronHighlights__card {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   padding: 22px 22px 24px;
-  border-radius: var(--kimi-radius-card);
+  border-radius: var(--echadron-radius-card);
   border: 1px solid var(--vp-c-divider);
   background: var(--vp-c-bg-soft);
 }
 
-.KimiHighlights__icon {
+.EchadronHighlights__icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 36px;
   height: 36px;
   border-radius: 10px;
-  background: var(--kimi-brand-soft);
+  background: var(--echadron-brand-soft);
   font-size: 18px;
   margin-bottom: 14px;
 }
 
-.KimiHighlights__title {
+.EchadronHighlights__title {
   font-size: 16px;
   font-weight: 700;
   letter-spacing: -0.01em;
@@ -206,7 +206,7 @@ const ctaText = computed(() => isZh.value ? '了解' : 'Learn more')
   color: var(--vp-c-text-1);
 }
 
-.KimiHighlights__desc {
+.EchadronHighlights__desc {
   font-size: 14px;
   line-height: 1.55;
   color: var(--vp-c-text-2);
@@ -214,60 +214,60 @@ const ctaText = computed(() => isZh.value ? '了解' : 'Learn more')
 }
 
 /* === Features (bottom section: clickable extension points) === */
-.KimiFeatures__grid {
+.EchadronFeatures__grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 20px;
 }
 
 @media (max-width: 1024px) {
-  .KimiFeatures__grid {
+  .EchadronFeatures__grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 @media (max-width: 640px) {
-  .KimiFeatures__grid {
+  .EchadronFeatures__grid {
     grid-template-columns: 1fr;
   }
 }
 
-.KimiFeatures__card {
+.EchadronFeatures__card {
   position: relative;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   padding: 28px 24px 26px;
-  border-radius: var(--kimi-radius-card);
+  border-radius: var(--echadron-radius-card);
   border: 1px solid var(--vp-c-divider);
   background: var(--vp-c-bg);
   color: var(--vp-c-text-1);
   text-decoration: none;
-  transition: transform var(--kimi-transition), border-color var(--kimi-transition),
-              box-shadow var(--kimi-transition), background var(--kimi-transition);
+  transition: transform var(--echadron-transition), border-color var(--echadron-transition),
+              box-shadow var(--echadron-transition), background var(--echadron-transition);
   overflow: hidden;
 }
 
-.KimiFeatures__card::before {
+.EchadronFeatures__card::before {
   content: '';
   position: absolute;
   inset: 0;
-  background: var(--kimi-brand-gradient-soft);
+  background: var(--echadron-brand-gradient-soft);
   opacity: 0;
-  transition: opacity var(--kimi-transition);
+  transition: opacity var(--echadron-transition);
   pointer-events: none;
   border-radius: inherit;
 }
 
-.KimiFeatures__card:hover {
+.EchadronFeatures__card:hover {
   transform: translateY(-3px);
   border-color: var(--vp-c-brand-1);
   box-shadow: var(--vp-shadow-3);
 }
-.KimiFeatures__card:hover::before {
+.EchadronFeatures__card:hover::before {
   opacity: 1;
 }
 
-.KimiFeatures__icon {
+.EchadronFeatures__icon {
   position: relative;
   z-index: 1;
   display: inline-flex;
@@ -276,12 +276,12 @@ const ctaText = computed(() => isZh.value ? '了解' : 'Learn more')
   width: 44px;
   height: 44px;
   border-radius: 12px;
-  background: var(--kimi-brand-soft);
+  background: var(--echadron-brand-soft);
   font-size: 22px;
   margin-bottom: 18px;
 }
 
-.KimiFeatures__title {
+.EchadronFeatures__title {
   position: relative;
   z-index: 1;
   font-size: 18px;
@@ -291,7 +291,7 @@ const ctaText = computed(() => isZh.value ? '了解' : 'Learn more')
   color: var(--vp-c-text-1);
 }
 
-.KimiFeatures__desc {
+.EchadronFeatures__desc {
   position: relative;
   z-index: 1;
   font-size: 14.5px;
@@ -300,7 +300,7 @@ const ctaText = computed(() => isZh.value ? '了解' : 'Learn more')
   margin: 0 0 20px;
 }
 
-.KimiFeatures__cta {
+.EchadronFeatures__cta {
   position: relative;
   z-index: 1;
   display: inline-flex;
@@ -310,10 +310,10 @@ const ctaText = computed(() => isZh.value ? '了解' : 'Learn more')
   font-weight: 600;
   color: var(--vp-c-brand-1);
   margin-top: auto;
-  transition: transform var(--kimi-transition);
+  transition: transform var(--echadron-transition);
 }
 
-.KimiFeatures__card:hover .KimiFeatures__cta {
+.EchadronFeatures__card:hover .EchadronFeatures__cta {
   transform: translateX(3px);
 }
 </style>

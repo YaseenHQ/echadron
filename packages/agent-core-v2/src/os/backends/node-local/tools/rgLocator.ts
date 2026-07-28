@@ -3,7 +3,7 @@
  *
  * Resolves the `rg` command used by Glob and Grep, preferring a file found on
  * PATH, then the vendor hook, then the app cache, and finally bootstrapping a
- * pinned ripgrep archive into `<KIMI_CODE_HOME|~/.kimi-code>/bin` when the
+ * pinned ripgrep archive into `<ECHADRON_HOME|~/.echadron>/bin` when the
  * caller permits it. File lookup intentionally avoids spawning `rg --version`
  * so tool resolution has the same observable shape as v1.
  */
@@ -71,7 +71,7 @@ function getShareDir(): string {
     process.env['IMPERIUM_HOME'] ??
     process.env['KIMI_CODE_HOME'];
   if (override !== undefined && override !== '') return override;
-  return join(homedir(), '.kimi-code');
+  return join(homedir(), '.echadron');
 }
 
 export function getShareBinRgPath(): string {

@@ -510,9 +510,9 @@ describe('sessionExport', () => {
       webLog,
     });
 
-    expect(result.entries).toContain('logs/kimi-web.jsonl');
-    expect(result.manifest.webLogPath).toBe('logs/kimi-web.jsonl');
-    await expect(readZipEntry(outputPath, 'logs/kimi-web.jsonl')).resolves.toEqual(
+    expect(result.entries).toContain('logs/echadron-web.jsonl');
+    expect(result.manifest.webLogPath).toBe('logs/echadron-web.jsonl');
+    await expect(readZipEntry(outputPath, 'logs/echadron-web.jsonl')).resolves.toEqual(
       Buffer.from(webLog, 'utf8'),
     );
   });

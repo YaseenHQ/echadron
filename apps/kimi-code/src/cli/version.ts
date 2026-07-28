@@ -1,5 +1,5 @@
 /**
- * Kimi Code version helpers.
+ * Echadron version helpers.
  *
  * `getVersion` reads the host CLI's `package.json#version`.
  */

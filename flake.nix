@@ -1,5 +1,5 @@
 {
-  description = "Kimi Code CLI";
+  description = "Echadron multi-provider agent harness";
 
   inputs = {
     # Pinned to the 25.11 release channel because nixpkgs-unstable currently
@@ -81,7 +81,7 @@
         ./apps/kimi-code
         ./apps/vscode
         ./apps/kimi-inspect
-        ./apps/kimi-web
+        ./apps/echadron-web
         ./apps/vis
         ./apps/vis/server
         ./apps/vis/web
@@ -105,10 +105,10 @@
         "@moonshot-ai/kimi-telemetry"
         "@moonshot-ai/transcript"
         "@moonshot-ai/tree-sitter-bash"
-        "@moonshot-ai/kimi-code"
-        "kimi-code"
+        "@yaseenhq/echadron"
+        "echadron-code"
         "@moonshot-ai/kimi-inspect"
-        "@moonshot-ai/kimi-web"
+        "@yaseenhq/echadron-web"
         "@moonshot-ai/vis"
         "@moonshot-ai/vis-server"
         "@moonshot-ai/vis-web"
@@ -132,10 +132,10 @@
             else if pkgs.stdenv.hostPlatform.isDarwin then
               "darwin-x64"
             else
-              throw "Unsupported Kimi Code native target for ${pkgs.stdenv.hostPlatform.system}";
+              throw "Unsupported Echadron native target for ${pkgs.stdenv.hostPlatform.system}";
 
-          kimi-code = pkgs.stdenv.mkDerivation (finalAttrs: {
-            pname = "kimi-code";
+          echadron = pkgs.stdenv.mkDerivation (finalAttrs: {
+            pname = "echadron";
             version = appPackageJson.version;
 
             src = lib.fileset.toSource {
@@ -200,12 +200,12 @@
                     "// runVerifyStep skipped in nix sandbox (sigtool lacks -dv)"
               ''}
               # The SEA blob step (scripts/native/02-sea-blob.mjs) embeds the
-              # Kimi web assets from apps/kimi-code/dist-web and fails if that
+              # Echadron web assets from apps/kimi-code/dist-web and fails if that
               # directory is missing. Build the web app and stage its assets
               # before producing the native executable.
-              pnpm --filter=@moonshot-ai/kimi-web run build
+              pnpm --filter=@yaseenhq/echadron-web run build
               node apps/kimi-code/scripts/copy-web-assets.mjs
-              pnpm --filter=@moonshot-ai/kimi-code run build:native:sea
+              pnpm --filter=@yaseenhq/echadron run build:native:sea
               runHook postBuild
             '';
 
@@ -213,37 +213,37 @@
               runHook preInstall
 
               install -Dm755 \
-                "apps/kimi-code/dist-native/bin/${nativeTarget}/kimi" \
-                "$out/bin/kimi"
+                "apps/kimi-code/dist-native/bin/${nativeTarget}/echadron" \
+                "$out/bin/echadron"
 
               runHook postInstall
             '';
 
             postInstall = ''
-              wrapProgram $out/bin/kimi --prefix PATH : ${lib.makeBinPath [ pkgs.ripgrep pkgs.fd ]}
+              wrapProgram $out/bin/echadron --prefix PATH : ${lib.makeBinPath [ pkgs.ripgrep pkgs.fd ]}
             '';
 
             meta = {
-              description = "Kimi Code CLI";
-              homepage = "https://github.com/MoonshotAI/kimi-code";
+              description = "Echadron multi-provider agent harness";
+              homepage = "https://github.com/YaseenHQ/kimi";
               license = lib.licenses.mit;
-              mainProgram = "kimi";
+              mainProgram = "echadron";
               platforms = systems;
             };
           });
         in
         {
-          inherit kimi-code;
-          default = kimi-code;
+          inherit echadron;
+          default = echadron;
         }
       );
 
       apps = forAllSystems (pkgs: {
-        kimi-code = {
+        echadron = {
           type = "app";
-          program = "${self.packages.${pkgs.system}.kimi-code}/bin/kimi";
+          program = "${self.packages.${pkgs.system}.echadron}/bin/echadron";
         };
-        default = self.apps.${pkgs.system}.kimi-code;
+        default = self.apps.${pkgs.system}.echadron;
       });
 
       devShells = forAllSystems (pkgs: {

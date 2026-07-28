@@ -27,7 +27,7 @@ export default defineConfig({
       "import { homedir as __echadronHomedir } from 'node:os';",
       'const __filename = __cjsShimFileURLToPath(import.meta.url);',
       'const __dirname = __cjsShimDirname(__filename);',
-      "process.env.ECHADRON_HOME ??= __echadronJoin(__echadronHomedir(), '.imperium');",
+      "process.env.ECHADRON_HOME ??= __echadronJoin(__echadronHomedir(), '.echadron');",
       "process.env.IMPERIUM_HOME ??= process.env.ECHADRON_HOME;",
       "process.env.KIMI_CODE_HOME ??= process.env.ECHADRON_HOME;",
     ].join('\n'),

@@ -48,12 +48,49 @@ const ModelsDevCacheSchema: z.ZodType<ModelsDevCache> = z
     checkedAt: z.string().min(1),
     etag: z.string().optional(),
     lastModified: z.string().optional(),
-    catalog: z.record(z.string(), z.unknown()).transform((value) => value as Catalog),
+    // The upstream document is untrusted JSON. Keep the cache useful when a
+    // provider entry is malformed, but never let malformed nested values
+    // reach catalogProviderModels (which expects provider/model objects).
+    catalog: z.unknown().transform((value) => normalizeCatalog(value)),
   })
   .strict();
 
-function isCatalog(value: unknown): value is Catalog {
+function isCatalog(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function isSafeObjectKey(key: string): boolean {
+  return key !== '__proto__' && key !== 'constructor' && key !== 'prototype';
+}
+
+/**
+ * Keep only object-shaped provider/model entries from the external catalog.
+ * This is intentionally a structural filter rather than a strict schema:
+ * models.dev adds metadata over time, and unknown fields must remain intact.
+ */
+function normalizeCatalog(value: unknown): Catalog {
+  if (!isCatalog(value)) return {} as Catalog;
+
+  const catalog: Record<string, unknown> = {};
+  for (const [providerId, rawProvider] of Object.entries(value)) {
+    if (!isSafeObjectKey(providerId) || !isCatalog(rawProvider)) continue;
+
+    const provider: Record<string, unknown> = { ...rawProvider };
+    const rawModels = rawProvider['models'];
+    if (rawModels !== undefined) {
+      if (!isCatalog(rawModels)) {
+        delete provider['models'];
+      } else {
+        const models: Record<string, unknown> = {};
+        for (const [modelId, rawModel] of Object.entries(rawModels)) {
+          if (isSafeObjectKey(modelId) && isCatalog(rawModel)) models[modelId] = rawModel;
+        }
+        provider['models'] = models;
+      }
+    }
+    catalog[providerId] = provider;
+  }
+  return catalog as Catalog;
 }
 
 /** Read a valid persisted snapshot, ignoring a missing/corrupt cache. */
@@ -132,7 +169,7 @@ export async function refreshModelsDevCatalog(
     ...(response.headers.get('last-modified') === null
       ? {}
       : { lastModified: response.headers.get('last-modified')! }),
-    catalog: payload,
+    catalog: normalizeCatalog(payload),
   };
   await writeJsonFile(filePath, ModelsDevCacheSchema, cache);
   return { status: 'updated', cache };

@@ -16,6 +16,7 @@ import { log } from '@moonshot-ai/kimi-code-sdk';
 import { DEFAULT_OAUTH_PROVIDER_NAME, PRODUCT_NAME } from '../constant/kimi-tui';
 import type { LoginProgressSpinnerHandle } from '../types';
 import { formatErrorMessage } from '../utils/event-payload';
+import { getDataDir } from '../../utils/paths';
 import type { SlashCommandHost } from './dispatch';
 import {
   promptApiKey,
@@ -173,7 +174,7 @@ export async function handleOpenPlatformLogin(
   const platformName = consoleHost.length > 0 ? `Kimi Platform (${consoleHost})` : 'Kimi Platform';
   const subtitleLines = [
     `${'base_url'.padEnd(12)}${platform.baseUrl}`,
-    `${'saved to'.padEnd(12)}~/.kimi-code/config.toml`,
+    `${'saved to'.padEnd(12)}${getDataDir()}/config.toml`,
   ];
   const apiKey = await promptApiKey(host, platformName, subtitleLines);
   if (apiKey === undefined) return;

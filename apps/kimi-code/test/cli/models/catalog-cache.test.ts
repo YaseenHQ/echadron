@@ -81,4 +81,33 @@ describe('Echadron models.dev catalog cache', () => {
     await writeFile(filePath, '{not-json', 'utf8');
     await expect(readModelsDevCache(filePath)).resolves.toBeUndefined();
   });
+
+  it('drops malformed provider and model entries while preserving valid metadata', async () => {
+    const filePath = await cachePath();
+    const fetchImpl = vi.fn<typeof fetch>().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          openai: {
+            name: 'OpenAI',
+            models: {
+              'gpt-test': { id: 'gpt-test', name: 'GPT Test' },
+              'bad-model': null,
+            },
+          },
+          'bad-provider': null,
+          'bad-models': { name: 'Ignored models value', models: [] },
+        }),
+      ),
+    );
+
+    const result = await refreshModelsDevCatalog({ filePath, force: true, fetchImpl });
+    expect(Object.keys(result.cache.catalog)).toEqual(['openai', 'bad-models']);
+    expect(result.cache.catalog['openai']?.models).toEqual({
+      'gpt-test': { id: 'gpt-test', name: 'GPT Test' },
+    });
+    expect(result.cache.catalog['bad-models']?.models).toBeUndefined();
+
+    // The normalized snapshot is also what a later process reads from disk.
+    await expect(readModelsDevCache(filePath)).resolves.toEqual(result.cache);
+  });
 });

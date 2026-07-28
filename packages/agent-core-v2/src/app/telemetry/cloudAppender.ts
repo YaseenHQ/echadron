@@ -59,6 +59,8 @@ export interface CloudAppenderHostOptions {
   readonly buildSha?: string;
   readonly sessionId?: string;
   readonly getAccessToken?: () => string | null | Promise<string | null>;
+  /** Optional endpoint override for standalone hosts; defaults to the legacy service. */
+  readonly endpoint?: string;
 }
 
 export function createCloudAppender(

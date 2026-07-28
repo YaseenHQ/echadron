@@ -10,7 +10,7 @@ import { VSCodeSettings } from "./config/vscode-settings";
 import { handlers, type BroadcastFn, type HandlerContext, type ReloadWebviewFn, type ShowLogsFn } from "./handlers";
 import { BaselineManager, type BaselineSession } from "./managers/baseline.manager";
 import { FileManager } from "./managers/file.manager";
-import { KimiRuntime } from "./runtime/kimi-runtime";
+import { EchadronRuntime } from "./runtime/echadron-runtime";
 import type { SessionRuntime } from "./runtime/session-runtime";
 import { areSameFsPath } from "./utils/fs-path";
 import {
@@ -24,7 +24,7 @@ import {
 
 export class BridgeHandler {
   readonly baselineManager: BaselineManager;
-  readonly runtime: KimiRuntime;
+  readonly runtime: EchadronRuntime;
 
   private readonly customWorkDirs = new Map<string, string>();
   private readonly fileManager: FileManager;
@@ -37,7 +37,16 @@ export class BridgeHandler {
     private readonly showLogs: ShowLogsFn,
     private readonly writeLog: (message: string) => void,
   ) {
-    this.runtime = new KimiRuntime({
+    // Prefer the Echadron host namespace when a launcher supplies one. The
+    // SDK still accepts KIMI_CODE_HOME as its compatibility fallback, but the
+    // VS Code host must not silently create a second home when ECHADRON_HOME
+    // is already configured.
+    const homeDir =
+      process.env["ECHADRON_HOME"]?.trim() ||
+      process.env["ECHADRON_CODE_HOME"]?.trim() ||
+      process.env["IMPERIUM_HOME"]?.trim();
+    this.runtime = new EchadronRuntime({
+      ...(homeDir === undefined || homeDir.length === 0 ? {} : { homeDir }),
       version: VSCodeSettings.getExtensionConfig().version,
       broadcast,
       captureBaseline: (session, filePath, webviewIds) => {
@@ -290,14 +299,14 @@ export class BridgeHandler {
   private trace(id: string, method: string, durationMs: number, ok: boolean): void {
     // Deliberately exclude params, prompt text, file paths, and credentials.
     const line = `[bridge] id=${id} method=${method} ok=${String(ok)} durationMs=${durationMs}`;
-    console.debug(`[kimi-vscode] ${line}`);
+    console.debug(`[echadron-vscode] ${line}`);
     this.writeLog(line);
   }
 
   private logRuntimeError(message: string, error?: unknown): void {
     const detail = errorDetail(error);
     const line = `${message}${detail ? `: ${detail}` : ""}`;
-    console.error(`[kimi-vscode] ${line}`);
+    console.error(`[echadron-vscode] ${line}`);
     this.writeLog(line);
   }
 }

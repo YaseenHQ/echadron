@@ -72,6 +72,73 @@ importers:
         specifier: 4.1.4
         version: 4.1.4(@types/node@22.19.17)(@vitest/coverage-v8@4.1.4)(jsdom@25.0.1)(msw@2.15.0(@types/node@22.19.17)(typescript@6.0.2))(vite@8.0.8(@types/node@22.19.17)(esbuild@0.27.7)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.8.3))
 
+  apps/echadron-web:
+    dependencies:
+      '@chenglou/pretext':
+        specifier: 0.0.8
+        version: 0.0.8
+      '@fontsource-variable/inter':
+        specifier: 5.2.8
+        version: 5.2.8
+      '@fontsource-variable/jetbrains-mono':
+        specifier: ^5.2.8
+        version: 5.2.8
+      '@xterm/addon-fit':
+        specifier: ^0.11.0
+        version: 0.11.0
+      '@xterm/xterm':
+        specifier: ^6.0.0
+        version: 6.0.0
+      katex:
+        specifier: ^0.17.0
+        version: 0.17.0
+      markstream-vue:
+        specifier: ^1.0.7
+        version: 1.0.7(katex@0.17.0)(mermaid@11.15.0)(stream-markdown@0.0.16(react@19.2.5)(shiki@4.3.0)(vue@3.5.35(typescript@6.0.2)))(vue-i18n@11.4.5(vue@3.5.35(typescript@6.0.2)))(vue@3.5.35(typescript@6.0.2))
+      mermaid:
+        specifier: ^11.15.0
+        version: 11.15.0
+      shiki:
+        specifier: ^4.3.0
+        version: 4.3.0
+      stream-markdown:
+        specifier: ^0.0.16
+        version: 0.0.16(react@19.2.5)(shiki@4.3.0)(vue@3.5.35(typescript@6.0.2))
+      vue:
+        specifier: ^3.5.35
+        version: 3.5.35(typescript@6.0.2)
+      vue-i18n:
+        specifier: ^11.4.5
+        version: 11.4.5(vue@3.5.35(typescript@6.0.2))
+    devDependencies:
+      '@iconify-json/ri':
+        specifier: ^1.2.10
+        version: 1.2.10
+      '@iconify-json/tabler':
+        specifier: ^1.2.35
+        version: 1.2.35
+      '@vitejs/plugin-vue':
+        specifier: ^5.2.4
+        version: 5.2.4(vite@6.4.2(@types/node@22.19.17)(jiti@2.6.1)(lightningcss@1.32.0)(tsx@4.21.0)(yaml@2.8.3))(vue@3.5.35(typescript@6.0.2))
+      typescript:
+        specifier: 6.0.2
+        version: 6.0.2
+      unplugin-icons:
+        specifier: ^23.0.0
+        version: 23.0.1(@vue/compiler-sfc@3.5.35)
+      vite:
+        specifier: ^6.3.3
+        version: 6.4.2(@types/node@22.19.17)(jiti@2.6.1)(lightningcss@1.32.0)(tsx@4.21.0)(yaml@2.8.3)
+      vitest:
+        specifier: 4.1.4
+        version: 4.1.4(@types/node@22.19.17)(@vitest/coverage-v8@4.1.4)(jsdom@25.0.1)(msw@2.15.0(@types/node@22.19.17)(typescript@6.0.2))(vite@6.4.2(@types/node@22.19.17)(jiti@2.6.1)(lightningcss@1.32.0)(tsx@4.21.0)(yaml@2.8.3))
+      vue-tsc:
+        specifier: ~3.2.0
+        version: 3.2.9(typescript@6.0.2)
+      ws:
+        specifier: ^8.18.0
+        version: 8.20.0
+
   apps/kimi-code:
     devDependencies:
       '@moonshot-ai/acp-adapter':
@@ -92,9 +159,6 @@ importers:
       '@moonshot-ai/kimi-telemetry':
         specifier: workspace:^
         version: link:../../packages/telemetry
-      '@moonshot-ai/kimi-web':
-        specifier: workspace:^
-        version: link:../kimi-web
       '@moonshot-ai/migration-legacy':
         specifier: workspace:^
         version: link:../../packages/migration-legacy
@@ -113,6 +177,9 @@ importers:
       '@types/yazl':
         specifier: ^2.4.6
         version: 2.4.6
+      '@yaseenhq/echadron-web':
+        specifier: workspace:^
+        version: link:../echadron-web
       chalk:
         specifier: ^5.4.1
         version: 5.6.2
@@ -199,73 +266,6 @@ importers:
       vitest:
         specifier: 4.1.4
         version: 4.1.4(@types/node@22.19.17)(@vitest/coverage-v8@4.1.4)(jsdom@25.0.1)(msw@2.15.0(@types/node@22.19.17)(typescript@6.0.2))(vite@6.4.2(@types/node@22.19.17)(jiti@2.6.1)(lightningcss@1.32.0)(tsx@4.21.0)(yaml@2.8.3))
-
-  apps/kimi-web:
-    dependencies:
-      '@chenglou/pretext':
-        specifier: 0.0.8
-        version: 0.0.8
-      '@fontsource-variable/inter':
-        specifier: 5.2.8
-        version: 5.2.8
-      '@fontsource-variable/jetbrains-mono':
-        specifier: ^5.2.8
-        version: 5.2.8
-      '@xterm/addon-fit':
-        specifier: ^0.11.0
-        version: 0.11.0
-      '@xterm/xterm':
-        specifier: ^6.0.0
-        version: 6.0.0
-      katex:
-        specifier: ^0.17.0
-        version: 0.17.0
-      markstream-vue:
-        specifier: ^1.0.7
-        version: 1.0.7(katex@0.17.0)(mermaid@11.15.0)(stream-markdown@0.0.16(react@19.2.5)(shiki@4.3.0)(vue@3.5.35(typescript@6.0.2)))(vue-i18n@11.4.5(vue@3.5.35(typescript@6.0.2)))(vue@3.5.35(typescript@6.0.2))
-      mermaid:
-        specifier: ^11.15.0
-        version: 11.15.0
-      shiki:
-        specifier: ^4.3.0
-        version: 4.3.0
-      stream-markdown:
-        specifier: ^0.0.16
-        version: 0.0.16(react@19.2.5)(shiki@4.3.0)(vue@3.5.35(typescript@6.0.2))
-      vue:
-        specifier: ^3.5.35
-        version: 3.5.35(typescript@6.0.2)
-      vue-i18n:
-        specifier: ^11.4.5
-        version: 11.4.5(vue@3.5.35(typescript@6.0.2))
-    devDependencies:
-      '@iconify-json/ri':
-        specifier: ^1.2.10
-        version: 1.2.10
-      '@iconify-json/tabler':
-        specifier: ^1.2.35
-        version: 1.2.35
-      '@vitejs/plugin-vue':
-        specifier: ^5.2.4
-        version: 5.2.4(vite@6.4.2(@types/node@22.19.17)(jiti@2.6.1)(lightningcss@1.32.0)(tsx@4.21.0)(yaml@2.8.3))(vue@3.5.35(typescript@6.0.2))
-      typescript:
-        specifier: 6.0.2
-        version: 6.0.2
-      unplugin-icons:
-        specifier: ^23.0.0
-        version: 23.0.1(@vue/compiler-sfc@3.5.35)
-      vite:
-        specifier: ^6.3.3
-        version: 6.4.2(@types/node@22.19.17)(jiti@2.6.1)(lightningcss@1.32.0)(tsx@4.21.0)(yaml@2.8.3)
-      vitest:
-        specifier: 4.1.4
-        version: 4.1.4(@types/node@22.19.17)(@vitest/coverage-v8@4.1.4)(jsdom@25.0.1)(msw@2.15.0(@types/node@22.19.17)(typescript@6.0.2))(vite@6.4.2(@types/node@22.19.17)(jiti@2.6.1)(lightningcss@1.32.0)(tsx@4.21.0)(yaml@2.8.3))
-      vue-tsc:
-        specifier: ~3.2.0
-        version: 3.2.9(typescript@6.0.2)
-      ws:
-        specifier: ^8.18.0
-        version: 8.20.0
 
   apps/vis:
     devDependencies:

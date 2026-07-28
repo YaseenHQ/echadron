@@ -24,7 +24,7 @@ Environment variables fall into three categories by function and cannot be colla
 For ordinary runtime parameters such as model alias, Plan mode, yolo mode, and Skills directories, priority from highest to lowest is:
 
 1. **Command-line options** (`-m`, `--plan`, `--yolo`, etc.): apply only to the current startup
-2. **User config file** (`~/.kimi-code/config.toml`): stores long-term preferences
+2. **User config file** (`~/.echadron/config.toml`): stores long-term preferences
 
 A small number of environment variables explicitly override specific config file fields — for example, `KIMI_CODE_BACKGROUND_KEEP_ALIVE_ON_EXIT` has higher priority than `[background].keep_alive_on_exit`. These exceptions are noted in [Environment variables](./env-vars.md) and in the relevant field descriptions in [Configuration files](./config-files.md).
 
@@ -82,7 +82,7 @@ Mutual exclusion rules (startup fails if violated):
 **Isolated test environment** — use a separate data directory to avoid polluting the main config and sessions:
 
 ```sh
-KIMI_CODE_HOME="$PWD/.kimi-sandbox" kimi
+ECHADRON_HOME="$PWD/.echadron-sandbox" echadron
 ```
 
 **One-off test key** — since provider credentials are read only from the config file, write a test key into the `env` sub-table:
@@ -95,16 +95,16 @@ KIMI_API_KEY = "sk-test"
 **Skip approval for batch tasks**:
 
 ```sh
-kimi --yolo -p "Batch rename the following files..."
+echadron --yolo -p "Batch rename the following files..."
 ```
 
 **Enter Plan mode temporarily** (to make it permanent, set `default_plan_mode = true` in the config file):
 
 ```sh
-kimi --plan
+echadron --plan
 ```
 
 ## Next steps
 
 - [Configuration files](./config-files.md) — complete reference for all configurable fields
-- [Environment variables](./env-vars.md) — full list and description of `KIMI_CODE_HOME` and related variables
+- [Environment variables](./env-vars.md) — full list and description of `ECHADRON_HOME` and related variables

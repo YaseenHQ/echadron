@@ -4,7 +4,7 @@
  *
  * Servers started by current builds run in the foreground attached to a
  * terminal (Ctrl+C stops them), so they need no kill command. Builds before
- * the `kimi web` command tree could leave a background daemon behind; those
+ * the legacy web command tree could leave a background daemon behind; those
  * recorded themselves in the legacy single-instance lock at
  * `<KIMI_CODE_HOME>/server/lock`, which the instance registry never sees.
  * This command is the cleanup path for exactly those servers.

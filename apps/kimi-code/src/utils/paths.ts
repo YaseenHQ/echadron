@@ -10,9 +10,10 @@ import { homedir } from 'node:os';
 import { join } from 'node:path';
 
 import {
-  IMPERIUM_DATA_DIR_NAME,
+  ECHADRON_DATA_DIR_NAME,
+  ECHADRON_CODE_HOME_ENV,
+  ECHADRON_MODELS_CACHE_FILE_NAME,
   IMPERIUM_HOME_ENV,
-  IMPERIUM_MODELS_CACHE_FILE_NAME,
   ECHADRON_HOME_ENV,
   KIMI_CODE_BANNER_DIR_NAME,
   KIMI_CODE_BANNER_STATE_FILE_NAME,
@@ -31,8 +32,8 @@ import {
 /**
  * Return the root data directory for Echadron.
  *
- * Priority: `ECHADRON_HOME` > legacy `IMPERIUM_HOME` > the legacy
- * `~/.imperium` home.
+ * Priority: `ECHADRON_HOME` > `ECHADRON_CODE_HOME` > legacy `IMPERIUM_HOME` > the Echadron
+ * `~/.echadron` home.
  *
  * This intentionally does not read `KIMI_CODE_HOME`: the fork must be able to
  * run beside an upstream Kimi Code installation without sharing credentials,
@@ -41,11 +42,12 @@ import {
 export function getDataDir(): string {
   const envDir =
     process.env[ECHADRON_HOME_ENV] ??
+    process.env[ECHADRON_CODE_HOME_ENV] ??
     process.env[IMPERIUM_HOME_ENV];
   if (envDir) {
     return envDir;
   }
-  return join(homedir(), IMPERIUM_DATA_DIR_NAME);
+  return join(homedir(), ECHADRON_DATA_DIR_NAME);
 }
 
 /**
@@ -64,7 +66,7 @@ export function getCacheDir(): string {
 
 /** Return the persistent models.dev catalog snapshot used by `update --models`. */
 export function getModelsDevCacheFile(): string {
-  return join(getCacheDir(), IMPERIUM_MODELS_CACHE_FILE_NAME);
+  return join(getCacheDir(), ECHADRON_MODELS_CACHE_FILE_NAME);
 }
 
 /**

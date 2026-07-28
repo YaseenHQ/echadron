@@ -20,7 +20,7 @@ All other workspace packages are private internal packages, are not published to
 - `@moonshot-ai/kaos`
 - `@moonshot-ai/kimi-code-oauth`
 - `@moonshot-ai/kimi-telemetry`
-- `@moonshot-ai/kimi-web`
+- `@yaseenhq/echadron-web`
 - `@moonshot-ai/kosong`
 - `@moonshot-ai/migration-legacy`
 - `@moonshot-ai/protocol`
@@ -60,8 +60,8 @@ Fill in the following:
 
 | Field | Value |
 | --- | --- |
-| GitHub Organization | `MoonshotAI` |
-| GitHub Repository | `kimi-code` |
+| GitHub Organization | `YaseenHQ` |
+| GitHub Repository | `kimi` |
 | GitHub Workflow | `release.yml` |
 | Environment | leave empty |
 
@@ -143,7 +143,7 @@ The root-level `pnpm run publish` first runs typecheck, lint, sherif, test, buil
 ## Notes
 
 - Every PR that affects publishable-package behavior or public API should include a corresponding changeset.
-- Changes under `plugins/` (the bundled official plugins such as `kimi-datasource`) do **not** need a changeset: each plugin carries its own version in `kimi.plugin.json` and `plugins/marketplace.json` and is distributed via the marketplace CDN, separately from the `@moonshot-ai/kimi-code` npm package.
+- Changes under `plugins/` (the bundled official plugins such as `kimi-datasource`) do **not** need a changeset: each plugin carries its own version in `kimi.plugin.json` and `plugins/marketplace.json` and is distributed via the marketplace CDN, separately from the `@yaseenhq/echadron` npm package.
 - Changeset files must be committed to the repository — release PRs are only triggered after they're merged.
 - Release PRs require human review and merge; they will not publish automatically.
 - Do not add release changesets for private internal packages; only select `@yaseenhq/echadron` and `@moonshot-ai/kimi-code-sdk`.

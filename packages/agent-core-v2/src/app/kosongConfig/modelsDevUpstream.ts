@@ -171,12 +171,17 @@ async function fetchAndCache(homeDir?: string): Promise<ModelsDevCatalog> {
 
 /**
  * Seed the core browser from the host's persisted `update --models` snapshot.
- * Composition roots pass their home explicitly; the IMPERIUM_HOME (and
- * compatibility KIMI_CODE_HOME) environment fallback keeps standalone SDK
- * consumers working when no home is supplied.
+ * Composition roots pass their home explicitly; the Echadron home variables
+ * are the primary fallback, with the historical names retained only for
+ * migration.
  */
 async function readPersistedCache(homeDir?: string): Promise<ModelsDevCacheEntry | undefined> {
-  const home = homeDir ?? process.env['IMPERIUM_HOME'] ?? process.env['KIMI_CODE_HOME'];
+  const home =
+    homeDir ??
+    process.env['ECHADRON_HOME'] ??
+    process.env['ECHADRON_CODE_HOME'] ??
+    process.env['IMPERIUM_HOME'] ??
+    process.env['KIMI_CODE_HOME'];
   if (home === undefined || home.length === 0) return undefined;
   try {
     const parsed: unknown = JSON.parse(
@@ -195,7 +200,12 @@ async function readPersistedCache(homeDir?: string): Promise<ModelsDevCacheEntry
 }
 
 async function writePersistedCache(entry: ModelsDevCacheEntry, homeDir?: string): Promise<void> {
-  const home = homeDir ?? process.env['IMPERIUM_HOME'] ?? process.env['KIMI_CODE_HOME'];
+  const home =
+    homeDir ??
+    process.env['ECHADRON_HOME'] ??
+    process.env['ECHADRON_CODE_HOME'] ??
+    process.env['IMPERIUM_HOME'] ??
+    process.env['KIMI_CODE_HOME'];
   if (home === undefined || home.length === 0) return;
   let tempPath: string | undefined;
   try {

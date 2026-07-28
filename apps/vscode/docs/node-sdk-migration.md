@@ -6,29 +6,30 @@ Last updated: 2026-07-16
 
 ## Context
 
-The `0.5.x` VS Code extension launched a separately installed Python Kimi CLI
+The `0.5.x` VS Code extension launched a separately installed legacy Python Kimi CLI
 and communicated with it over stdio. That architecture duplicated runtime
 installation, configuration, authentication, and session behavior between the
-editor and Kimi Code.
+editor and Echadron.
 
 Version `0.6.0` moves the extension into this monorepo under `apps/vscode` and
 runs the stable TypeScript v1 engine through `@moonshot-ai/kimi-code-sdk` in the
-VS Code Extension Host. The migration preserves the existing extension ID,
-commands, Webview, and user-visible workflows. It does not redesign the UI or
-introduce unrelated TUI features.
+VS Code Extension Host. The migration preserves the existing commands, Webview,
+and user-visible workflows. Echadron uses its own extension identity so it can
+be installed alongside the upstream Kimi extension without taking it over. It
+does not redesign the UI or introduce unrelated TUI features.
 
 This document records the durable design decisions behind that migration. It
 is not a release checklist or a transcript of the implementation process.
 
 ## Goals
 
-- Keep the extension ID `moonshot-ai.kimi-code` so `0.6.0` upgrades existing
-  installations.
+- Use the distinct extension ID `yaseenhq.echadron-code` so Echadron can
+  coexist with upstream Kimi Code; legacy settings are migrated when available.
 - Preserve the existing VS Code commands, shortcuts, Webview workflows, editor
   integration, session management, MCP management, and file changes panel.
 - Replace the Python/stdio host with the in-process v1 Node SDK.
-- Share Kimi Code configuration, authentication, MCP configuration, and
-  sessions with the TUI when both processes resolve the same Kimi Code home.
+- Share Echadron configuration, authentication, MCP configuration, and
+  sessions with the TUI when both processes resolve the same Echadron home.
 - Reuse the shared legacy migration package instead of maintaining a VS
   Code-specific session translator.
 - Add only the smallest SDK/core APIs needed to preserve existing VS Code
@@ -60,7 +61,7 @@ flowchart LR
   Host["VS Code Extension Host<br/>Node process"]
   SDK["@moonshot-ai/kimi-code-sdk<br/>KimiHarness and Session"]
   Core["v1 agent-core"]
-  Home["Kimi Code home<br/>config, auth, MCP, sessions"]
+  Home["Echadron home<br/>config, auth, MCP, sessions"]
 
   UI <-->|"postMessage RPC and events"| Host
   Host -->|"in-process calls"| SDK
@@ -80,12 +81,12 @@ stay in the trusted Extension Host.
 
 The runtime constructs the SDK client with:
 
-- `userAgentProduct: "kimi-code-vscode"`
+- `userAgentProduct: "echadron-vscode"`
 - `version` from `apps/vscode/package.json`
 - `uiMode: "vscode"`
 
 For `0.6.0`, the normal HTTP User-Agent product is therefore
-`kimi-code-vscode/0.6.0`. The version has one source of truth and is not copied
+`echadron-vscode/0.6.0`. The version has one source of truth and is not copied
 into runtime code or packaging scripts.
 
 ### Package boundaries
@@ -102,9 +103,9 @@ into runtime code or packaging scripts.
 | Area | Primary implementation |
 |---|---|
 | Activation and VS Code commands | `apps/vscode/src/extension.ts` |
-| Webview lifecycle | `apps/vscode/src/KimiWebviewProvider.ts` |
+| Webview lifecycle | `apps/vscode/src/EchadronWebviewProvider.ts` |
 | Webview RPC boundary | `apps/vscode/src/bridge-handler.ts`, `apps/vscode/src/handlers` |
-| SDK host | `apps/vscode/src/runtime/kimi-runtime.ts` |
+| SDK host | `apps/vscode/src/runtime/echadron-runtime.ts` |
 | Session lifecycle and event routing | `apps/vscode/src/runtime/session-runtime.ts` |
 | SDK-to-Webview event conversion | `apps/vscode/src/runtime/event-adapter.ts` |
 | Session replay | `apps/vscode/src/runtime/replay-adapter.ts` |
@@ -115,12 +116,12 @@ into runtime code or packaging scripts.
 
 ## Data ownership
 
-### Shared Kimi Code home
+### Shared Echadron home
 
-The SDK resolves the home directory using the normal Kimi Code rules:
+The host resolves the home directory using the canonical Echadron rules:
 
-1. system-level `KIMI_CODE_HOME`, when set;
-2. otherwise `~/.kimi-code`.
+1. `ECHADRON_HOME` or `ECHADRON_CODE_HOME`, when set;
+2. otherwise the SDK's default home (with legacy `KIMI_CODE_HOME` accepted as a fallback).
 
 The extension does not add a separate `kimi.homeDir` setting and does not pass
 its own default home to the SDK. VS Code and the TUI share the following data
@@ -131,11 +132,11 @@ only when they resolve the same home:
 - authentication state
 - `sessions/`
 - `session_index.jsonl`
-- other SDK-owned Kimi Code data
+- other SDK-owned Echadron data
 
 Remote SSH, WSL, and Dev Container installations use the environment and home
 of the remote Extension Host. They do not automatically share the local
-machine's Kimi Code home.
+machine's Echadron home.
 
 ### VS Code-owned state
 
@@ -243,7 +244,7 @@ maintain another config/session translator.
 - default source: `~/.kimi`;
 - optional additional source: a valid legacy `KIMI_SHARE_DIR` from the removed
   VS Code setting;
-- target: the SDK-resolved Kimi Code home.
+- target: the SDK-resolved Echadron home.
 
 Migration covers the shared config, MCP config, user history, supported skills,
 and sessions. Existing target data wins according to the shared migration
@@ -252,7 +253,7 @@ legacy source.
 
 On first launch, the extension detects work without mutating either home and
 offers **Migrate now** or **Later**. The command
-`Kimi Code: Migrate Legacy Data` remains available for manual runs and retries.
+`Echadron: Migrate Legacy Data` remains available for manual runs and retries.
 
 The shared marker `.migrated-to-kimi-code` can contain multiple target homes.
 This prevents duplicate migration when the TUI migrated the same source first,
@@ -276,7 +277,7 @@ feature.
 ### New sessions
 
 Baselines are stored under the extension's `globalStorage`, namespaced by the
-resolved Kimi Code home and session ID. The home namespace prevents sessions
+resolved Echadron home and session ID. The home namespace prevents sessions
 with the same ID in different homes from sharing baseline state.
 
 The session runtime observes `tool.call.started` for the explicit `Write` and
@@ -385,7 +386,7 @@ replaces them:
 
 1. The Webview never imports the Node SDK or gains direct Node/file/auth access.
 2. `apps/vscode` never imports v1 agent-core directly.
-3. Shared config and sessions live in the SDK-resolved Kimi Code home; editor
+3. Shared config and sessions live in the SDK-resolved Echadron home; editor
    preferences and baselines remain VS Code-owned.
 4. Legacy migration translation stays in `packages/migration-legacy`.
 5. Session storage is accessed through SDK/core APIs, not parsed or mutated by

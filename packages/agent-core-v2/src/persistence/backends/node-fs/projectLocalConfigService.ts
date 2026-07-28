@@ -2,7 +2,8 @@
  * `FileProjectLocalConfigService` — node-fs backend for `IProjectLocalConfigService`.
  *
  * Discovers project roots, parses and writes project-local
- * `.kimi-code/local.toml`, resolves additional directories with
+ * `.echadron/local.toml` (falling back to legacy `.kimi-code/local.toml`),
+ * resolves additional directories with
  * v1-compatible OS-home expansion through `bootstrap`, and accesses the local
  * filesystem through `hostFs`. Works purely by path (project-root discovery
  * via the nearest `.git` ancestor); it never touches the workspace catalog or
@@ -48,7 +49,7 @@ export class FileProjectLocalConfigService implements IProjectLocalConfigService
 
   async readAdditionalDirs(workDir: string): Promise<ProjectAdditionalDirsLoadResult> {
     const projectRoot = await this.findProjectRoot(workDir);
-    const configPath = this.getProjectLocalConfigPath(projectRoot);
+    const configPath = await this.resolveProjectLocalConfigPath(projectRoot);
     const file = await this.readProjectLocalToml(configPath);
 
     const additionalDirs = file?.parsed.workspace?.additional_dir;
@@ -72,7 +73,7 @@ export class FileProjectLocalConfigService implements IProjectLocalConfigService
     inputPath: string,
   ): Promise<ProjectAdditionalDirsLoadResult> {
     const projectRoot = await this.findProjectRoot(workDir);
-    const configPath = this.getProjectLocalConfigPath(projectRoot);
+    const configPath = await this.resolveProjectLocalConfigPath(projectRoot);
     const additionalDir = await this.resolveAdditionalDir(workDir, inputPath);
     const file = (await this.readProjectLocalToml(configPath)) ?? { raw: {}, parsed: {} };
     const fileAdditionalDirs = file.parsed.workspace?.additional_dir ?? [];
@@ -96,8 +97,12 @@ export class FileProjectLocalConfigService implements IProjectLocalConfigService
     return { projectRoot, configPath, additionalDirs: [...fileExistingDirs, additionalDir] };
   }
 
-  private getProjectLocalConfigPath(projectRoot: string): string {
-    return join(projectRoot, '.kimi-code', 'local.toml');
+  private async resolveProjectLocalConfigPath(projectRoot: string): Promise<string> {
+    const echadronPath = join(projectRoot, '.echadron', 'local.toml');
+    if (await this.pathExists(echadronPath)) return echadronPath;
+    const legacyPath = join(projectRoot, '.kimi-code', 'local.toml');
+    if (await this.pathExists(legacyPath)) return legacyPath;
+    return echadronPath;
   }
 
   private async findProjectRoot(workDir: string): Promise<string> {

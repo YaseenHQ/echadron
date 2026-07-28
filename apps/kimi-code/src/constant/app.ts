@@ -51,9 +51,13 @@ export const LEGACY_NPM_PACKAGE_NAME = '@moonshot-ai/kimi-code';
 // App-owned data paths. SDK/core runtime config is intentionally not routed here.
 /** Primary host-owned home environment variable. */
 export const ECHADRON_HOME_ENV = 'ECHADRON_HOME';
+/** Internal subprocess alias used by ACP/web hosts; equivalent to ECHADRON_HOME. */
+export const ECHADRON_CODE_HOME_ENV = 'ECHADRON_CODE_HOME';
 /** Legacy host namespaces accepted during the migration. */
 export const IMPERIUM_HOME_ENV = 'IMPERIUM_HOME';
-export const IMPERIUM_DATA_DIR_NAME = '.imperium';
+export const ECHADRON_DATA_DIR_NAME = '.echadron';
+/** @deprecated Use ECHADRON_DATA_DIR_NAME; retained for source compatibility. */
+export const IMPERIUM_DATA_DIR_NAME = ECHADRON_DATA_DIR_NAME;
 
 /** SDK compatibility names. Their values intentionally remain Kimi-specific. */
 export const KIMI_CODE_HOME_ENV = 'KIMI_CODE_HOME';
@@ -70,7 +74,9 @@ export const KIMI_CODE_PLUGIN_UPDATE_NOTICE_STATE_FILE_NAME = 'plugin-notices.js
 export const KIMI_CODE_INPUT_HISTORY_DIR_NAME = 'user-history';
 export const KIMI_CODE_BANNER_DIR_NAME = 'banner';
 export const KIMI_CODE_BANNER_STATE_FILE_NAME = 'state.json';
-export const IMPERIUM_MODELS_CACHE_FILE_NAME = 'models.dev.json';
+export const ECHADRON_MODELS_CACHE_FILE_NAME = 'models.dev.json';
+/** @deprecated Use ECHADRON_MODELS_CACHE_FILE_NAME; retained for old imports. */
+export const IMPERIUM_MODELS_CACHE_FILE_NAME = ECHADRON_MODELS_CACHE_FILE_NAME;
 
 // Managed Kimi auth provider key shared with OAuth/SDK config.
 export const DEFAULT_OAUTH_PROVIDER_NAME = 'managed:kimi-code';
@@ -103,6 +109,7 @@ export const KIMI_CODE_CDN_LATEST_URL = `${KIMI_CODE_CDN_BASE}/latest`;
 export const KIMI_CODE_CDN_LATEST_JSON_URL = `${KIMI_CODE_CDN_BASE}/latest.json`;
 export const KIMI_CODE_TIPS_BANNER_URL = 'https://cdn.kimi.com/kimi-code-tips/tips.json';
 export const KIMI_CODE_PLUGIN_MARKETPLACE_URL = `${KIMI_CODE_CDN_BASE}/plugins/marketplace.json`;
+export const ECHADRON_PLUGIN_MARKETPLACE_URL_ENV = 'ECHADRON_PLUGIN_MARKETPLACE_URL';
 export const KIMI_CODE_PLUGIN_MARKETPLACE_URL_ENV = 'KIMI_CODE_PLUGIN_MARKETPLACE_URL';
 // Official plugins whose usage bills against the user's plan quota. Installing
 // one of these shows a quota note after the install result.

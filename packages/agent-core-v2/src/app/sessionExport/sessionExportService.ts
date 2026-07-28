@@ -38,7 +38,7 @@ import { openZipSource, type ZipSource } from './file-source';
 
 const SESSION_LOG_REL = 'logs/kimi-code.log';
 const GLOBAL_LOG_REL = 'logs/global/kimi-code.log';
-const WEB_LOG_REL = 'logs/kimi-web.jsonl';
+const WEB_LOG_REL = 'logs/echadron-web.jsonl';
 const DESKTOP_LOG_REL = 'logs/kimi-desktop.log';
 
 export class SessionExportService implements ISessionExportService {

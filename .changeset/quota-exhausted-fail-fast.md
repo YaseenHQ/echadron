@@ -1,5 +1,5 @@
 ---
-"@moonshot-ai/kimi-code": patch
+"@yaseenhq/echadron": patch
 "@moonshot-ai/kimi-code-sdk": patch
 ---
 

@@ -74,11 +74,16 @@ async function loadAgentsMdForRoots(
   };
 
   // User-level files come first so any project-level AGENTS.md overrides them.
-  // The brand dir follows KIMI_CODE_HOME (default ~/.kimi-code); the generic
+  // The brand dir follows ECHADRON_HOME (default ~/.echadron); the generic
   // .agents dir stays under the real OS home so it can be shared across tools.
   const realHome = kaos.gethome();
-  const brandDir = brandHome ?? join(realHome, '.kimi-code');
-  await collect(join(brandDir, 'AGENTS.md'));
+  const brandDir = brandHome ?? join(realHome, '.echadron');
+  const loadedBrandFile = await collect(join(brandDir, 'AGENTS.md'));
+  if (!loadedBrandFile && brandHome === undefined) {
+    // Keep the old user-level file available during migration, but only when
+    // the caller did not explicitly provide an isolated brand home.
+    await collect(join(realHome, '.kimi-code', 'AGENTS.md'));
+  }
 
   // Generic user-level dir (.agents) matches skill discovery.
   const genericDirs = [join(realHome, '.agents')];
@@ -96,7 +101,10 @@ async function loadAgentsMdForRoots(
     const dirs = dirsRootToLeaf(rootKaos, rootWorkDir, projectRoot);
 
     for (const dir of dirs) {
+      // Read the legacy path first so the canonical Echadron file wins on
+      // duplicate instructions during migration.
       await collect(join(dir, '.kimi-code', 'AGENTS.md'));
+      await collect(join(dir, '.echadron', 'AGENTS.md'));
       for (const fileName of ['AGENTS.md', 'agents.md']) {
         if (await collect(join(dir, fileName))) break;
       }

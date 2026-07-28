@@ -1,5 +1,5 @@
 ---
-"@moonshot-ai/kimi-code": patch
+"@yaseenhq/echadron": patch
 ---
 
 Show a quota consumption note after installing official plugins that bill against plan quota (such as Kimi Datasource).

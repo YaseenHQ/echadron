@@ -28,7 +28,7 @@ export async function resolveMcpJsonPaths(input: ResolveMcpJsonPathsInput): Prom
   return {
     user: join(resolveKimiHome(input.homeDir), 'mcp.json'),
     projectRoot: join(projectRoot, '.mcp.json'),
-    project: join(input.cwd, '.kimi-code', 'mcp.json'),
+    project: join(input.cwd, '.echadron', 'mcp.json'),
   };
 }
 
@@ -38,11 +38,12 @@ export interface LoadMcpServersInput {
 }
 
 /**
- * Load MCP server declarations from the user-global `~/.kimi-code/mcp.json`,
+ * Load MCP server declarations from the user-global Echadron `mcp.json`,
  * the project-root `<project root>/.mcp.json`, and the project-local
- * `<cwd>/.kimi-code/mcp.json`. Entries in later files override earlier files
+ * `<cwd>/.echadron/mcp.json`. The legacy `<cwd>/.kimi-code/mcp.json` is read
+ * before the canonical project-local file. Entries in later files override earlier files
  * with the same key, so a repo can specialise or replace a shared definition,
- * and Kimi-specific project config wins over the Claude-compatible root file.
+ * and Echadron-specific project config wins over the Claude-compatible root file.
  *
  * Note: project-local entries may spawn stdio commands at session start, so
  * opening a session inside an untrusted checkout will execute whatever its
@@ -52,12 +53,14 @@ export async function loadMcpServers(
   input: LoadMcpServersInput,
 ): Promise<Record<string, McpServerConfig>> {
   const paths = await resolveMcpJsonPaths({ cwd: input.cwd, homeDir: input.homeDir });
-  const [user, projectRoot, project] = await Promise.all([
+  const legacyProject = join(input.cwd, '.kimi-code', 'mcp.json');
+  const [user, projectRoot, legacyProjectConfig, project] = await Promise.all([
     readMcpJson(paths.user),
     readMcpJson(paths.projectRoot, { stdioCwdBase: dirname(paths.projectRoot) }),
+    readMcpJson(legacyProject),
     readMcpJson(paths.project),
   ]);
-  return { ...user, ...projectRoot, ...project };
+  return { ...user, ...projectRoot, ...legacyProjectConfig, ...project };
 }
 
 async function findProjectRoot(cwd: string): Promise<string> {

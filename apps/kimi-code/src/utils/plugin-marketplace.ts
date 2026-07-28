@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { gt, valid } from 'semver';
 
 import {
+  ECHADRON_PLUGIN_MARKETPLACE_URL_ENV,
   KIMI_CODE_PLUGIN_MARKETPLACE_URL,
   KIMI_CODE_PLUGIN_MARKETPLACE_URL_ENV,
 } from '#/constant/app';
@@ -76,7 +77,10 @@ export interface LoadPluginMarketplaceOptions {
 export async function loadPluginMarketplace(
   options: LoadPluginMarketplaceOptions,
 ): Promise<PluginMarketplace> {
-  const configuredSource = options.source ?? process.env[KIMI_CODE_PLUGIN_MARKETPLACE_URL_ENV];
+  const configuredSource =
+    options.source ??
+    process.env[ECHADRON_PLUGIN_MARKETPLACE_URL_ENV] ??
+    process.env[KIMI_CODE_PLUGIN_MARKETPLACE_URL_ENV];
   const location = resolveMarketplaceLocation(
     configuredSource ?? KIMI_CODE_PLUGIN_MARKETPLACE_URL,
     options.workDir,

@@ -179,10 +179,10 @@ describe('server-v2 /api/v1/sessions', () => {
       sessionId: string;
       webLogPath?: string;
     };
-    expect(entries.get('logs/kimi-web.jsonl')?.toString('utf8')).toBe(webLog);
+    expect(entries.get('logs/echadron-web.jsonl')?.toString('utf8')).toBe(webLog);
     expect(manifest).toMatchObject({
       sessionId: id,
-      webLogPath: 'logs/kimi-web.jsonl',
+      webLogPath: 'logs/echadron-web.jsonl',
     });
     await expect.poll(() => listExportTempDirs(id)).toEqual([]);
   });

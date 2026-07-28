@@ -164,7 +164,7 @@ echadron web --no-open       # don't open the browser
 echadron web --port 58628    # pick a specific bind port
 ```
 
-Multiple instances can share one home directory: each registers itself under `~/.imperium/server/instances/`, and a busy port is retried with `port + 1` (58628, 58629, …).
+Multiple instances can share one home directory: each registers itself under `~/.echadron/server/instances/`, and a busy port is retried with `port + 1` (58628, 58629, …). Legacy homes are discovered when `ECHADRON_HOME` is not set.
 
 | Option | Description |
 | --- | --- |
@@ -188,15 +188,15 @@ The `echadron server` command tree is deprecated: any `echadron server …` invo
 
 #### `echadron server kill`
 
-Deprecated — only stops a server started by a version before 0.28.0. Those versions could leave a background server behind, recorded in the legacy single-instance lock at `~/.imperium/server/lock`; the command first tries `POST /api/v1/shutdown` for a graceful exit, then signals the recorded pid with SIGTERM, escalating to SIGKILL when needed, and removes the lock file once the process is confirmed dead. Servers started by `echadron web` run in the foreground — stop them with `Ctrl+C` instead.
+Deprecated — only stops a server started by a version before 0.28.0. Those versions could leave a background server behind, recorded in the legacy single-instance lock at `~/.echadron/server/lock`; the command first tries `POST /api/v1/shutdown` for a graceful exit, then signals the recorded pid with SIGTERM, escalating to SIGKILL when needed, and removes the lock file once the process is confirmed dead. Servers started by `echadron web` run in the foreground — stop them with `Ctrl+C` instead.
 
 #### `echadron web rotate-token`
 
-Generate a new persistent bearer token (written to `~/.imperium/server.token`); the previous token stops working immediately. The token is shared by the whole home directory, so every running instance picks the new one up on its next auth check — no restart needed.
+Generate a new persistent bearer token (written to `~/.echadron/server.token`); the previous token stops working immediately. The token is shared by the whole home directory, so every running instance picks the new one up on its next auth check — no restart needed.
 
 ### `echadron doctor`
 
-Validate `config.toml` and `tui.toml` without starting the TUI or modifying either file. By default, the command checks the files under `KIMI_CODE_HOME` (or `~/.imperium` when the environment variable is unset). Missing default files are reported as skipped because built-in defaults can apply.
+Validate `config.toml` and `tui.toml` without starting the TUI or modifying either file. By default, the command checks the files under `ECHADRON_HOME` (or `~/.echadron` when the environment variable is unset). `IMPERIUM_HOME` and `KIMI_CODE_HOME` remain accepted migration aliases. Missing default files are reported as skipped because built-in defaults can apply.
 
 ```sh
 echadron doctor
@@ -236,7 +236,7 @@ echadron export [sessionId] [options]
 | `--yes` | `-y` | Skip the confirmation prompt for the default session and export directly |
 | `--no-include-global-log` | | Do not include the global diagnostic log. Included by default |
 
-The export contains all files in the target session directory. The global diagnostic log (`~/.imperium/logs/kimi-code.log`) is included by default because it may contain events from other sessions or projects; add `--no-include-global-log` if you do not want to share it.
+The export contains all files in the target session directory. The global diagnostic log (`~/.echadron/logs/kimi-code.log`) keeps its legacy filename for SDK and archive compatibility and is included by default because it may contain events from other sessions or projects; add `--no-include-global-log` if you do not want to share it.
 
 ```sh
 # Export the most recent session in the current directory, skipping confirmation

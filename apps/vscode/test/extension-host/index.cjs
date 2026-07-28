@@ -6,20 +6,20 @@ const vscode = require("vscode");
 
 const EXTENSION_ID = "yaseenhq.echadron-code";
 const EXPECTED_COMMANDS = [
-  "kimi.clearAllState",
-  "kimi.focusInput",
-  "kimi.insertMention",
-  "kimi.logout",
-  "kimi.migrateLegacyData",
-  "kimi.newConversation",
-  "kimi.openInSideBar",
-  "kimi.openInTab",
-  "kimi.resetKimi",
-  "kimi.showLogs",
+  "echadron.clearAllState",
+  "echadron.focusInput",
+  "echadron.insertMention",
+  "echadron.logout",
+  "echadron.migrateLegacyData",
+  "echadron.newConversation",
+  "echadron.openInSideBar",
+  "echadron.openInTab",
+  "echadron.reset",
+  "echadron.showLogs",
 ];
 
 exports.run = async function run() {
-  const isolatedHome = process.env.KIMI_VSCODE_SMOKE_OS_HOME;
+  const isolatedHome = process.env.ECHADRON_VSCODE_SMOKE_OS_HOME;
   assert.ok(isolatedHome, "isolated OS home must be provided");
   process.env.HOME = isolatedHome;
   process.env.USERPROFILE = isolatedHome;
@@ -54,15 +54,15 @@ exports.run = async function run() {
   assert.equal(config.get("executablePath"), undefined, "removed Python CLI setting is still contributed");
   assert.equal(config.get("environmentVariables"), undefined, "removed global CLI env setting is still contributed");
 
-  await vscode.commands.executeCommand("kimi.openInTab");
+  await vscode.commands.executeCommand("echadron.openInTab");
   await waitFor(() => {
     return vscode.window.tabGroups.all.some((group) =>
       group.tabs.some((tab) =>
-        tab.input instanceof vscode.TabInputWebview && isKimiPanelViewType(tab.input.viewType)));
-  }, 5_000, () => `Kimi Webview tab did not open; tabs=${describeTabs()}`);
+        tab.input instanceof vscode.TabInputWebview && isEchadronPanelViewType(tab.input.viewType)));
+  }, 5_000, () => `Echadron webview tab did not open; tabs=${describeTabs()}`);
 
-  await vscode.commands.executeCommand("kimi.showLogs");
-  await vscode.commands.executeCommand("kimi.resetKimi");
+  await vscode.commands.executeCommand("echadron.showLogs");
+  await vscode.commands.executeCommand("echadron.reset");
   await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
 
   console.log(
@@ -75,9 +75,9 @@ exports.run = async function run() {
       webview: "opened",
     }),
   );
-  assert.ok(process.env.KIMI_VSCODE_SMOKE_REPORT, "Extension Host report path must be provided");
+  assert.ok(process.env.ECHADRON_VSCODE_SMOKE_REPORT, "Extension Host report path must be provided");
   await writeFile(
-    process.env.KIMI_VSCODE_SMOKE_REPORT,
+    process.env.ECHADRON_VSCODE_SMOKE_REPORT,
     JSON.stringify({ vscode: vscode.version }),
     "utf8",
   );
@@ -102,8 +102,8 @@ function describeTabs() {
     }))));
 }
 
-function isKimiPanelViewType(viewType) {
+function isEchadronPanelViewType(viewType) {
   // VS Code 1.100 exposes the internal `mainThreadWebview-` prefix here;
   // newer hosts expose the extension's original view type.
-  return viewType === "kimiPanel" || viewType.endsWith("-kimiPanel");
+  return viewType === "echadronPanel" || viewType.endsWith("-echadronPanel");
 }

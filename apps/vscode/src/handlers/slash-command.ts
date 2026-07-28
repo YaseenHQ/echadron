@@ -64,7 +64,7 @@ export async function runHostSlashCommand(
       emit(result.message);
       if (result.sensitive) {
         void vscode.window.showWarningMessage(
-          "Kimi: The imported file may contain API keys, tokens, or credentials.",
+          "Echadron: The imported file may contain API keys, tokens, or credentials.",
         );
       }
     } else {
@@ -289,7 +289,7 @@ async function resolveExportPath(args: string, workDir: string, defaultName: str
 
 function defaultExportName(sessionId: string, now: Date): string {
   const timestamp = now.toISOString().replaceAll(/[-:]/g, "").replace("T", "-").slice(0, 15);
-  return `kimi-export-${sessionId.slice(0, 8)}-${timestamp}.md`;
+  return `echadron-export-${sessionId.slice(0, 8)}-${timestamp}.md`;
 }
 
 function resolveUserPath(value: string, workDir: string): string {

@@ -154,7 +154,7 @@ export function resolveKimiHome(
     env['ECHADRON_CODE_HOME'] ??
     env['IMPERIUM_HOME'] ??
     env['KIMI_CODE_HOME'] ??
-    join(osHomeDir, '.kimi-code')
+    join(osHomeDir, '.echadron')
   );
 }
 

@@ -258,7 +258,7 @@ export class ModelsDevImportService implements IModelsDevImportService {
     try {
       entries = await fetchCustomRegistry(source, {
         fetchImpl: upstreamFetch(),
-        userAgent: 'kimi-code-kap-server',
+        userAgent: 'echadron-kap-server',
         signal: AbortSignal.timeout(UPSTREAM_FETCH_TIMEOUT_MS),
       });
     } catch (err) {

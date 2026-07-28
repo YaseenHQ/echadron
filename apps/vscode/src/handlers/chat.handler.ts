@@ -6,7 +6,7 @@ import type { ApprovalResponse, ContentPart } from "../../shared/legacy-sdk";
 import { getUserMessage } from "../../shared/errors";
 import type { ErrorPhase } from "../../shared/types";
 import { VSCodeSettings } from "../config/vscode-settings";
-import { normalizeEffort } from "../runtime/kimi-runtime";
+import { normalizeEffort } from "../runtime/echadron-runtime";
 import type { SessionRuntime } from "../runtime/session-runtime";
 import { isWorkspacePathContained, relativeWorkspacePath } from "../utils/workspace-path";
 import { parseHostSlashCommand, runHostSlashCommand } from "./slash-command";

@@ -1,7 +1,11 @@
 import { getDefaultTelemetryClient } from './client';
 import { EventSink } from './sink';
 import { SystemMetricsCollector } from './systemMetrics';
-import { AsyncTransport } from './transport';
+import {
+  AsyncTransport,
+  LEGACY_TELEMETRY_ENDPOINT_ENV,
+  TELEMETRY_ENDPOINT_ENV,
+} from './transport';
 
 /**
  * Primary host-facing opt-out variable. The legacy Kimi name remains
@@ -61,6 +65,7 @@ export function initializeTelemetry(options: TelemetryBootstrapOptions): void {
   const transport = new AsyncTransport({
     homeDir: options.homeDir,
     deviceId: options.deviceId,
+    endpoint: process.env[TELEMETRY_ENDPOINT_ENV] ?? process.env[LEGACY_TELEMETRY_ENDPOINT_ENV],
     getAccessToken: options.getAccessToken,
   });
   const sink = new EventSink({

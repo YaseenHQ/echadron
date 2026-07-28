@@ -74,7 +74,7 @@ const getExtensionConfig: Handler<void, ExtensionConfig> = async () => {
 };
 
 const openSettings: Handler<void, { ok: boolean }> = async () => {
-  await vscode.commands.executeCommand("workbench.action.openSettings", "kimi");
+  await vscode.commands.executeCommand("workbench.action.openSettings", "echadron");
   return { ok: true };
 };
 

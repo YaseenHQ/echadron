@@ -46,7 +46,7 @@ describe('workspace local config', () => {
 
     await expect(loadWorkspaceLocalConfig(testKaos, join(root, 'packages', 'app'))).resolves.toEqual({
       projectRoot: root,
-      configPath: join(root, '.kimi-code', 'local.toml'),
+      configPath: join(root, '.echadron', 'local.toml'),
       additionalDirs: [],
     });
   });
@@ -66,7 +66,7 @@ describe('workspace local config', () => {
 
     await expect(readWorkspaceAdditionalDirs(testKaos, join(root, 'packages', 'app'))).resolves.toEqual({
       projectRoot: root,
-      configPath: join(root, '.kimi-code', 'local.toml'),
+      configPath: join(root, '.echadron', 'local.toml'),
       additionalDirs: [sharedDir, otherDir],
     });
   });
@@ -110,7 +110,7 @@ describe('workspace local config', () => {
     await mkdir(otherDir, { recursive: true });
 
     const appended = await appendWorkspaceAdditionalDir(testKaos, root, 'shared', []);
-    const configPath = join(root, '.kimi-code', 'local.toml');
+    const configPath = join(root, '.echadron', 'local.toml');
     const before = await readFile(configPath, 'utf-8');
 
     const duplicate = await appendWorkspaceAdditionalDir(testKaos, root, './shared', []);

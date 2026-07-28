@@ -16,6 +16,8 @@ import {
 const originalEnv = { ...process.env };
 
 beforeEach(() => {
+  delete process.env['ECHADRON_HOME'];
+  delete process.env['ECHADRON_CODE_HOME'];
   delete process.env['IMPERIUM_HOME'];
   delete process.env['KIMI_CODE_HOME'];
 });
@@ -25,13 +27,26 @@ afterEach(() => {
 });
 
 describe('getDataDir', () => {
-  it('returns ~/.imperium when IMPERIUM_HOME is not set', () => {
-    expect(getDataDir()).toBe(join(homedir(), '.imperium'));
+  it('returns ~/.echadron when ECHADRON_HOME is not set', () => {
+    expect(getDataDir()).toBe(join(homedir(), '.echadron'));
+  });
+
+  it('prefers ECHADRON_HOME over compatibility aliases', () => {
+    process.env['ECHADRON_HOME'] = '/tmp/echadron-home';
+    process.env['ECHADRON_CODE_HOME'] = '/tmp/echadron-code-home';
+    process.env['IMPERIUM_HOME'] = '/tmp/legacy-home';
+    expect(getDataDir()).toBe('/tmp/echadron-home');
   });
 
   it('returns IMPERIUM_HOME when set', () => {
     process.env['IMPERIUM_HOME'] = '/tmp/echadron-test-data';
     expect(getDataDir()).toBe('/tmp/echadron-test-data');
+  });
+
+  it('uses the ACP/web compatibility alias before legacy homes', () => {
+    process.env['ECHADRON_CODE_HOME'] = '/tmp/echadron-code-home';
+    process.env['IMPERIUM_HOME'] = '/tmp/legacy-home';
+    expect(getDataDir()).toBe('/tmp/echadron-code-home');
   });
 
   it('returns IMPERIUM_HOME even if it is a relative path', () => {
@@ -42,7 +57,7 @@ describe('getDataDir', () => {
 
 describe('getLogDir', () => {
   it('returns <dataDir>/logs', () => {
-    expect(getLogDir()).toBe(join(homedir(), '.imperium', 'logs'));
+    expect(getLogDir()).toBe(join(homedir(), '.echadron', 'logs'));
   });
 
   it('respects IMPERIUM_HOME', () => {
@@ -53,7 +68,7 @@ describe('getLogDir', () => {
 
 describe('getBinDir', () => {
   it('returns <dataDir>/bin', () => {
-    expect(getBinDir()).toBe(join(homedir(), '.imperium', 'bin'));
+    expect(getBinDir()).toBe(join(homedir(), '.echadron', 'bin'));
   });
 
   it('respects IMPERIUM_HOME', () => {
@@ -64,7 +79,7 @@ describe('getBinDir', () => {
 
 describe('getUpdateStateFile', () => {
   it('returns <dataDir>/updates/latest.json', () => {
-    expect(getUpdateStateFile()).toBe(join(homedir(), '.imperium', 'updates', 'latest.json'));
+    expect(getUpdateStateFile()).toBe(join(homedir(), '.echadron', 'updates', 'latest.json'));
   });
 
   it('respects IMPERIUM_HOME', () => {
@@ -76,7 +91,7 @@ describe('getUpdateStateFile', () => {
 describe('getUpdateInstallStateFile', () => {
   it('returns <dataDir>/updates/install.json', () => {
     expect(getUpdateInstallStateFile()).toBe(
-      join(homedir(), '.imperium', 'updates', 'install.json'),
+      join(homedir(), '.echadron', 'updates', 'install.json'),
     );
   });
 
@@ -91,7 +106,7 @@ describe('getInputHistoryFile', () => {
     const workDir = '/home/user/project';
     const hash = createHash('md5').update(workDir, 'utf-8').digest('hex');
     expect(getInputHistoryFile(workDir)).toBe(
-      join(homedir(), '.imperium', 'user-history', `${hash}.jsonl`),
+      join(homedir(), '.echadron', 'user-history', `${hash}.jsonl`),
     );
   });
 

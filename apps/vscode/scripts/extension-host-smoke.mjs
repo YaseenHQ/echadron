@@ -10,7 +10,7 @@ import { isMainModule } from "./vsix-targets.mjs";
 
 const scriptDir = dirname(fileURLToPath(import.meta.url));
 const appDir = resolve(scriptDir, "..");
-const defaultCachePath = join(tmpdir(), "kimi-vscode-test-cache");
+const defaultCachePath = join(tmpdir(), "echadron-vscode-test-cache");
 
 export async function runExtensionHostSmoke(options = {}) {
   const version = options.version ?? "stable";
@@ -84,10 +84,9 @@ export async function runExtensionHostSmoke(options = {}) {
       ],
       extensionTestsEnv: {
         ECHADRON_HOME: paths.echadronHome,
-        KIMI_CODE_HOME: paths.echadronHome,
-        KIMI_VSCODE_SMOKE_OS_HOME: paths.osHome,
-        KIMI_VSCODE_SMOKE_REPORT: paths.report,
-        KIMI_VSCODE_SMOKE_VSIX: basename(vsixPath),
+        ECHADRON_VSCODE_SMOKE_OS_HOME: paths.osHome,
+        ECHADRON_VSCODE_SMOKE_REPORT: paths.report,
+        ECHADRON_VSCODE_SMOKE_VSIX: basename(vsixPath),
       },
     });
 
@@ -119,8 +118,8 @@ async function writeHarnessManifest(directory) {
   await writeFile(
     join(directory, "package.json"),
     JSON.stringify({
-      name: "kimi-vscode-extension-host-smoke",
-      displayName: "Kimi VSCode Extension Host Smoke",
+      name: "echadron-vscode-extension-host-smoke",
+      displayName: "Echadron VSCode Extension Host Smoke",
       publisher: "local-test",
       version: "0.0.0",
       engines: { vscode: "^1.70.0" },

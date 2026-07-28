@@ -14,19 +14,25 @@ const APP_ROOT = resolve(SCRIPT_DIR, '..');
 // the whole repo instead of just apps/kimi-code.
 const REPO_ROOT = resolve(APP_ROOT, '../..');
 // Runtime variable the CLI reads to locate the marketplace JSON.
-const MARKETPLACE_ENV = 'KIMI_CODE_PLUGIN_MARKETPLACE_URL';
+const MARKETPLACE_ENV = 'ECHADRON_PLUGIN_MARKETPLACE_URL';
+const LEGACY_MARKETPLACE_ENV = 'KIMI_CODE_PLUGIN_MARKETPLACE_URL';
 // Opt-in for dev: point this run at an external marketplace instead of a local one.
-const EXTERNAL_MARKETPLACE_ENV = 'KIMI_CODE_DEV_MARKETPLACE_URL';
+const EXTERNAL_MARKETPLACE_ENV = 'ECHADRON_DEV_MARKETPLACE_URL';
+const LEGACY_EXTERNAL_MARKETPLACE_ENV = 'KIMI_CODE_DEV_MARKETPLACE_URL';
 
 let marketplaceServer;
 const env = { ...process.env };
-env.IMPERIUM_HOME ??= join(homedir(), '.imperium');
-env.KIMI_CODE_HOME = env.IMPERIUM_HOME;
+env.ECHADRON_HOME ??= join(homedir(), '.echadron');
+env.IMPERIUM_HOME ??= env.ECHADRON_HOME;
+env.KIMI_CODE_HOME ??= env.ECHADRON_HOME;
 
-const externalUrl = process.env[EXTERNAL_MARKETPLACE_ENV]?.trim();
+const externalUrl =
+  process.env[EXTERNAL_MARKETPLACE_ENV]?.trim() ??
+  process.env[LEGACY_EXTERNAL_MARKETPLACE_ENV]?.trim();
 if (externalUrl !== undefined && externalUrl.length > 0) {
   // Explicitly asked to use an external marketplace; don't start a local server.
   env[MARKETPLACE_ENV] = externalUrl;
+  env[LEGACY_MARKETPLACE_ENV] = externalUrl;
   console.error(`Using external plugin marketplace: ${externalUrl}`);
 } else {
   // Default: every `pnpm run dev:cli` runs its own isolated marketplace server on a
@@ -35,6 +41,7 @@ if (externalUrl !== undefined && externalUrl.length > 0) {
   const inherited = process.env[MARKETPLACE_ENV]?.trim();
   marketplaceServer = await startPluginMarketplaceServer();
   env[MARKETPLACE_ENV] = marketplaceServer.marketplaceUrl;
+  env[LEGACY_MARKETPLACE_ENV] = marketplaceServer.marketplaceUrl;
   console.error(`Plugin marketplace dev server: ${marketplaceServer.marketplaceUrl}`);
   if (inherited !== undefined && inherited.length > 0 && inherited !== marketplaceServer.marketplaceUrl) {
     console.error(

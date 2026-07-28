@@ -1,5 +1,5 @@
 /**
- * `kimi provider` sub-command — non-interactive provider management.
+ * `echadron provider` sub-command — non-interactive provider management.
  *
  * Headless counterpart to the TUI `/login` and `/logout` provider flows
  * for the custom-registry path so users can import an api.json document, drop

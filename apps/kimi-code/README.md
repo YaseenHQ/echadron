@@ -1,6 +1,6 @@
 # Echadron CLI
 
-> The Starting Point for Next-Gen Agents
+> A multi-provider agent harness for your terminal
 
 [![npm](https://img.shields.io/npm/v/@yaseenhq/echadron)](https://www.npmjs.com/package/@yaseenhq/echadron) [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)  [![Docs](https://img.shields.io/badge/docs-online-blue)](https://github.com/YaseenHQ/kimi/tree/main/docs/en)
 
@@ -63,8 +63,8 @@ Refresh the provider/model directory independently of authentication:
 echadron update --models
 ```
 
-Echadron stores the validator-aware snapshot at the legacy
-`~/.imperium/cache/models.dev.json` path and reuses it for up to four hours during
+Echadron stores the validator-aware snapshot at
+`~/.echadron/cache/models.dev.json` and reuses it for up to four hours during
 normal browsing. The regular release updater remains disabled until Echadron
 has its own release channel.
 

@@ -839,15 +839,28 @@ export class OpenAIResponsesStreamedMessage implements StreamedMessage {
   private _finishReason: FinishReason | null = null;
   private _rawFinishReason: string | null = null;
   private readonly _iter: AsyncGenerator<StreamedMessagePart>;
+  private readonly compactionSource?: CompactionSource;
+  private readonly _convertErrorHook?:
+    | ((error: unknown) => ChatProviderError | undefined)
+    | undefined;
 
   constructor(
     response: unknown,
     isStream: boolean,
-    private readonly compactionSource?: CompactionSource,
-    private readonly _convertErrorHook?:
-      | ((error: unknown) => ChatProviderError | undefined)
-      | undefined,
+    compactionSourceOrHook?:
+      | CompactionSource
+      | ((error: unknown) => ChatProviderError | undefined),
+    convertErrorHook?: (error: unknown) => ChatProviderError | undefined,
   ) {
+    // Keep the upstream three-argument hook form source-compatible while
+    // retaining Echadron's fourth-argument compaction-aware form.
+    if (typeof compactionSourceOrHook === 'function') {
+      this.compactionSource = undefined;
+      this._convertErrorHook = compactionSourceOrHook;
+    } else {
+      this.compactionSource = compactionSourceOrHook;
+      this._convertErrorHook = convertErrorHook;
+    }
     if (isStream) {
       this._iter = this._convertStreamResponse(response as AsyncIterable<RawObject>);
     } else {

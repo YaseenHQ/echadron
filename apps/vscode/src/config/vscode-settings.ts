@@ -13,7 +13,9 @@ function getConfigValue<T>(key: string, fallback: T): T {
   // legacy Kimi values. This keeps existing settings working even though the
   // manifest now exposes the Echadron namespace as the primary one.
   for (const config of [modern, legacy]) {
-    const inspected = config.inspect<T>(key);
+    // Test doubles and older VS Code hosts may only implement `get`; use it
+    // when the richer inspection API is unavailable.
+    const inspected = typeof config.inspect === "function" ? config.inspect<T>(key) : undefined;
     for (const value of [
       inspected?.workspaceFolderValue,
       inspected?.workspaceValue,
@@ -43,7 +45,7 @@ export const VSCodeSettings = {
   },
 
   get showThinkingContent(): boolean {
-    return getConfigValue("showThinkingContent", false);
+    return getConfigValue("showThinkingContent", true);
   },
 
   get showThinkingExpanded(): boolean {

@@ -54,8 +54,9 @@ without changing credentials or `config.toml`:
 echadron update --models
 ```
 
-The snapshot is stored under the legacy `~/.imperium/cache/models.dev.json` path and reused for
-normal provider browsing for up to four hours. `echadron update` without
+The snapshot is stored under `~/.echadron/cache/models.dev.json` and reused for
+normal provider browsing for up to four hours. Existing installations may still
+be read from legacy `.kimi-code` data roots. `echadron update` without
 `--models` is intentionally disabled until Echadron has its own signed release
 channel; it never contacts or installs the upstream Kimi Code release.
 
