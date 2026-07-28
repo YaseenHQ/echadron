@@ -826,7 +826,12 @@ describe('KimiOAuthToolkit', () => {
 
     await expect(toolkit.getManagedUsage()).resolves.toMatchObject({
       kind: 'ok',
-      summary: { label: 'Weekly limit', used: 10, limit: 100 },
+      summary: {
+        name: 'Weekly limit',
+        window: { duration: 1, unit: 'week' },
+        used: 10,
+        limit: 100,
+      },
       limits: [],
       extraUsage: {
         balanceCents: 10000,
@@ -861,7 +866,12 @@ describe('KimiOAuthToolkit', () => {
 
     await expect(toolkit.getManagedUsage()).resolves.toMatchObject({
       kind: 'ok',
-      summary: { label: 'Weekly limit', used: 10, limit: 100 },
+      summary: {
+        name: 'Weekly limit',
+        window: { duration: 1, unit: 'week' },
+        used: 10,
+        limit: 100,
+      },
       limits: [],
       extraUsage: null,
     });

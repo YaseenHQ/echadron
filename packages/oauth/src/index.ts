@@ -150,7 +150,6 @@ export type {
 export {
   fetchManagedUsage,
   formatDuration,
-  formatResetTime,
   isManagedKimiCode,
   isManagedKimiCodeBaseUrl,
   kimiCodeBaseUrl,
@@ -162,6 +161,7 @@ export type {
   FetchManagedUsageResult,
   ParsedManagedUsage,
   UsageRow,
+  UsageWindow,
 } from './managed-usage';
 
 export { fetchSubmitFeedback, kimiCodeFeedbackUrl } from './managed-feedback';
