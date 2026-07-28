@@ -1,5 +1,5 @@
 {
-  description = "Echadron CLI";
+  description = "Kimi Code CLI";
 
   inputs = {
     # Pinned to the 25.11 release channel because nixpkgs-unstable currently
@@ -42,7 +42,7 @@
           node
         else
           throw ''
-            Echadron requires Node.js >= ${minNodeVersion},
+            Kimi Code requires Node.js >= ${minNodeVersion},
             but nixpkgs only offers ${node.version}.
             Pin a newer nixpkgs revision or update minNodeVersion in flake.nix.
           '';
@@ -77,6 +77,7 @@
         ./packages/protocol
         ./packages/telemetry
         ./packages/transcript
+        ./packages/tree-sitter-bash
         ./apps/kimi-code
         ./apps/vscode
         ./apps/kimi-inspect
@@ -103,7 +104,9 @@
         "@moonshot-ai/protocol"
         "@moonshot-ai/kimi-telemetry"
         "@moonshot-ai/transcript"
-        "@yaseenhq/echadron"
+        "@moonshot-ai/tree-sitter-bash"
+        "@moonshot-ai/kimi-code"
+        "kimi-code"
         "@moonshot-ai/kimi-inspect"
         "@moonshot-ai/kimi-web"
         "@moonshot-ai/vis"
@@ -129,10 +132,10 @@
             else if pkgs.stdenv.hostPlatform.isDarwin then
               "darwin-x64"
             else
-              throw "Unsupported Echadron native target for ${pkgs.stdenv.hostPlatform.system}";
+              throw "Unsupported Kimi Code native target for ${pkgs.stdenv.hostPlatform.system}";
 
-          echadron = pkgs.stdenv.mkDerivation (finalAttrs: {
-            pname = "echadron";
+          kimi-code = pkgs.stdenv.mkDerivation (finalAttrs: {
+            pname = "kimi-code";
             version = appPackageJson.version;
 
             src = lib.fileset.toSource {
@@ -159,7 +162,7 @@
               inherit (finalAttrs) pname version src pnpmWorkspaces;
               inherit pnpm;
               fetcherVersion = 3;
-              hash = "sha256-k2McTzqvLoSzXQwwHJYdzA4prhJUlOa4JKbDektSHiA=";
+              hash = "sha256-bL1AaInlb8dE+ua7a6llvQWkibEwEzfI3oQW5IOpX6I=";
             };
 
             nativeBuildInputs = [
@@ -202,7 +205,7 @@
               # before producing the native executable.
               pnpm --filter=@moonshot-ai/kimi-web run build
               node apps/kimi-code/scripts/copy-web-assets.mjs
-              pnpm --filter=@yaseenhq/echadron run build:native:sea
+              pnpm --filter=@moonshot-ai/kimi-code run build:native:sea
               runHook postBuild
             '';
 
@@ -210,37 +213,37 @@
               runHook preInstall
 
               install -Dm755 \
-                "apps/kimi-code/dist-native/bin/${nativeTarget}/echadron" \
-                "$out/bin/echadron"
+                "apps/kimi-code/dist-native/bin/${nativeTarget}/kimi" \
+                "$out/bin/kimi"
 
               runHook postInstall
             '';
 
             postInstall = ''
-              wrapProgram $out/bin/echadron --prefix PATH : ${lib.makeBinPath [ pkgs.ripgrep pkgs.fd ]}
+              wrapProgram $out/bin/kimi --prefix PATH : ${lib.makeBinPath [ pkgs.ripgrep pkgs.fd ]}
             '';
 
             meta = {
-              description = "Echadron CLI";
-              homepage = "https://github.com/YaseenHQ/kimi";
+              description = "Kimi Code CLI";
+              homepage = "https://github.com/MoonshotAI/kimi-code";
               license = lib.licenses.mit;
-              mainProgram = "echadron";
+              mainProgram = "kimi";
               platforms = systems;
             };
           });
         in
         {
-          inherit echadron;
-          default = echadron;
+          inherit kimi-code;
+          default = kimi-code;
         }
       );
 
       apps = forAllSystems (pkgs: {
-        echadron = {
+        kimi-code = {
           type = "app";
-          program = "${self.packages.${pkgs.system}.echadron}/bin/echadron";
+          program = "${self.packages.${pkgs.system}.kimi-code}/bin/kimi";
         };
-        default = self.apps.${pkgs.system}.echadron;
+        default = self.apps.${pkgs.system}.kimi-code;
       });
 
       devShells = forAllSystems (pkgs: {
