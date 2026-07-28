@@ -13,6 +13,8 @@ describe('bootstrap path helpers', () => {
     });
 
     it('prefers IMPERIUM_HOME over the KIMI_CODE_HOME compatibility env', () => {
+      const previousEchadronHome = process.env['ECHADRON_HOME'];
+      const previousEchadronCodeHome = process.env['ECHADRON_CODE_HOME'];
       const previousLegacyHome = process.env['IMPERIUM_HOME'];
       const prev = process.env['KIMI_CODE_HOME'];
       process.env['IMPERIUM_HOME'] = '/env/echadron';
@@ -20,6 +22,10 @@ describe('bootstrap path helpers', () => {
       try {
         expect(resolveKimiHome()).toBe('/env/echadron');
       } finally {
+        if (previousEchadronHome === undefined) delete process.env['ECHADRON_HOME'];
+        else process.env['ECHADRON_HOME'] = previousEchadronHome;
+        if (previousEchadronCodeHome === undefined) delete process.env['ECHADRON_CODE_HOME'];
+        else process.env['ECHADRON_CODE_HOME'] = previousEchadronCodeHome;
         if (previousLegacyHome === undefined) delete process.env['IMPERIUM_HOME'];
         else process.env['IMPERIUM_HOME'] = previousLegacyHome;
         if (prev === undefined) delete process.env['KIMI_CODE_HOME'];
@@ -28,13 +34,21 @@ describe('bootstrap path helpers', () => {
     });
 
     it('falls back to KIMI_CODE_HOME env', () => {
+      const previousEchadronHome = process.env['ECHADRON_HOME'];
+      const previousEchadronCodeHome = process.env['ECHADRON_CODE_HOME'];
       const previousLegacyHome = process.env['IMPERIUM_HOME'];
       const prev = process.env['KIMI_CODE_HOME'];
       delete process.env['IMPERIUM_HOME'];
+      delete process.env['ECHADRON_HOME'];
+      delete process.env['ECHADRON_CODE_HOME'];
       process.env['KIMI_CODE_HOME'] = '/env/kimi';
       try {
         expect(resolveKimiHome()).toBe('/env/kimi');
       } finally {
+        if (previousEchadronHome === undefined) delete process.env['ECHADRON_HOME'];
+        else process.env['ECHADRON_HOME'] = previousEchadronHome;
+        if (previousEchadronCodeHome === undefined) delete process.env['ECHADRON_CODE_HOME'];
+        else process.env['ECHADRON_CODE_HOME'] = previousEchadronCodeHome;
         if (previousLegacyHome === undefined) delete process.env['IMPERIUM_HOME'];
         else process.env['IMPERIUM_HOME'] = previousLegacyHome;
         if (prev === undefined) delete process.env['KIMI_CODE_HOME'];

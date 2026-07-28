@@ -569,7 +569,14 @@ describe('ModelCatalog inspect', () => {
     try {
       const model = catalog.get('k1');
       const view = catalog.inspect('k1');
-      const { authProvider: _auth, id: _id, name, ...rest } = model;
+      const {
+        authProvider: _auth,
+        id: _id,
+        name,
+        thinkingBudgetMin: _thinkingBudgetMin,
+        thinkingBudgetMax: _thinkingBudgetMax,
+        ...rest
+      } = model;
       expect(view.resolved).toMatchObject({ ...rest, wireName: name });
 
       // A silent registry write keeps the stale generation: inspect reflects
