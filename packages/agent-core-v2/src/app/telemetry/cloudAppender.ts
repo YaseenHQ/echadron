@@ -59,6 +59,8 @@ export interface CloudAppenderHostOptions {
   readonly buildSha?: string;
   readonly sessionId?: string;
   readonly getAccessToken?: () => string | null | Promise<string | null>;
+  /** Optional endpoint override for standalone hosts; defaults to the legacy service. */
+  readonly endpoint?: string;
 }
 
 export function createCloudAppender(
@@ -105,10 +107,11 @@ export class CloudAppender implements ITelemetryAppender {
   }
 
   track(event: string, properties?: TelemetryProperties): void {
+    const eventSessionId = properties?.['sessionId'];
     const enriched: EnrichedCloudEvent = {
       event_id: randomUUID().replaceAll('-', ''),
       device_id: this.deviceId,
-      session_id: this.sessionId,
+      session_id: typeof eventSessionId === 'string' ? eventSessionId : this.sessionId,
       event,
       timestamp: Date.now() / 1000,
       properties: cleanTelemetryProperties(sanitizeProperties(properties)),

@@ -1,4 +1,4 @@
-import { CLI_COMMAND_NAME } from '#/constant/app';
+import { CLI_COMMAND_ALIASES, CLI_COMMAND_NAME } from '#/constant/app';
 import { registerMigrateCommand } from '#/migration/index';
 import { Command, InvalidArgumentError, Option } from 'commander';
 
@@ -15,6 +15,7 @@ export type MainCommandHandler = (opts: CLIOptions) => void;
 export type MigrateCommandHandler = () => void;
 export type PluginNodeRunnerHandler = (entry: string, args: readonly string[]) => void;
 export type UpgradeCommandHandler = () => void | Promise<void>;
+export type UpdateModelsCommandHandler = () => void | Promise<void>;
 
 export function createProgram(
   version: string,
@@ -22,15 +23,17 @@ export function createProgram(
   onMigrate: MigrateCommandHandler,
   onPluginNodeRunner: PluginNodeRunnerHandler = () => {},
   onUpgrade: UpgradeCommandHandler = () => {},
+  onUpdateModels: UpdateModelsCommandHandler = onUpgrade,
 ): Command {
   const program = new Command(CLI_COMMAND_NAME)
+    .aliases(CLI_COMMAND_ALIASES)
     .description('The Starting Point for Next-Gen Agents')
     .version(version, '-V, --version')
     .allowUnknownOption(false)
     .configureHelp({ helpWidth: 100 })
     .helpOption('-h, --help', 'Show help.')
     .usage('[options] [command]')
-    .addHelpText('after', '\nDocumentation:        https://moonshotai.github.io/kimi-code/\n');
+    .addHelpText('after', '\nDocumentation:        https://github.com/YaseenHQ/kimi/tree/main/docs/\n');
 
   program
     .addOption(
@@ -122,11 +125,12 @@ export function createProgram(
   registerVisCommand(program);
   registerMigrateCommand(program, onMigrate);
   program
-    .command('upgrade')
-    .alias('update')
-    .description('Upgrade Kimi Code to the latest version.')
-    .action(async () => {
-      await onUpgrade();
+    .command('update')
+    .alias('upgrade')
+    .description('Update Echadron or refresh its model catalogs.')
+    .option('--models', 'Refresh the models.dev catalog only.')
+    .action(async (options: { models?: boolean }) => {
+      await (options.models === true ? onUpdateModels() : onUpgrade());
     });
 
   program

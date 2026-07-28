@@ -30,7 +30,12 @@ export async function shutdownTelemetry(
   await shutdown(options);
 }
 
-export { initializeTelemetry } from './bootstrap';
+export {
+  initializeTelemetry,
+  isTelemetryDisabledByEnv,
+  LEGACY_TELEMETRY_DISABLE_ENV,
+  TELEMETRY_DISABLE_ENV,
+} from './bootstrap';
 export type { TelemetryBootstrapOptions } from './bootstrap';
 
 export { installCrashHandlers, setCrashPhase } from './crash';
@@ -40,3 +45,8 @@ export { normalizeRemote } from './remote';
 
 export type { TelemetryPrimitive, TelemetryProperties } from './types';
 export type { TelemetryClient, TelemetryContextIds } from './client';
+export {
+  LEGACY_TELEMETRY_ENDPOINT_ENV,
+  TELEMETRY_ENDPOINT,
+  TELEMETRY_ENDPOINT_ENV,
+} from './transport';

@@ -17,6 +17,7 @@ import { mkdirSync } from 'node:fs';
 import { homedir } from 'node:os';
 
 import { join } from 'pathe';
+import { applyEchadronEnvironmentAliases } from '@moonshot-ai/kimi-code-oauth';
 
 import { SyncDescriptor } from '#/_base/di/descriptors';
 import { createDecorator, type ServiceIdentifier } from '#/_base/di/instantiation';
@@ -27,7 +28,6 @@ import {
 import { FileStorageService } from '#/persistence/backends/node-fs/fileStorageService';
 import { FileSkillDiscovery } from '#/app/skillCatalog/fileSkillDiscovery';
 import { ISkillDiscovery } from '#/app/skillCatalog/skillDiscovery';
-import { IKosongConfigService } from '#/app/kosongConfig/kosongConfig';
 
 export interface IBootstrapOptions {
   readonly homeDir: string;
@@ -93,6 +93,7 @@ export interface BootstrapInput {
 
 export function resolveBootstrapOptions(input: BootstrapInput = {}): IBootstrapOptions {
   const env = input.env ?? process.env;
+  applyEchadronEnvironmentAliases(env);
   const osHomeDir = input.osHomeDir ?? homedir();
   const homeDir = resolveKimiHome(input.homeDir, env, osHomeDir);
   const configPath = input.configPath ?? join(homeDir, 'config.toml');
@@ -121,16 +122,12 @@ export function bootstrap(input: BootstrapInput = {}, extraSeeds: ScopeSeed = []
   const app = createAppScope({
     extra: [...bootstrapSeed(input), ...storageSeed(options), ...skillSeed(), ...extraSeeds],
   });
-  // Instantiate the kosong persistence bridge eagerly: kosong's registries
-  // only become `ready` once the bridge has hydrated them from config, and
-  // Eager registration alone never constructs a service.
-  app.accessor.get(IKosongConfigService);
   return { app };
 }
 
 function storageSeed(options: IBootstrapOptions): ScopeSeed {
   const file = (): SyncDescriptor<IFileSystemStorageService> =>
-    new SyncDescriptor(FileStorageService, [options.homeDir, 0o700, 0o600], true);
+    new SyncDescriptor(FileStorageService, [options.homeDir, 0o700, 0o600]);
   return [
     [IFileSystemStorageService as ServiceIdentifier<unknown>, file()],
   ];
@@ -140,7 +137,7 @@ function skillSeed(): ScopeSeed {
   return [
     [
       ISkillDiscovery as ServiceIdentifier<unknown>,
-      new SyncDescriptor(FileSkillDiscovery, [], true),
+      new SyncDescriptor(FileSkillDiscovery, []),
     ],
   ];
 }
@@ -150,7 +147,15 @@ export function resolveKimiHome(
   env: NodeJS.ProcessEnv = process.env,
   osHomeDir: string = homedir(),
 ): string {
-  return homeDir ?? env['KIMI_CODE_HOME'] ?? join(osHomeDir, '.kimi-code');
+  applyEchadronEnvironmentAliases(env);
+  return (
+    homeDir ??
+    env['ECHADRON_HOME'] ??
+    env['ECHADRON_CODE_HOME'] ??
+    env['IMPERIUM_HOME'] ??
+    env['KIMI_CODE_HOME'] ??
+    join(osHomeDir, '.echadron')
+  );
 }
 
 export function resolveConfigPath(input: {

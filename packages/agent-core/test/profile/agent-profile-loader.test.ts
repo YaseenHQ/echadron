@@ -59,6 +59,7 @@ describe('agent profile loader', () => {
       `
 name: agent
 description: Parent agent
+model: parent-model
 systemPromptPath: ./${fileName(systemPath)}
 promptVars:
   parentOnly: parent-value
@@ -77,6 +78,7 @@ subagents:
       `
 extends: agent
 name: coder
+model: inherit
 promptVars:
   childOnly: child-value
   roleAdditional: child-role
@@ -104,6 +106,8 @@ tools:
     const coderPrompt = profiles['coder']?.systemPrompt(promptContext);
 
     expect(profiles['coder']?.description).toBe('Coder child subagent');
+    expect(profiles['agent']?.model).toBe('parent-model');
+    expect(profiles['coder']?.model).toBeUndefined();
     expect(profiles['coder']?.tools).toEqual(['Bash', 'Skill']);
     expect(profiles['agent']?.subagents?.['shared']).toBe(profiles['shared']);
     expect(profiles['agent']?.subagents?.['coder']).toBe(profiles['coder']);
@@ -249,7 +253,7 @@ describe('default agent profiles', () => {
       cwd: '/workspace/two',
     });
 
-    expect(first).toContain('You are Kimi Code CLI');
+    expect(first).toContain('You are Echadron');
     expect(first).toContain('Available skills');
     expect(first).toContain('/workspace/one');
     expect(second).toContain('/workspace/two');

@@ -1,15 +1,15 @@
-# `kimi acp` Subcommand
+# `echadron acp` Subcommand
 
-`kimi acp` switches Kimi Code CLI to **ACP (Agent Client Protocol)** mode: it communicates with an ACP client (such as Zed, JetBrains AI Chat, etc.) via JSON-RPC over stdin/stdout, letting the IDE directly drive kimi's sessions, prompts, and tool calls.
+`echadron acp` switches Echadron to **ACP (Agent Client Protocol)** mode: it communicates with an ACP client (such as Zed, JetBrains AI Chat, etc.) via JSON-RPC over stdin/stdout, letting the IDE directly drive Echadron sessions, prompts, and tool calls.
 
 ```sh
-kimi acp
+echadron acp
 ```
 
-Once started, the command prints no banner and immediately waits for the ACP client to send an `initialize` request on stdin. Logs are written to stderr (as well as the diagnostic log under `~/.kimi-code/logs/`), so the ACP channel itself stays clean.
+Once started, the command prints no banner and immediately waits for the ACP client to send an `initialize` request on stdin. Logs are written to stderr (as well as the diagnostic log under `~/.echadron/logs/`), so the ACP channel itself stays clean.
 
 ::: tip Who calls this?
-You typically do not need to run `kimi acp` manually — this command is the subprocess entry point for IDEs. For IDE-side configuration, see [Using in IDEs](../guides/ides.md).
+You typically do not need to run `echadron acp` manually — this command is the subprocess entry point for IDEs. For IDE-side configuration, see [Using in IDEs](../guides/ides.md).
 :::
 
 ## Capability Matrix
@@ -25,6 +25,7 @@ The table below lists the capabilities declared by the current ACP adapter layer
 | `mcpCapabilities.sse` | `true` | Forwards legacy SSE MCP services configured by the IDE |
 | `loadSession` | `true` | Supports `session/load` to resume an existing session, replaying history on load |
 | `sessionCapabilities.list` | `{}` | Supports `session/list` to enumerate the current user's sessions |
+| `sessionCapabilities.additionalDirectories` | `{}` | Accepts additional workspace roots on new/load/resume and reports them from `session/list` |
 
 ## ACP Method Coverage
 
@@ -36,9 +37,9 @@ The spec divides methods into a **stable** surface and an evolving **unstable** 
 
 | Method | Implemented | Description |
 | --- | --- | --- |
-| `initialize` | Yes | Version negotiation; returns `agentInfo: { name: 'Kimi Code CLI', version }`, capability matrix, and `authMethods` |
-| `authenticate` | Yes | Validates `method_id='login'`; returns `authRequired (-32000)` if token is missing, `invalidParams (-32602)` for unknown ID |
-| `session/new` | Yes | Accepts `cwd` / `mcpServers`; returns `configOptions[]` |
+| `initialize` | Yes | Version negotiation; returns `agentInfo: { name: 'Echadron', version }`, capability matrix, and the `Login with Echadron (OAuth)` terminal auth method |
+| `authenticate` | Yes | Validates `method_id='login'`; reloads the live config after terminal OAuth auth and returns `authRequired (-32000)` if no usable provider is configured |
+| `session/new` | Yes | Accepts `cwd` / `additionalDirectories` / `mcpServers`; returns `configOptions[]` |
 | `session/load` | Yes | Restores a session from disk and replays history via `session/update` |
 | `session/resume` | Yes | Lightweight sibling of `session/load`; skips history replay |
 | `session/prompt` | Yes | Accepts `text` / `image` / `resource` / `resource_link` content blocks; streams `agent_message_chunk` |
@@ -53,7 +54,7 @@ The spec divides methods into a **stable** surface and an evolving **unstable** 
 
 | Method | Implemented | Description |
 | --- | --- | --- |
-| `session/update` | Yes | Streams `agent_message_chunk` / `tool_call*` / `plan` / `config_option_update` / `available_commands_update` |
+| `session/update` | Yes | Streams `agent_message_chunk` / `tool_call*` / `plan` / `config_option_update` / `available_commands_update` / unstable `usage_update` |
 | `session/request_permission` | Yes | Shared channel for tool approval and question elicitation |
 | `fs/read_text_file` | Yes | File reads at the kaos layer are routed to the client (advertised via `fsCapabilities`) |
 | `fs/write_text_file` | Yes | File writes at the kaos layer are routed to the client |
@@ -66,18 +67,20 @@ The spec divides methods into a **stable** surface and an evolving **unstable** 
 | `session/set_model` | Yes | Compatibility path; equivalent to `set_config_option({configId:'model'})` |
 | Remaining 18 methods | No | Includes session lifecycle extensions, buffer sync, inline-edit prediction, provider management, etc. |
 
+Model rows in `configOptions` are rebuilt from the live Echadron config. Their canonical `_meta['echadron:model']` metadata (plus the deprecated `_meta['imperium:model']` compatibility key) includes the provider/model id, protocol, capabilities, and non-secret context/input/output limits imported from models.dev. During a prompt, `usage_update` carries the current and maximum context tokens so clients can render the same context-window state as the TUI. Provider management (`providers/list`, `providers/set`, `providers/disable`) remains intentionally unadvertised until credential replacement and OAuth account switching can be made transactional and safe over ACP.
+
 All methods not listed above return `methodNotFound`.
 
 ## MCP Forwarding
 
 When an ACP client provides `mcpServers` in `session/new` or `session/load`, the adapter layer performs the following conversions:
 
-- `http` → kimi's `transport: 'http'` configuration
-- `stdio` → kimi's `transport: 'stdio'` configuration
-- `sse` → kimi's `transport: 'sse'` configuration
+- `http` → Echadron's `transport: 'http'` configuration
+- `stdio` → Echadron's `transport: 'stdio'` configuration
+- `sse` → Echadron's `transport: 'sse'` configuration
 - `acp` → discarded with a warn log entry
 
 ## Next steps
 
 - [Using in IDEs](../guides/ides.md) — Zed / JetBrains configuration steps and troubleshooting
-- [`kimi` Command Reference](./kimi-command.md) — Complete subcommand list
+- [`echadron` Command Reference](./kimi-command.md) — Complete subcommand list

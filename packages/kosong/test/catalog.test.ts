@@ -67,14 +67,16 @@ describe('resolveCatalogImport — wire resolution', () => {
     ).toEqual({ kind: 'invalid', reason: 'unknown-explicit-type' });
   });
 
-  it('falls back to openai for vendor-specific SDKs models.dev does not type', () => {
-    // xai shape: vendor npm, no explicit type, no api → guessed, needs a URL.
+  it('recognizes explicit OpenAI-compatible SDK adapters', () => {
+    // xAI is a vendor SDK, but models.dev declares its OpenAI-compatible
+    // transport explicitly through npm.
     expect(resolveCatalogImport({ id: 'xai', npm: '@ai-sdk/xai' })).toEqual({
       kind: 'needs-base-url',
       wire: 'openai',
-      guessed: true,
+      guessed: false,
     });
-    // openrouter shape: vendor npm with its own api — guessed but usable.
+    // OpenRouter is also a known compatible adapter; its endpoint is usable
+    // without asking for a second URL.
     expect(
       resolveCatalogImport({
         id: 'openrouter',
@@ -84,7 +86,7 @@ describe('resolveCatalogImport — wire resolution', () => {
     ).toEqual({
       kind: 'ok',
       wire: 'openai',
-      guessed: true,
+      guessed: false,
       baseUrl: 'https://openrouter.ai/api/v1',
     });
     // Recognized SDKs are never guesses.
@@ -98,6 +100,15 @@ describe('resolveCatalogImport — wire resolution', () => {
     expect(resolveCatalogImport({ id: 'x', type: 'openai_responses' })).toMatchObject({
       guessed: false,
     });
+  });
+
+  it('uses the exact adapter before provider-id heuristics', () => {
+    expect(
+      resolveCatalogImport({ id: 'custom-google', npm: '@ai-sdk/google-vertex' }),
+    ).toMatchObject({ kind: 'ok', wire: 'vertexai', guessed: false });
+    expect(
+      resolveCatalogImport({ id: 'custom-anthropic', npm: '@ai-sdk/anthropic' }),
+    ).toMatchObject({ kind: 'ok', wire: 'anthropic', guessed: false });
   });
 
   it('refuses SDKs known to be proprietary instead of guessing', () => {
@@ -178,7 +189,7 @@ describe('resolveCatalogImport — endpoint resolution', () => {
   it('adapts a user-supplied URL to the wire (Anthropic strips a trailing /v1)', () => {
     expect(
       resolveCatalogImport({ id: 'xai', npm: '@ai-sdk/xai' }, 'https://api.x.ai/v1'),
-    ).toEqual({ kind: 'ok', wire: 'openai', guessed: true, baseUrl: 'https://api.x.ai/v1' });
+    ).toEqual({ kind: 'ok', wire: 'openai', guessed: false, baseUrl: 'https://api.x.ai/v1' });
     expect(
       resolveCatalogImport(
         { id: 'google-vertex-anthropic', npm: '@ai-sdk/google-vertex/anthropic' },
@@ -365,6 +376,48 @@ describe('catalogModelToCapability', () => {
     expect(model?.capability.thinking).toBe(true);
   });
 
+  it('keeps an explicit private-catalog default and drops the sentinel tier', () => {
+    const model = catalogModelToCapability({
+      id: 'custom-reasoner',
+      reasoning: true,
+      default_effort: 'HIGH',
+      reasoning_options: [{ type: 'effort', values: ['default', 'low', 'HIGH', 'high'] }],
+      limit: { context: 1000 },
+    });
+    expect(model?.supportEfforts).toEqual(['low', 'high']);
+    expect(model?.defaultEffort).toBe('high');
+  });
+
+  it('materializes models.dev experimental modes with safe request overlays', () => {
+    const models = catalogProviderModels({
+      id: 'gateway',
+      models: {
+        'gpt-5.4': {
+          id: 'gpt-5.4',
+          limit: { context: 1000 },
+          experimental: {
+            modes: {
+              fast: {
+                provider: {
+                  headers: { 'x-mode': 'fast', authorization: 'must-not-override' },
+                  body: { service_tier: 'priority', messages: ['must-not-override'] },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+    expect(models.map((model) => model.id)).toEqual(['gpt-5.4', 'gpt-5.4-fast']);
+    expect(models[1]).toMatchObject({
+      wireModel: 'gpt-5.4',
+      name: 'gpt-5.4 Fast',
+      requestHeaders: { 'x-mode': 'fast' },
+      requestBody: { service_tier: 'priority' },
+      mode: 'fast',
+    });
+  });
+
   it("reads the 'none' entry as the off encoding, not a selectable level", () => {
     const model = catalogModelToCapability({
       id: 'grok',
@@ -529,6 +582,9 @@ describe('catalogModelToCapability', () => {
         limit: { context: 1000 },
       });
       expect(model?.supportEfforts).toBeUndefined();
+      if (reasoning_options[0]?.type === 'budget_tokens') {
+        expect(model?.thinkingBudget).toEqual({ min: 1024, max: 32768 });
+      }
       expect(model?.capability.thinking).toBe(true);
     }
   });

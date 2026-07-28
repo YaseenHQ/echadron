@@ -1,7 +1,7 @@
 /**
  * Scenario: the VS Code host and another Node SDK client share one in-process Kimi home.
  * Responsibilities: outbound host identity, config/session interoperability, MCP credential/edit compatibility, and terminal provider failures.
- * Wiring: KimiRuntime, KimiHarness, core, storage, and HTTP provider adapter are real; only the remote provider is local.
+ * Wiring: EchadronRuntime, KimiHarness, core, storage, and HTTP provider adapter are real; only the remote provider is local.
  * Run: pnpm --filter kimi-code exec vitest run test/kimi-harness.integration.test.ts
  */
 
@@ -42,7 +42,7 @@ import { chatHandlers } from "../src/handlers/chat.handler";
 import { mcpHandlers } from "../src/handlers/mcp.handler";
 import { parseHostSlashCommand, runHostSlashCommand } from "../src/handlers/slash-command";
 import type { HandlerContext } from "../src/handlers/types";
-import { KimiRuntime } from "../src/runtime/kimi-runtime";
+import { EchadronRuntime } from "../src/runtime/echadron-runtime";
 import type { SessionRuntime } from "../src/runtime/session-runtime";
 
 const MODEL_ALIAS = "vscode-test";
@@ -63,7 +63,7 @@ interface RuntimeRig {
   readonly homeDir: string;
   readonly workDir: string;
   readonly provider: FakeProviderHarness;
-  readonly runtime: KimiRuntime;
+  readonly runtime: EchadronRuntime;
   readonly broadcasts: BroadcastRecord[];
   readonly logs: LogRecord[];
   readonly version: string;
@@ -102,7 +102,7 @@ async function createRuntimeRig(extraAliases: readonly string[] = []): Promise<R
   const version = await readExtensionVersion();
   const broadcasts: BroadcastRecord[] = [];
   const logs: LogRecord[] = [];
-  const runtime = new KimiRuntime({
+  const runtime = new EchadronRuntime({
     version,
     homeDir,
     broadcast: (event: string, data: unknown, webviewId?: string) => {
@@ -386,7 +386,7 @@ describe("VS Code Kimi harness integration (shares one in-process SDK home)", ()
     await expect(session.prompt("hello")).resolves.toEqual({ status: "finished" });
 
     expect(rig.provider.requests[0]?.headers["user-agent"]).toBe(
-      `kimi-code-vscode/${rig.version}`,
+      `echadron-vscode/${rig.version}`,
     );
   });
 
@@ -1224,7 +1224,7 @@ describe("VS Code Kimi harness integration (shares one in-process SDK home)", ()
     await expect(runSlash(runtime, "/export exported.md")).resolves.toBe(true);
 
     const markdown = await readFile(join(rig.workDir, "exported.md"), "utf8");
-    expect(markdown).toContain("# Kimi Session Export");
+    expect(markdown).toContain("# Echadron Session Export");
     expect(markdown).toContain("Prior context.");
   });
 

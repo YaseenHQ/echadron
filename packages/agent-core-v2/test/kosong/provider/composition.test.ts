@@ -40,8 +40,15 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { APIError as AnthropicAPIError } from '@anthropic-ai/sdk';
+
 import { isUnknownCapability } from '#/kosong/contract/capability';
-import { APIConnectionError } from '#/kosong/contract/errors';
+import {
+  APIConnectionError,
+  APIProviderQuotaExhaustedError,
+  APIProviderRateLimitError,
+  isRetryableGenerateError,
+} from '#/kosong/contract/errors';
 import type { Message } from '#/kosong/contract/message';
 import type {
   ChatProvider,
@@ -739,6 +746,68 @@ describe('per-turn intent wire encoding (behavior probes)', () => {
   });
 });
 
+describe('quota-exhausted classification through the real composition (behavior probes)', () => {
+  const MOONSHOT_QUOTA_BODY = {
+    type: 'error',
+    error: {
+      type: 'exceeded_current_quota_error',
+      message:
+        'Your account is suspended due to insufficient balance, please recharge your account',
+    },
+  };
+
+  function mockQuota429Client(provider: ChatProvider): void {
+    const client = sdkClient(provider) as {
+      messages: { create: unknown };
+      beta: { messages: { create: unknown } };
+    };
+    const reject = vi.fn().mockImplementation(() => {
+      throw AnthropicAPIError.generate(
+        429,
+        MOONSHOT_QUOTA_BODY,
+        'Too many requests',
+        new Headers(),
+      );
+    });
+    client.messages.create = reject;
+    client.beta.messages.create = reject;
+  }
+
+  it('fails fast on a Moonshot quota 429 over the (kimi, anthropic) composition', async () => {
+    const provider = registry.createChatProvider({
+      protocol: 'anthropic',
+      providerType: 'kimi',
+      modelName: 'kimi-for-coding',
+      apiKey: 'sk-probe',
+    });
+    mockQuota429Client(provider);
+
+    const caught = await provider.generate('', [], PROBE_HISTORY).then(
+      () => undefined,
+      (error: unknown) => error,
+    );
+    expect(caught).toBeInstanceOf(APIProviderQuotaExhaustedError);
+    expect(isRetryableGenerateError(caught)).toBe(false);
+  });
+
+  it('keeps the same 429 a retryable rate limit on a plain anthropic composition', async () => {
+    const provider = registry.createChatProvider({
+      protocol: 'anthropic',
+      modelName: 'claude-opus-4-6',
+      apiKey: 'sk-probe',
+    });
+    mockQuota429Client(provider);
+
+    const caught = await provider.generate('', [], PROBE_HISTORY).then(
+      () => undefined,
+      (error: unknown) => error,
+    );
+    expect(caught).toBeInstanceOf(APIProviderRateLimitError);
+    expect(caught).not.toBeInstanceOf(APIProviderQuotaExhaustedError);
+    expect(isRetryableGenerateError(caught)).toBe(true);
+  });
+});
+
 describe('reasoning dialect (behavior probes)', () => {
   it('yields think parts from the `reasoning` wire field', async () => {
     const provider = registry.createChatProvider({
@@ -1311,6 +1380,20 @@ describe('Anthropic max-tokens profile', () => {
 });
 
 describe('OpenAI reasoning_effort path (issue #1616)', () => {
+  it('preserves models.dev mode body fields while protecting generated request fields', async () => {
+    const provider = new OpenAILegacyChatProvider({
+      model: 'gpt-5.4',
+      apiKey: 'sk-probe',
+      stream: false,
+      generationKwargs: { service_tier: 'priority', model: 'must-not-win' },
+    });
+
+    const body = await captureOpenAIBody(provider);
+
+    expect(body['service_tier']).toBe('priority');
+    expect(body['model']).toBe('gpt-5.4');
+  });
+
   it('auto-enables reasoning_effort=medium from think-part history when no withThinking hook exists', async () => {
     const provider = new OpenAILegacyChatProvider({
       model: 'gpt-4.1',

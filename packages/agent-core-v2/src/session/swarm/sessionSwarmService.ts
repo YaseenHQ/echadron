@@ -22,8 +22,7 @@
 import type { TokenUsage } from '#/kosong/contract/usage';
 import { IModelCatalog } from '#/kosong/model/catalog';
 
-import { InstantiationType } from '#/_base/di/extensions';
-import { LifecycleScope, registerScopedService } from '#/_base/di/scope';
+import { LifecycleScope, ScopeActivation, registerScopedService } from '#/_base/di/scope';
 import { linkAbortSignal } from '#/_base/utils/abort';
 import type { IAgentScopeHandle } from '#/_base/di/scope';
 import { IAgentProfileService } from '#/agent/profile/profile';
@@ -33,6 +32,7 @@ import { IAgentUserToolService } from '#/agent/userTool/userTool';
 import { IEventBus } from '#/app/event/eventBus';
 import { ISessionAgentProfileCatalog } from '#/session/sessionAgentProfileCatalog/sessionAgentProfileCatalog';
 import { applyProfilePromptPrefix } from '#/app/agentProfileCatalog/promptPrefix';
+import { agentProfileModelAlias } from '#/app/agentProfileCatalog/profile-shared';
 import { IAgentLifecycleService } from '#/session/agentLifecycle/agentLifecycle';
 import {
   isSubagentMeta,
@@ -153,10 +153,13 @@ export class SessionSwarmService implements ISessionSwarmService {
     if (callerData.modelAlias === undefined) {
       throw new Error('Caller agent has no model bound');
     }
+    const modelAlias = agentProfileModelAlias(profile, callerData.modelAlias);
     const binding = options.binding ?? {
-      model: callerData.modelAlias,
-      thinking: callerData.thinkingLevel,
+      model: modelAlias,
+      thinking: modelAlias === callerData.modelAlias ? callerData.thinkingLevel : undefined,
     };
+    const usesProfileModel =
+      profile.model !== undefined && binding.model === profile.model;
     let child: IAgentScopeHandle;
     try {
       this.modelCatalog.get(binding.model);
@@ -170,6 +173,7 @@ export class SessionSwarmService implements ISessionSwarmService {
         labels: subagentLabels(callerAgentId, { swarmItem: options.swarmItem }),
       });
     } catch (error) {
+      if (usesProfileModel) throw error;
       throw wrapSubagentModelError(error, binding.model, callerData.modelAlias);
     }
     child.accessor
@@ -284,6 +288,6 @@ registerScopedService(
   LifecycleScope.Session,
   ISessionSwarmService,
   SessionSwarmService,
-  InstantiationType.Eager,
+  ScopeActivation.OnScopeCreated,
   'sessionSwarm',
 );

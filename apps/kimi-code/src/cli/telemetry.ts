@@ -70,16 +70,15 @@ export interface InitializeServerTelemetryOptions {
 }
 
 /**
- * Bootstrap telemetry for the `kimi web` host.
+ * @deprecated The web command uses kap-server's v2 CloudAppender directly.
  *
- * Mirrors {@link initializeCliTelemetry}: mints the device id, reads config to
- * honor the `telemetry` toggle and pick up the default model, attaches the
- * sink with `ui_mode = "web"`, and returns a {@link TelemetryClient} the
- * caller hands to `startServer` via `coreProcessOptions.telemetry`. That wires
- * the same real client into `KimiCore`, so agent-core events emitted inside the
- * server process (`mcp_connected`, `session_load_failed`, plan-mode / cron
- * events, …) actually leave the process carrying the enriched context
- * (`app_name` / `version` / `ui_mode` / `model` / platform fields).
+ * Legacy v1 bootstrap for the `echadron web` host. The web command now uses
+ * kap-server's v2 `CloudAppender` as its sole runtime sink; this helper stays
+ * exported for compatibility with older internal callers and tests and must
+ * not be called alongside `startServer({ telemetry: true })`.
+ *
+ * It mirrors the CLI bootstrap and remains useful to hosts that explicitly
+ * choose the v1 sink, but it is not part of the canonical kap-server path.
  *
  * The returned client wraps the `@moonshot-ai/kimi-telemetry` module
  * functions, so the module-level `track` / `withTelemetryContext` (used to
@@ -120,7 +119,7 @@ function readServerTelemetryConfig(
 ): Pick<KimiConfig, 'telemetry' | 'defaultModel'> {
   try {
     const { config, fileError } = loadRuntimeConfigSafe(configPath);
-    // A broken config fails the server on its own inside KimiCore; for
+    // A broken config fails the server on its own inside the core host; for
     // telemetry just degrade to "enabled, no model" so we never block startup.
     if (fileError !== undefined) return {};
     return config;

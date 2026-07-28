@@ -1,15 +1,15 @@
 {
-  "name": "kimi-code",
-  "publisher": "moonshot-ai",
-  "displayName": "Kimi Code",
-  "description": "Official Kimi Code plugin for VS Code",
+  "name": "echadron-code",
+  "publisher": "yaseenhq",
+  "displayName": "Echadron",
+  "description": "Echadron coding agent for VS Code",
   "version": "0.6.5",
   "private": true,
   "license": "Apache-2.0",
   "type": "module",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/MoonshotAI/kimi-code.git",
+    "url": "git+https://github.com/YaseenHQ/kimi.git",
     "directory": "apps/vscode"
   },
   "engines": {
@@ -39,123 +39,113 @@
     "skills",
     "json",
     "autocomplete",
-    "moonshot",
-    "kimi",
-    "moonshot-ai"
+    "echadron",
+    "yaseenhq"
   ],
   "pricing": "Free",
   "activationEvents": [],
   "main": "./dist/extension.js",
-  "icon": "resources/kimi-icon-storefront.png",
+  "icon": "resources/echadron-icon-storefront.png",
   "contributes": {
     "configuration": {
-      "title": "Kimi Code",
+      "title": "Echadron",
       "properties": {
-        "kimi.yoloMode": {
+        "echadron.yoloMode": {
           "type": "boolean",
           "default": false,
           "description": "Auto-approve regular tool calls; the agent may still ask questions"
         },
-        "kimi.autosave": {
+        "echadron.autosave": {
           "type": "boolean",
           "default": true,
-          "description": "Automatically save files before Kimi reads or writes them"
+          "description": "Automatically save files before Echadron reads or writes them"
         },
-        "kimi.enableNewConversationShortcut": {
+        "echadron.enableNewConversationShortcut": {
           "type": "boolean",
           "default": false,
-          "description": "Use Cmd/Ctrl+N to start a new conversation when Kimi is focused"
+          "description": "Use Cmd/Ctrl+N to start a new conversation when Echadron is focused"
         },
-        "kimi.useCtrlEnterToSend": {
+        "echadron.useCtrlEnterToSend": {
           "type": "boolean",
           "default": false,
           "description": "Use Ctrl/Cmd+Enter to send prompts instead of Enter"
         },
-        "kimi.showThinkingContent": {
+        "echadron.showThinkingContent": {
           "type": "boolean",
           "default": true,
           "description": "Show thinking/reasoning content in the chat UI"
         },
-        "kimi.showThinkingExpanded": {
+        "echadron.showThinkingExpanded": {
           "type": "boolean",
           "default": false,
-          "description": "Auto-expand thinking/reasoning sections when shown (requires 'Show Thinking Content' to be enabled)"
+          "description": "Auto-expand thinking/reasoning sections when shown"
         },
-        "kimi.editorContext": {
+        "echadron.editorContext": {
           "type": "string",
           "default": "never",
-          "enum": [
-            "never",
-            "onConversationStart",
-            "onFileChange"
-          ],
-          "enumDescriptions": [
-            "Never share editor context",
-            "Share once when conversation starts",
-            "Share when active file changes"
-          ],
-          "description": "Control when to share the active editor's file and cursor position with Kimi"
+          "enum": ["never", "onConversationStart", "onFileChange"],
+          "description": "Control when to share the active editor's file and cursor position with Echadron"
         }
       }
     },
     "commands": [
       {
-        "command": "kimi.clearAllState",
-        "title": "Kimi Code: [DEBUG] Clear All State"
+        "command": "echadron.clearAllState",
+        "title": "Echadron: [DEBUG] Clear All State"
       },
       {
-        "command": "kimi.openInTab",
-        "title": "Kimi Code: Open in New Tab",
+        "command": "echadron.openInTab",
+        "title": "Echadron: Open in New Tab",
         "icon": "$(link-external)"
       },
       {
-        "command": "kimi.openInSideBar",
-        "title": "Kimi Code: Open in Side Panel",
+        "command": "echadron.openInSideBar",
+        "title": "Echadron: Open in Side Panel",
         "icon": "$(layout-sidebar-left)"
       },
       {
-        "command": "kimi.focusInput",
-        "title": "Kimi Code: Focus Input",
+        "command": "echadron.focusInput",
+        "title": "Echadron: Focus Input",
         "icon": "$(edit)"
       },
       {
-        "command": "kimi.insertMention",
-        "title": "Kimi Code: Insert Current File",
+        "command": "echadron.insertMention",
+        "title": "Echadron: Insert Current File",
         "icon": "$(mention)"
       },
       {
-        "command": "kimi.newConversation",
-        "title": "Kimi Code: New Conversation",
+        "command": "echadron.newConversation",
+        "title": "Echadron: New Conversation",
         "icon": "$(add)"
       },
       {
-        "command": "kimi.showLogs",
-        "title": "Kimi Code: Show Logs",
+        "command": "echadron.showLogs",
+        "title": "Echadron: Show Logs",
         "icon": "$(output)"
       },
       {
-        "command": "kimi.resetKimi",
-        "title": "Kimi Code: Reset Kimi (in case of any issues/no response)",
+        "command": "echadron.reset",
+        "title": "Echadron: Reset (in case of any issues/no response)",
         "icon": "$(refresh)"
       },
       {
-        "command": "kimi.logout",
-        "title": "Kimi Code: Logout",
+        "command": "echadron.logout",
+        "title": "Echadron: Logout",
         "icon": "$(sign-out)"
       },
       {
-        "command": "kimi.migrateLegacyData",
-        "title": "Kimi Code: Migrate Legacy Data"
+        "command": "echadron.migrateLegacyData",
+        "title": "Echadron: Migrate Legacy Data"
       }
     ],
     "keybindings": [
       {
-        "command": "kimi.focusInput",
+        "command": "echadron.focusInput",
         "key": "ctrl+shift+k",
         "mac": "cmd+shift+k"
       },
       {
-        "command": "kimi.insertMention",
+        "command": "echadron.insertMention",
         "key": "alt+k",
         "mac": "alt+k",
         "when": "editorTextFocus"
@@ -164,80 +154,80 @@
     "viewsContainers": {
       "activitybar": [
         {
-          "id": "kimi-sidebar",
-          "title": "Kimi Code",
-          "icon": "resources/kimi-icon.svg"
+          "id": "echadron-sidebar",
+          "title": "Echadron",
+          "icon": "resources/echadron-icon.svg"
         }
       ]
     },
     "views": {
-      "kimi-sidebar": [
+      "echadron-sidebar": [
         {
           "type": "webview",
-          "id": "kimi.webview",
-          "name": "Kimi Code"
+          "id": "echadron.webview",
+          "name": "Echadron"
         }
       ]
     },
     "menus": {
       "view/title": [
         {
-          "command": "kimi.openInTab",
-          "when": "view == kimi.webview",
+          "command": "echadron.openInTab",
+          "when": "view == echadron.webview",
           "group": "navigation"
         },
         {
-          "command": "kimi.newConversation",
-          "when": "view == kimi.webview",
+          "command": "echadron.newConversation",
+          "when": "view == echadron.webview",
           "group": "navigation"
         }
       ],
       "commandPalette": [
         {
-          "command": "kimi.clearAllState",
+          "command": "echadron.clearAllState",
           "when": "isDevelopment"
         },
         {
-          "command": "kimi.openInTab",
+          "command": "echadron.openInTab",
           "when": "true"
         },
         {
-          "command": "kimi.openInSideBar",
+          "command": "echadron.openInSideBar",
           "when": "true"
         },
         {
-          "command": "kimi.focusInput",
+          "command": "echadron.focusInput",
           "when": "true"
         },
         {
-          "command": "kimi.insertMention",
+          "command": "echadron.insertMention",
           "when": "true"
         },
         {
-          "command": "kimi.newConversation",
+          "command": "echadron.newConversation",
           "when": "true"
         },
         {
-          "command": "kimi.showLogs",
+          "command": "echadron.showLogs",
           "when": "true"
         },
         {
-          "command": "kimi.resetKimi",
+          "command": "echadron.reset",
           "when": "true"
         },
         {
-          "command": "kimi.logout",
-          "when": "kimi.isLoggedIn"
+          "command": "echadron.logout",
+          "when": "echadron.isLoggedIn"
         },
         {
-          "command": "kimi.migrateLegacyData",
+          "command": "echadron.migrateLegacyData",
           "when": "true"
         }
       ],
       "editor/context": [
         {
-          "command": "kimi.insertMention",
-          "group": "moonshot-ai",
+          "command": "echadron.insertMention",
+          "group": "echadron",
           "when": "editorTextFocus"
         }
       ]

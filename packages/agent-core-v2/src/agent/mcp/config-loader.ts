@@ -27,7 +27,7 @@ export async function resolveMcpJsonPaths(input: ResolveMcpJsonPathsInput): Prom
   return {
     user: join(resolveKimiHome(input.homeDir), 'mcp.json'),
     projectRoot: join(projectRoot, '.mcp.json'),
-    project: join(input.cwd, '.kimi-code', 'mcp.json'),
+    project: join(input.cwd, '.echadron', 'mcp.json'),
   };
 }
 
@@ -40,12 +40,14 @@ export async function loadMcpServers(
   input: LoadMcpServersInput,
 ): Promise<Record<string, McpServerConfig>> {
   const paths = await resolveMcpJsonPaths({ cwd: input.cwd, homeDir: input.homeDir });
-  const [user, projectRoot, project] = await Promise.all([
+  const legacyProject = join(input.cwd, '.kimi-code', 'mcp.json');
+  const [user, projectRoot, legacy, project] = await Promise.all([
     readMcpJson(paths.user),
     readMcpJson(paths.projectRoot, { stdioCwdBase: dirname(paths.projectRoot) }),
+    readMcpJson(legacyProject),
     readMcpJson(paths.project),
   ]);
-  return { ...user, ...projectRoot, ...project };
+  return { ...user, ...projectRoot, ...legacy, ...project };
 }
 
 async function findProjectRoot(cwd: string): Promise<string> {

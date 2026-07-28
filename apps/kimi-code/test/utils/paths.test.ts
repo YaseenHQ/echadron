@@ -16,6 +16,9 @@ import {
 const originalEnv = { ...process.env };
 
 beforeEach(() => {
+  delete process.env['ECHADRON_HOME'];
+  delete process.env['ECHADRON_CODE_HOME'];
+  delete process.env['IMPERIUM_HOME'];
   delete process.env['KIMI_CODE_HOME'];
 });
 
@@ -24,50 +27,63 @@ afterEach(() => {
 });
 
 describe('getDataDir', () => {
-  it('returns ~/.kimi-code when KIMI_CODE_HOME is not set', () => {
-    expect(getDataDir()).toBe(join(homedir(), '.kimi-code'));
+  it('returns ~/.echadron when ECHADRON_HOME is not set', () => {
+    expect(getDataDir()).toBe(join(homedir(), '.echadron'));
   });
 
-  it('returns KIMI_CODE_HOME when set', () => {
-    process.env['KIMI_CODE_HOME'] = '/tmp/kimi-test-data';
-    expect(getDataDir()).toBe('/tmp/kimi-test-data');
+  it('prefers ECHADRON_HOME over compatibility aliases', () => {
+    process.env['ECHADRON_HOME'] = '/tmp/echadron-home';
+    process.env['ECHADRON_CODE_HOME'] = '/tmp/echadron-code-home';
+    process.env['IMPERIUM_HOME'] = '/tmp/legacy-home';
+    expect(getDataDir()).toBe('/tmp/echadron-home');
   });
 
-  it('returns KIMI_CODE_HOME even if it is a relative path', () => {
-    process.env['KIMI_CODE_HOME'] = 'relative/path';
+  it('returns IMPERIUM_HOME when set', () => {
+    process.env['IMPERIUM_HOME'] = '/tmp/echadron-test-data';
+    expect(getDataDir()).toBe('/tmp/echadron-test-data');
+  });
+
+  it('uses the ACP/web compatibility alias before legacy homes', () => {
+    process.env['ECHADRON_CODE_HOME'] = '/tmp/echadron-code-home';
+    process.env['IMPERIUM_HOME'] = '/tmp/legacy-home';
+    expect(getDataDir()).toBe('/tmp/echadron-code-home');
+  });
+
+  it('returns IMPERIUM_HOME even if it is a relative path', () => {
+    process.env['IMPERIUM_HOME'] = 'relative/path';
     expect(getDataDir()).toBe('relative/path');
   });
 });
 
 describe('getLogDir', () => {
   it('returns <dataDir>/logs', () => {
-    expect(getLogDir()).toBe(join(homedir(), '.kimi-code', 'logs'));
+    expect(getLogDir()).toBe(join(homedir(), '.echadron', 'logs'));
   });
 
-  it('respects KIMI_CODE_HOME', () => {
-    process.env['KIMI_CODE_HOME'] = '/z';
+  it('respects IMPERIUM_HOME', () => {
+    process.env['IMPERIUM_HOME'] = '/z';
     expect(getLogDir()).toBe(join('/z', 'logs'));
   });
 });
 
 describe('getBinDir', () => {
   it('returns <dataDir>/bin', () => {
-    expect(getBinDir()).toBe(join(homedir(), '.kimi-code', 'bin'));
+    expect(getBinDir()).toBe(join(homedir(), '.echadron', 'bin'));
   });
 
-  it('respects KIMI_CODE_HOME', () => {
-    process.env['KIMI_CODE_HOME'] = '/custom-bin-home';
+  it('respects IMPERIUM_HOME', () => {
+    process.env['IMPERIUM_HOME'] = '/custom-bin-home';
     expect(getBinDir()).toBe(join('/custom-bin-home', 'bin'));
   });
 });
 
 describe('getUpdateStateFile', () => {
   it('returns <dataDir>/updates/latest.json', () => {
-    expect(getUpdateStateFile()).toBe(join(homedir(), '.kimi-code', 'updates', 'latest.json'));
+    expect(getUpdateStateFile()).toBe(join(homedir(), '.echadron', 'updates', 'latest.json'));
   });
 
-  it('respects KIMI_CODE_HOME', () => {
-    process.env['KIMI_CODE_HOME'] = '/updates-home';
+  it('respects IMPERIUM_HOME', () => {
+    process.env['IMPERIUM_HOME'] = '/updates-home';
     expect(getUpdateStateFile()).toBe(join('/updates-home', 'updates', 'latest.json'));
   });
 });
@@ -75,12 +91,12 @@ describe('getUpdateStateFile', () => {
 describe('getUpdateInstallStateFile', () => {
   it('returns <dataDir>/updates/install.json', () => {
     expect(getUpdateInstallStateFile()).toBe(
-      join(homedir(), '.kimi-code', 'updates', 'install.json'),
+      join(homedir(), '.echadron', 'updates', 'install.json'),
     );
   });
 
-  it('respects KIMI_CODE_HOME', () => {
-    process.env['KIMI_CODE_HOME'] = '/updates-home';
+  it('respects IMPERIUM_HOME', () => {
+    process.env['IMPERIUM_HOME'] = '/updates-home';
     expect(getUpdateInstallStateFile()).toBe(join('/updates-home', 'updates', 'install.json'));
   });
 });
@@ -90,12 +106,12 @@ describe('getInputHistoryFile', () => {
     const workDir = '/home/user/project';
     const hash = createHash('md5').update(workDir, 'utf-8').digest('hex');
     expect(getInputHistoryFile(workDir)).toBe(
-      join(homedir(), '.kimi-code', 'user-history', `${hash}.jsonl`),
+      join(homedir(), '.echadron', 'user-history', `${hash}.jsonl`),
     );
   });
 
-  it('respects KIMI_CODE_HOME', () => {
-    process.env['KIMI_CODE_HOME'] = '/custom/data';
+  it('respects IMPERIUM_HOME', () => {
+    process.env['IMPERIUM_HOME'] = '/custom/data';
     const hash = createHash('md5').update('/proj', 'utf-8').digest('hex');
     expect(getInputHistoryFile('/proj')).toBe(
       join('/custom/data', 'user-history', `${hash}.jsonl`),

@@ -38,7 +38,7 @@ export function buildExportMarkdown(input: {
     `token_count: ${String(input.tokenCount)}`,
     "---",
     "",
-    "# Kimi Session Export",
+    "# Echadron Session Export",
     "",
     "## Overview",
     "",

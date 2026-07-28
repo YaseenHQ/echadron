@@ -49,8 +49,12 @@ export interface ModelOverride {
   reasoningKey?: string;
   adaptiveThinking?: boolean;
   supportEfforts?: string[];
+  thinkingBudgetMin?: number;
+  thinkingBudgetMax?: number;
   defaultEffort?: string;
   offEffort?: string;
+  requestHeaders?: Record<string, string>;
+  requestBody?: Record<string, unknown>;
 }
 
 /**
@@ -86,8 +90,12 @@ export interface ModelRecord {
   adaptiveThinking?: boolean;
   betaApi?: boolean;
   supportEfforts?: string[];
+  thinkingBudgetMin?: number;
+  thinkingBudgetMax?: number;
   defaultEffort?: string;
   offEffort?: string;
+  requestHeaders?: Record<string, string>;
+  requestBody?: Record<string, unknown>;
 
   overrides?: ModelOverride;
 

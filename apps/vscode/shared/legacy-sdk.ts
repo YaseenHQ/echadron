@@ -168,6 +168,8 @@ export interface ModelConfig {
   capabilities: string[];
   adaptive_thinking?: boolean;
   support_efforts?: string[];
+  thinking_budget_min?: number;
+  thinking_budget_max?: number;
   default_effort?: string;
 }
 

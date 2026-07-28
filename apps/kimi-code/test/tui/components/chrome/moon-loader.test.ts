@@ -20,6 +20,16 @@ afterEach(() => {
 });
 
 describe('MoonLoader', () => {
+  it('supports switching to a named unicode animation while it is running', () => {
+    const loader = createLoader();
+    const brailleFrame = loader.renderInline();
+
+    loader.setAnimation('orbit');
+
+    expect(loader.renderInline()).not.toBe(brailleFrame);
+    expect(loader.renderInline().trim().length).toBeGreaterThan(0);
+  });
+
   it('clears a previous warning color when reused without a color function', () => {
     const ui = { requestRender() {} } as unknown as TUI;
     const loader = new MoonLoader(ui, (value) => `<warning>${value}</warning>`, 'retrying');

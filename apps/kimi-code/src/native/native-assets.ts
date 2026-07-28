@@ -141,18 +141,19 @@ export function getNativeCacheBase(options: NativeAssetOptions = {}): string {
   const platform = options.platform ?? process.platform;
   const home = options.homeDir ?? homedir();
 
-  const cacheDirEnv = optionalEnvValue(env, 'KIMI_CODE_CACHE_DIR');
+  const cacheDirEnv =
+    optionalEnvValue(env, 'IMPERIUM_CACHE_DIR') ?? optionalEnvValue(env, 'KIMI_CODE_CACHE_DIR');
   if (cacheDirEnv !== null) return cacheDirEnv;
 
-  if (platform === 'darwin') return joinPosix(home, 'Library', 'Caches', 'kimi-code');
+  if (platform === 'darwin') return joinPosix(home, 'Library', 'Caches', 'imperium');
   if (platform === 'win32') {
     const localAppData = optionalEnvValue(env, 'LOCALAPPDATA');
     return localAppData !== null
-      ? pathWin32.join(localAppData, 'kimi-code')
-      : pathWin32.join(home, 'AppData', 'Local', 'kimi-code', 'Cache');
+      ? pathWin32.join(localAppData, 'imperium')
+      : pathWin32.join(home, 'AppData', 'Local', 'imperium', 'Cache');
   }
 
-  return joinPosix(optionalEnvValue(env, 'XDG_CACHE_HOME') ?? joinPosix(home, '.cache'), 'kimi-code');
+  return joinPosix(optionalEnvValue(env, 'XDG_CACHE_HOME') ?? joinPosix(home, '.cache'), 'imperium');
 }
 
 export function getNativeAssetCacheRoot(

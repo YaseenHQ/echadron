@@ -19,10 +19,10 @@ import type { Component, TUI } from '@moonshot-ai/pi-tui';
 import { highlightLines, langFromPath } from '#/tui/components/media/code-highlight';
 import { renderDiffLinesClustered } from '#/tui/components/media/diff-preview';
 import {
-  BRAILLE_SPINNER_FRAMES,
-  BRAILLE_SPINNER_INTERVAL_MS,
   COMMAND_PREVIEW_LINES,
   RESULT_PREVIEW_LINES,
+  SUBAGENT_SPINNER_FRAMES,
+  SUBAGENT_SPINNER_INTERVAL_MS,
   THINKING_PREVIEW_LINES,
 } from '#/tui/constant/rendering';
 import {
@@ -211,9 +211,8 @@ const PLAN_SAVED_TO_RE = /\nPlan saved to: ([^\n]+)\n/;
 /**
  * Parses the ExitPlanMode result content string to recover the approval outcome
  * and optional plan path. Core-side templates live in
- * `packages/agent-core-v2/src/agent/plan/tools/exit-plan-mode.ts` (auto-approved
- * path) and `.../permissionPolicy/policies/exit-plan-mode-review-ask.ts`
- * (user-reviewed path):
+ * `packages/agent-core/src/tools/builtin/planning/exit-plan-mode.ts` and
+ * `.../agent/permission/policies/exit-plan-mode-review-ask.ts`:
  *   - Approved output starts with 'Exited plan mode.' and selected options
  *     are reported as 'Selected approach: <label>'. Older outputs may start
  *     with 'User approved option "<label>".' Plan-file mode may include
@@ -1083,14 +1082,15 @@ export class ToolCallComponent extends Container {
         this.stopSubagentElapsedTimer();
         return;
       }
-      // Drives both the braille spinner in the header and the elapsed-seconds
+      // Drives both the unicode spinner in the header and the elapsed-seconds
       // refresh. Only the header text changes on a tick, so we avoid rebuilding
       // the body (which would defeat the per-component render caches).
-      this.subagentSpinnerFrame = (this.subagentSpinnerFrame + 1) % BRAILLE_SPINNER_FRAMES.length;
+      this.subagentSpinnerFrame =
+        (this.subagentSpinnerFrame + 1) % SUBAGENT_SPINNER_FRAMES.length;
       this.headerText.setText(this.buildHeader());
       this.notifySnapshotChange();
       this.ui?.requestRender();
-    }, BRAILLE_SPINNER_INTERVAL_MS);
+    }, SUBAGENT_SPINNER_INTERVAL_MS);
   }
 
   private stopSubagentElapsedTimer(): void {
@@ -1839,9 +1839,10 @@ export class ToolCallComponent extends Container {
     if (phase === 'failed') return currentTheme.fg('error', '✗ ');
     if (phase === 'done') return currentTheme.fg('success', STATUS_BULLET);
     if (phase === 'backgrounded') return currentTheme.dim('◐ ');
-    // Active (queued / spawning / running): a braille spinner reads as alive
+    // Active (queued / spawning / running): an animated unicode mark reads as alive
     // where a static bullet looked frozen.
-    const frame = BRAILLE_SPINNER_FRAMES[this.subagentSpinnerFrame] ?? BRAILLE_SPINNER_FRAMES[0];
+    const frame =
+      SUBAGENT_SPINNER_FRAMES[this.subagentSpinnerFrame] ?? SUBAGENT_SPINNER_FRAMES[0];
     return currentTheme.fg('primary', `${frame} `);
   }
 

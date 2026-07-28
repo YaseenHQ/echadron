@@ -74,7 +74,7 @@ const getExtensionConfig: Handler<void, ExtensionConfig> = async () => {
 };
 
 const openSettings: Handler<void, { ok: boolean }> = async () => {
-  await vscode.commands.executeCommand("workbench.action.openSettings", "kimi");
+  await vscode.commands.executeCommand("workbench.action.openSettings", "echadron");
   return { ok: true };
 };
 
@@ -146,6 +146,8 @@ function toWebviewModel(id: string, model: ModelAlias): ModelConfig {
     adaptive_thinking: effective.adaptiveThinking,
     support_efforts:
       effective.supportEfforts === undefined ? undefined : [...effective.supportEfforts],
+    thinking_budget_min: effective.thinkingBudgetMin,
+    thinking_budget_max: effective.thinkingBudgetMax,
     default_effort: effective.defaultEffort,
   };
 }

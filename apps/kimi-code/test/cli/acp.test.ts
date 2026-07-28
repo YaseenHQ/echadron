@@ -28,6 +28,12 @@ class ExitCalled extends Error {
 describe('kimi acp', () => {
   let exitSpy: ReturnType<typeof vi.spyOn>;
   let stderrSpy: ReturnType<typeof vi.spyOn>;
+  const homeEnvNames = [
+    'ECHADRON_HOME',
+    'ECHADRON_CODE_HOME',
+    'IMPERIUM_HOME',
+    'KIMI_CODE_HOME',
+  ] as const;
 
   beforeEach(() => {
     vi.mocked(runAcpServer).mockClear();
@@ -63,15 +69,18 @@ describe('kimi acp', () => {
     const optsArg = vi.mocked(runAcpServer).mock.calls[0]?.[1];
     expect(optsArg).toEqual(
       expect.objectContaining({
-        agentInfo: { name: 'Kimi Code CLI', version: expect.any(String) },
+        agentInfo: { name: 'Echadron', version: expect.any(String) },
       }),
     );
     expect(exitSpy).toHaveBeenCalledWith(0);
   });
 
-  it('forwards KIMI_CODE_HOME to terminalAuthEnv when set', async () => {
-    const previous = process.env['KIMI_CODE_HOME'];
-    process.env['KIMI_CODE_HOME'] = '/tmp/kimi-debug';
+  it('forwards IMPERIUM_HOME to terminalAuthEnv when set', async () => {
+    const previous = Object.fromEntries(
+      homeEnvNames.map((name) => [name, process.env[name]]),
+    ) as Record<(typeof homeEnvNames)[number], string | undefined>;
+    for (const name of homeEnvNames) delete process.env[name];
+    process.env['IMPERIUM_HOME'] = '/tmp/echadron-debug';
     try {
       const program = new Command('kimi').exitOverride();
       registerAcpCommand(program);
@@ -81,21 +90,28 @@ describe('kimi acp', () => {
       const optsArg = vi.mocked(runAcpServer).mock.calls[0]?.[1];
       expect(optsArg).toEqual(
         expect.objectContaining({
-          terminalAuthEnv: { KIMI_CODE_HOME: '/tmp/kimi-debug' },
+          terminalAuthEnv: {
+            ECHADRON_HOME: '/tmp/echadron-debug',
+            ECHADRON_CODE_HOME: '/tmp/echadron-debug',
+            IMPERIUM_HOME: '/tmp/echadron-debug',
+            KIMI_CODE_HOME: '/tmp/echadron-debug',
+          },
         }),
       );
     } finally {
-      if (previous === undefined) {
-        delete process.env['KIMI_CODE_HOME'];
-      } else {
-        process.env['KIMI_CODE_HOME'] = previous;
+      for (const name of homeEnvNames) {
+        const value = previous[name];
+        if (value === undefined) delete process.env[name];
+        else process.env[name] = value;
       }
     }
   });
 
-  it('omits terminalAuthEnv when KIMI_CODE_HOME is unset', async () => {
-    const previous = process.env['KIMI_CODE_HOME'];
-    delete process.env['KIMI_CODE_HOME'];
+  it('omits terminalAuthEnv when IMPERIUM_HOME is unset', async () => {
+    const previous = Object.fromEntries(
+      homeEnvNames.map((name) => [name, process.env[name]]),
+    ) as Record<(typeof homeEnvNames)[number], string | undefined>;
+    for (const name of homeEnvNames) delete process.env[name];
     try {
       const program = new Command('kimi').exitOverride();
       registerAcpCommand(program);
@@ -107,8 +123,10 @@ describe('kimi acp', () => {
       };
       expect(optsArg.terminalAuthEnv).toBeUndefined();
     } finally {
-      if (previous !== undefined) {
-        process.env['KIMI_CODE_HOME'] = previous;
+      for (const name of homeEnvNames) {
+        const value = previous[name];
+        if (value === undefined) delete process.env[name];
+        else process.env[name] = value;
       }
     }
   });

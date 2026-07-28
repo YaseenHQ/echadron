@@ -1,5 +1,5 @@
 /**
- * `kimi provider` sub-command — non-interactive provider management.
+ * `echadron provider` sub-command — non-interactive provider management.
  *
  * Headless counterpart to the TUI `/login` and `/logout` provider flows
  * for the custom-registry path so users can import an api.json document, drop
@@ -35,6 +35,8 @@ import {
 import type { Command } from 'commander';
 
 import { createKimiCodeHostIdentity, createKimiCodeUserAgent } from '#/cli/version';
+import { readFreshModelsDevCatalog } from '#/cli/models/catalog-cache';
+import { getDataDir } from '#/utils/paths';
 
 interface WritableLike {
   write(chunk: string): boolean;
@@ -356,7 +358,7 @@ export async function handleCatalogAdd(
 
   if (opts.defaultModel !== undefined && !models.some((m) => m.id === opts.defaultModel)) {
     deps.stderr.write(
-      `Model "${opts.defaultModel}" is not in provider "${providerId}". Run "kimi provider catalog list ${providerId}" to see available ids.\n`,
+      `Model "${opts.defaultModel}" is not in provider "${providerId}". Run "echadron provider catalog list ${providerId}" to see available ids.\n`,
     );
     deps.exit(1);
   }
@@ -378,9 +380,9 @@ export async function handleCatalogAdd(
     config = await harness.removeProvider(providerId);
   }
 
-  // `applyCatalogProvider` always overwrites both `defaultModel` and
-  // `[thinking]`. The values we pass here are temporary; we restore
-  // a consistent state in the post-apply block below.
+  // The catalog import only writes provider/model metadata. The global
+  // thinking setting is intentionally left untouched so each imported model's
+  // declared default remains effective.
   applyCatalogProvider(config, {
     providerId,
     wire,
@@ -388,7 +390,14 @@ export async function handleCatalogAdd(
     apiKey,
     models,
     selectedModelId: opts.defaultModel ?? '',
-    thinking: false,
+    source: {
+      kind: 'modelsDev',
+      url,
+      catalogId: providerId,
+      ...(typeof entry.npm === 'string' ? { npm: entry.npm } : {}),
+      ...(typeof entry.api === 'string' ? { api: entry.api } : {}),
+      ...(opts.baseUrl === undefined ? {} : { baseUrl }),
+    },
   });
 
   // Resolve the final `defaultModel`:
@@ -434,6 +443,10 @@ export async function handleCatalogAdd(
 
 async function loadCatalogOrExit(deps: ProviderDeps, url: string): Promise<Catalog> {
   try {
+    if (url === DEFAULT_CATALOG_URL) {
+      const cached = await readFreshModelsDevCatalog();
+      if (cached !== undefined) return cached;
+    }
     return await fetchCatalog(url, { userAgent: createKimiCodeUserAgent() });
   } catch (error) {
     const suffix = error instanceof CatalogFetchError ? ` (HTTP ${String(error.status)})` : '';
@@ -547,7 +560,7 @@ function resolveDeps(overrides: Partial<ProviderDeps> = {}): ProviderDeps {
     getHarness:
       overrides.getHarness ??
       (() => {
-        harness ??= createKimiHarness({ identity });
+        harness ??= createKimiHarness({ homeDir: getDataDir(), identity });
         return harness;
       }),
     stdout: overrides.stdout ?? process.stdout,

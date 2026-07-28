@@ -1,6 +1,6 @@
 # Providers and models
 
-Kimi Code CLI supports connecting to multiple LLM platforms simultaneously — one-click login via the Kimi Code managed service, connecting Claude with an Anthropic API key, or connecting third-party inference services via the OpenAI-compatible protocol. Each provider corresponds to a specific API protocol; models are declared on top of providers with their own name, context length, and capabilities. This page explains how to configure each type of provider in `config.toml`.
+Echadron CLI supports connecting to multiple LLM platforms simultaneously — one-click login via the managed Kimi provider, connecting Claude with an Anthropic API key, or connecting third-party inference services via the OpenAI-compatible protocol. Each provider corresponds to a specific API protocol; models are declared on top of providers with their own name, context length, and capabilities. This page explains how to configure each type of provider in `config.toml`.
 
 ## Supported provider types
 
@@ -23,7 +23,7 @@ All providers communicate with models in streaming mode by default. Capabilities
 
 Run `/login` to connect a provider through one of two authentication routes:
 
-- **Sign in with an account (OAuth)**: Kimi Code, xAI, OpenAI Codex (ChatGPT Plus or Pro), Anthropic (Claude Pro or Max), and GitHub Copilot.
+- **Sign in with an account (OAuth)**: Kimi Code, xAI, and OpenAI Codex (ChatGPT Plus or Pro). Anthropic and GitHub Copilot subscription OAuth are not offered by the interactive login flow; connect those services with an API key or `config.toml` instead.
 - **Connect with an API key**: choose a Kimi Platform region, a known provider from the [models.dev](https://models.dev/) catalog, or a custom `api.json` registry.
 
 OAuth tokens are stored separately from `config.toml`; provider references and model metadata remain in Kimi's normal configuration format. `/logout` lists each credential individually, marking account sessions with **(OAuth)** and static credentials with **(API key)**, and can also clear **All OAuth accounts**, **All API-key providers**, or **All credentials**. This keeps OAuth and API-key credentials distinct even when they share a provider ID. Each bundle shows exactly which credentials it includes. Credential logout preserves provider/model configuration and saved sessions. An active OAuth session remains open; an active API-key session is closed so it cannot retain the cleared key in memory.
@@ -154,9 +154,9 @@ To route Vertex requests through a custom (e.g. proxied) endpoint, set `base_url
 
 ## OAuth and credential injection
 
-Kimi Code, xAI, OpenAI Codex, Anthropic, and GitHub Copilot can use OAuth rather than static API keys. After running `/login` and choosing **Sign in with an account (OAuth)**, the built-in authentication toolchain stores and refreshes the credential and writes the provider/model configuration automatically. Anthropic uses browser PKCE with a local callback server that auto-captures the redirect (manual paste as fallback); OpenAI Codex offers a browser or device-code choice; GitHub Copilot accepts a GitHub Enterprise domain; the others use their supported device-code flows.
+Kimi Code, xAI, and OpenAI Codex can use OAuth rather than static API keys. After running `/login` and choosing **Sign in with an account (OAuth)**, the built-in authentication toolchain stores and refreshes the credential and writes the provider/model configuration automatically. OpenAI Codex offers a browser or device-code choice; the other supported providers use their device-code flows. Anthropic and GitHub Copilot OAuth adapters remain available only to preserve compatibility with existing credentials; they are not advertised for new login.
 
-For xAI, Anthropic, and GitHub Copilot, models.dev metadata is fetched again whenever that provider logs in; Copilot also filters it against the models enabled for the authenticated account. This is login-time refresh, not a background updater. Kimi Code uses its managed models endpoint, while OpenAI Codex follows the explicit list described below.
+For xAI, models.dev metadata is fetched again whenever that provider logs in. This is login-time refresh, not a background updater. Kimi Code uses its managed models endpoint, while OpenAI Codex follows the explicit list described below.
 
 For example, xAI is persisted in the same `config.toml` architecture as every other provider:
 

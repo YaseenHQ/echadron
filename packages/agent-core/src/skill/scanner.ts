@@ -5,11 +5,11 @@ import { SkillParseError, UnsupportedSkillTypeError, parseSkillFromFile } from '
 import type { SkillDefinition, SkillRoot, SkillSource, SkippedSkill } from './types';
 import { normalizeSkillName } from './types';
 
-// Relative to brandHomeDir, which already IS the brand data dir (~/.kimi-code or
-// $KIMI_CODE_HOME) — no '.kimi-code' segment here, or it would nest twice.
+// Relative to brandHomeDir, which already IS the brand data dir (~/.echadron or
+// $ECHADRON_HOME) — no data-dir segment here, or it would nest twice.
 const USER_BRAND_DIRS = ['skills'] as const;
 const USER_GENERIC_DIRS = ['.agents/skills'] as const;
-const PROJECT_BRAND_DIRS = ['.kimi-code/skills'] as const;
+const PROJECT_BRAND_DIRS = ['.echadron/skills', '.kimi-code/skills'] as const;
 const PROJECT_GENERIC_DIRS = ['.agents/skills'] as const;
 
 // Bounds recursion so a directory symlink cycle inside a skill root cannot
@@ -19,7 +19,7 @@ const MAX_SKILL_SCAN_DEPTH = 8;
 export interface SkillPathContext {
   readonly userHomeDir: string;
   /**
-   * Brand data dir — `KIMI_CODE_HOME`, or `<userHomeDir>/.kimi-code` by default.
+   * Brand data dir — `ECHADRON_HOME`, or `<userHomeDir>/.echadron` by default.
    * User brand skills live directly under here as `skills/`, so this path
    * carries no `.kimi-code` segment of its own (that would double the prefix).
    */
@@ -68,7 +68,7 @@ export async function resolveSkillRoots(
   const roots: SkillRoot[] = [];
   const mergeAllAvailableSkills = options.mergeAllAvailableSkills ?? true;
   const { userHomeDir, workDir } = options.paths;
-  const brandHomeDir = options.paths.brandHomeDir ?? path.join(userHomeDir, '.kimi-code');
+  const brandHomeDir = options.paths.brandHomeDir ?? path.join(userHomeDir, '.echadron');
   const projectRoot = await findProjectRoot(workDir);
 
   if (options.explicitDirs !== undefined && options.explicitDirs.length > 0) {
@@ -101,6 +101,21 @@ export async function resolveSkillRoots(
       isDir,
       realpath,
     );
+    // A default Echadron install may still have user skills under the
+    // upstream directory. Keep that migration fallback, but do not merge it
+    // when a caller explicitly supplied a brand home (which is an isolation
+    // boundary for SDK hosts).
+    if (options.paths.brandHomeDir === undefined) {
+      await pushBrandGroup(
+        roots,
+        USER_BRAND_DIRS,
+        path.join(userHomeDir, '.kimi-code'),
+        'user',
+        mergeAllAvailableSkills,
+        isDir,
+        realpath,
+      );
+    }
     await pushFirstExisting(roots, USER_GENERIC_DIRS, userHomeDir, 'user', isDir, realpath);
   }
 

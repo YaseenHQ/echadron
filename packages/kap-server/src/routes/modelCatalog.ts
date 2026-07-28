@@ -362,6 +362,10 @@ export function registerModelCatalogRoutes(app: ModelCatalogRouteHost, core: Sco
           if (entry.max_output_size !== undefined) alias.maxOutputSize = entry.max_output_size;
           if (entry.support_efforts !== undefined)
             alias.supportEfforts = [...entry.support_efforts];
+          if (entry.thinking_budget_min !== undefined)
+            alias.thinkingBudgetMin = entry.thinking_budget_min;
+          if (entry.thinking_budget_max !== undefined)
+            alias.thinkingBudgetMax = entry.thinking_budget_max;
           if (entry.adaptive_thinking !== undefined)
             alias.adaptiveThinking = entry.adaptive_thinking;
           aliases[`${id}/${entry.model}`] = alias;
@@ -539,6 +543,10 @@ export function registerModelCatalogRoutes(app: ModelCatalogRouteHost, core: Sco
           alias.maxOutputSize = entry.max_output_size !== undefined ? entry.max_output_size : undefined;
           alias.supportEfforts =
             entry.support_efforts !== undefined ? [...entry.support_efforts] : undefined;
+          alias.thinkingBudgetMin =
+            entry.thinking_budget_min !== undefined ? entry.thinking_budget_min : undefined;
+          alias.thinkingBudgetMax =
+            entry.thinking_budget_max !== undefined ? entry.thinking_budget_max : undefined;
           alias.adaptiveThinking =
             entry.adaptive_thinking !== undefined ? entry.adaptive_thinking : undefined;
           nextModels[`${newId}/${entry.model}`] = alias;
@@ -964,4 +972,3 @@ async function handleImportRegistry(
     throw err;
   }
 }
-

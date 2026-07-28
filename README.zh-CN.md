@@ -1,42 +1,46 @@
-# Kimi Code CLI
+# Echadron
 
-[![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE) [![Docs](https://img.shields.io/badge/docs-online-blue)](https://moonshotai.github.io/kimi-code/zh/)
+Echadron 是一个支持多模型的 Agent Harness，基于 Kimi Code CLI 架构构建。
+推荐使用 `echadron`、`chad` 或 `maker` 命令；只安装 Echadron 自己的命令。
+它可以与上游 Kimi Code 并存，但不会安装或覆盖 `kimi` 命令。
 
-[Documentation](https://moonshotai.github.io/kimi-code/zh/) · [Issues](https://github.com/MoonshotAI/kimi-code/issues) · [English](README.md)
+[![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE) [![Docs](https://img.shields.io/badge/docs-online-blue)](https://github.com/YaseenHQ/kimi/tree/main/docs/zh)
+
+[Documentation](https://github.com/YaseenHQ/kimi/tree/main/docs/zh) · [Issues](https://github.com/YaseenHQ/kimi/issues) · [English](README.md)
 
 
-![Kimi Code 的使用演示](./docs/media/intro.gif)
+![Echadron 的使用演示](./docs/media/intro.gif)
 
 
-## 什么是 Kimi Code CLI
+## 什么是 Echadron
 
-Kimi Code CLI 是一个运行在终端里的 AI 编程 agent，可以帮你读写代码、执行 shell 命令、检索文件、抓取网页，并根据反馈自主决定下一步动作。开箱即用对接 Moonshot AI 的 Kimi 模型，也可指向其他兼容厂商。
+Echadron 是一个运行在终端里的多模型 AI 编程 agent，可以帮你读写代码、执行 shell 命令、检索文件、抓取网页，并根据反馈自主决定下一步动作。它支持兼容的 Provider 和模型，并保留 Kimi Code 的兼容架构。
 
 ## 安装
 
-推荐使用官方安装脚本，不需要提前安装 Node.js。
+Echadron 的独立 Native 安装器尚未发布；目前请使用 npm 包或从源码运行。
 
 - **macOS / Linux**：
 
 ```sh
-curl -fsSL https://code.kimi.com/kimi-code/install.sh | bash
+npm install -g @yaseenhq/echadron
 ```
 
 - **Windows（PowerShell）**：
 
 ```powershell
-irm https://code.kimi.com/kimi-code/install.ps1 | iex
+npm install -g @yaseenhq/echadron
 ```
 
-> Windows 用户首次启动前还需要安装 [Git for Windows](https://gitforwindows.org/)，Kimi Code CLI 会使用其中的 Git Bash 作为 Shell 环境。如果 Git Bash 安装在非标准路径，请把 `KIMI_SHELL_PATH` 设为 `bash.exe` 的绝对路径。
+> Windows 用户首次启动前还需要安装 [Git for Windows](https://gitforwindows.org/)。如果 Git Bash 安装在非标准路径，请把 `ECHADRON_SHELL_PATH` 设为 `bash.exe` 的绝对路径。
 
 随后在新的终端会话中运行：
 
 ```sh
-kimi --version
+echadron --version
 ```
 
-npm 安装、升级、卸载方式，见[快速上手](https://moonshotai.github.io/kimi-code/zh/guides/getting-started)。
+详细安装方式，见[快速上手](https://github.com/YaseenHQ/kimi/tree/main/docs/zh/guides/getting-started)。
 
 ## 快速开始
 
@@ -44,10 +48,10 @@ npm 安装、升级、卸载方式，见[快速上手](https://moonshotai.github
 
 ```sh
 cd your-project
-kimi
+echadron
 ```
 
-首次启动时，在 Kimi Code CLI 里输入 `/login`，选择 Kimi Code OAuth 或 Moonshot AI Open Platform API 密钥登录。登录完成后，可以先让它熟悉项目：
+首次启动时，在 Echadron 里输入 `/login`，选择可用的 OAuth 或 API 密钥 Provider 登录。登录完成后，可以先让它熟悉项目：
 
 ```
 帮我看一下这个项目的目录结构，简单介绍一下每个目录是做什么的
@@ -63,21 +67,21 @@ kimi
 - **丰富的插件生态** 从插件市场或任意 GitHub 仓库安装 skills、MCP 服务器和数据源，每次安装都会标明来源的信任级别。
 - **子 Agent 聚焦并行工作** 内置 `coder`、`explore`、`plan` 子 Agent 在隔离上下文中处理子任务，主对话保持清爽。
 - **生命周期 hooks** 在关键节点执行本地命令：拦截高风险工具调用、审计决策、发送桌面通知，或对接你自己的自动化脚本。
-- **编辑器 / IDE 集成（ACP）** 用 `kimi acp` 让 Zed、JetBrains 等任意 [Agent Client Protocol](https://agentclientprotocol.com/) 客户端直接驱动会话。
+- **编辑器 / IDE 集成（ACP）** 用 `echadron acp` 让 Zed、JetBrains 等任意 [Agent Client Protocol](https://agentclientprotocol.com/) 客户端直接驱动会话。
 
 
 ## 在编辑器里使用（ACP）
 
-Kimi Code CLI 支持 [Agent Client Protocol](https://agentclientprotocol.com/)，ACP 兼容的编辑器 / IDE（Zed、JetBrains……）可以通过 stdio 直接驱动会话。登录一次后，把编辑器指向 `kimi acp` 子命令即可，无需重复登录。
+Echadron 支持 [Agent Client Protocol](https://agentclientprotocol.com/)，ACP 兼容的编辑器 / IDE（Zed、JetBrains……）可以通过 stdio 直接驱动会话。使用 `/login` 登录一次后，把编辑器指向 `echadron acp` 子命令即可，无需重复登录；支持 terminal-auth 的 ACP 客户端也可以直接启动 Echadron OAuth 登录。
 
 以 Zed 为例，在 `~/.config/zed/settings.json` 中加入：
 
 ```json
 {
   "agent_servers": {
-    "Kimi Code CLI": {
+    "Echadron": {
       "type": "custom",
-      "command": "kimi",
+      "command": "echadron",
       "args": ["acp"],
       "env": {}
     }
@@ -85,24 +89,24 @@ Kimi Code CLI 支持 [Agent Client Protocol](https://agentclientprotocol.com/)�
 }
 ```
 
-随后在 Zed 的 Agent 面板新建对话即可。JetBrains 配置与排障见[在 IDE 中使用](https://moonshotai.github.io/kimi-code/zh/guides/ides)，完整能力矩阵见 [`kimi acp` 参考](https://moonshotai.github.io/kimi-code/zh/reference/kimi-acp)。
+随后在 Zed 的 Agent 面板新建对话即可。JetBrains 配置与排障见[在 IDE 中使用](https://github.com/YaseenHQ/kimi/tree/main/docs/zh/guides/ides)，完整能力矩阵见 [`echadron acp` 参考](https://github.com/YaseenHQ/kimi/tree/main/docs/zh/reference/kimi-acp)。
 
 ## 文档
 
-- [快速上手](https://moonshotai.github.io/kimi-code/zh/guides/getting-started)
-- [交互与审批](https://moonshotai.github.io/kimi-code/zh/guides/interaction)
-- [会话](https://moonshotai.github.io/kimi-code/zh/guides/sessions)
-- [在 IDE 中使用（ACP）](https://moonshotai.github.io/kimi-code/zh/guides/ides)
-- [配置](https://moonshotai.github.io/kimi-code/zh/configuration/config-files)
-- [命令参考](https://moonshotai.github.io/kimi-code/zh/reference/kimi-command)
+- [快速上手](https://github.com/YaseenHQ/kimi/tree/main/docs/zh/guides/getting-started)
+- [交互与审批](https://github.com/YaseenHQ/kimi/tree/main/docs/zh/guides/interaction)
+- [会话](https://github.com/YaseenHQ/kimi/tree/main/docs/zh/guides/sessions)
+- [在 IDE 中使用（ACP）](https://github.com/YaseenHQ/kimi/tree/main/docs/zh/guides/ides)
+- [配置](https://github.com/YaseenHQ/kimi/tree/main/docs/zh/configuration/config-files)
+- [命令参考](https://github.com/YaseenHQ/kimi/tree/main/docs/zh/reference/kimi-command)
 
 ## 本地开发
 
 环境要求：Node.js ≥ 24.15.0，pnpm 10.33.0。
 
 ```sh
-git clone https://github.com/MoonshotAI/kimi-code.git
-cd kimi-code
+git clone https://github.com/YaseenHQ/kimi.git
+cd kimi
 pnpm install
 ```
 
@@ -118,7 +122,7 @@ pnpm build      # 构建所有包
 
 ## 社区
 
-- [Issues](https://github.com/MoonshotAI/kimi-code/issues)
+- [Issues](https://github.com/YaseenHQ/kimi/issues)
 - 安全漏洞反馈，请见 [SECURITY.md](SECURITY.md)。
 
 ## 致谢

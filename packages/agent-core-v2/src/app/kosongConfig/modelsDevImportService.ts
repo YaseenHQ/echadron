@@ -36,9 +36,9 @@ import {
   type ManagedKimiConfigShape,
 } from '@moonshot-ai/kimi-code-oauth';
 
-import { InstantiationType } from '#/_base/di/extensions';
-import { LifecycleScope, registerScopedService } from '#/_base/di/scope';
+import { LifecycleScope, ScopeActivation, registerScopedService } from '#/_base/di/scope';
 import { Error2 } from '#/_base/errors/errors';
+import { IBootstrapService } from '#/app/bootstrap/bootstrap';
 import { IConfigService } from '#/app/config/config';
 import { IModelCatalog } from '#/kosong/model/catalog';
 import { type ModelsSection } from '#/kosong/model/model';
@@ -63,6 +63,7 @@ import {
   modelsDevModelToRecord,
   toModelsDevProviderItem,
   upstreamFetch,
+  MODELS_DEV_URL,
   UPSTREAM_FETCH_TIMEOUT_MS,
 } from './modelsDevUpstream';
 
@@ -77,15 +78,16 @@ export class ModelsDevImportService implements IModelsDevImportService {
     @IConfigService private readonly config: IConfigService,
     @IKosongConfigService private readonly kosongConfig: IKosongConfigService,
     @IModelCatalog private readonly modelCatalog: IModelCatalog,
+    @IBootstrapService private readonly bootstrap: IBootstrapService,
   ) {}
 
   async listModelsDevProviders(): Promise<ModelsDevProviderItem[]> {
-    const catalog = await getModelsDevCatalog();
+    const catalog = await getModelsDevCatalog(this.bootstrap.homeDir);
     return Object.entries(catalog).map(([id, entry]) => toModelsDevProviderItem(id, entry));
   }
 
   async getModelsDevProvider(catalogId: string): Promise<ModelsDevProviderItem> {
-    const catalog = await getModelsDevCatalog();
+    const catalog = await getModelsDevCatalog(this.bootstrap.homeDir);
     const entry = modelsDevEntry(catalog, catalogId);
     if (entry === undefined) {
       throw new Error2(
@@ -139,7 +141,7 @@ export class ModelsDevImportService implements IModelsDevImportService {
     options: ImportModelsDevProviderOptions,
   ): Promise<ImportModelsDevProviderResult> {
     const { catalogId } = options;
-    const catalog = await getModelsDevCatalog();
+    const catalog = await getModelsDevCatalog(this.bootstrap.homeDir);
     const entry = modelsDevEntry(catalog, catalogId);
     if (entry === undefined) {
       throw new Error2(
@@ -194,7 +196,17 @@ export class ModelsDevImportService implements IModelsDevImportService {
     // `undefined` when the wire needs none, so a stale on-disk value is
     // really cleared. The global default pointers are deliberately left
     // alone.
-    const provider: ProviderConfig = { type: resolution.wire };
+    const provider: ProviderConfig = {
+      type: resolution.wire,
+      source: {
+        kind: 'modelsDev',
+        url: MODELS_DEV_URL,
+        catalogId,
+        ...(typeof entry.npm === 'string' ? { npm: entry.npm } : {}),
+        ...(typeof entry.api === 'string' ? { api: entry.api } : {}),
+        ...(options.baseUrl === undefined ? {} : { baseUrl: resolution.baseUrl }),
+      },
+    };
     provider.baseUrl = resolution.baseUrl;
     provider.apiKey = options.apiKey ?? existing?.apiKey;
     await config.replace(PROVIDERS_SECTION, { ...providers, [targetId]: provider });
@@ -246,7 +258,7 @@ export class ModelsDevImportService implements IModelsDevImportService {
     try {
       entries = await fetchCustomRegistry(source, {
         fetchImpl: upstreamFetch(),
-        userAgent: 'kimi-code-kap-server',
+        userAgent: 'echadron-kap-server',
         signal: AbortSignal.timeout(UPSTREAM_FETCH_TIMEOUT_MS),
       });
     } catch (err) {
@@ -382,6 +394,6 @@ registerScopedService(
   LifecycleScope.App,
   IModelsDevImportService,
   ModelsDevImportService,
-  InstantiationType.Eager,
+  ScopeActivation.OnScopeCreated,
   'kosongConfig',
 );

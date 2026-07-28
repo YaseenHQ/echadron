@@ -1,5 +1,5 @@
 /**
- * Native v2 `kimi -p` (print mode) runner.
+ * Native v2 `echadron -p` (print mode) runner.
  *
  * Unlike the v1 path (and the former `V2PromptHarness` / `V2Session` shim), this
  * runner talks to agent-core-v2's native DI services directly — no
@@ -41,12 +41,12 @@ import {
   bootstrap,
   createCloudAppender,
   ensureMainAgent,
+  hostIdentitySeed,
   hostRequestHeadersSeed,
   logSeed,
   parseAgentFileText,
   resolveAgentPath,
   resolveAgentTaskConfig,
-  resolveKimiHome,
   resolveLoggingConfig,
   resolvePrintBackgroundMode,
   skillCatalogRuntimeOptionsSeed,
@@ -58,13 +58,16 @@ import {
   type Scope,
 } from '@moonshot-ai/agent-core-v2';
 import { createKimiDefaultHeaders, createKimiDeviceId } from '@moonshot-ai/kimi-code-oauth';
+import { isTelemetryDisabledByEnv } from '@moonshot-ai/kimi-telemetry';
 import { resolve } from 'pathe';
 
 import {
   CLI_SHUTDOWN_TIMEOUT_MS,
   CLI_USER_AGENT_PRODUCT,
+  PRODUCT_NAME,
   PROMPT_CLEANUP_TIMEOUT_MS,
 } from '#/constant/app';
+import { getDataDir } from '#/utils/paths';
 
 import {
   formatGoalSummaryText,
@@ -117,7 +120,7 @@ export async function runV2Print(
 
   writeExperimentalVersion(version, outputFormat, stdout, stderr);
 
-  const homeDir = resolveKimiHome();
+  const homeDir = getDataDir();
   let firstLaunch = false;
   const deviceId = createKimiDeviceId(homeDir, {
     onFirstLaunch: () => {
@@ -130,6 +133,7 @@ export async function runV2Print(
 
   const { app } = bootstrap({ homeDir, clientVersion: version }, [
     ...logSeed(logging),
+    ...hostIdentitySeed({ productName: PRODUCT_NAME }),
     ...hostRequestHeadersSeed(hostHeaders),
     // `--skillsDir` (v1 print parity): explicit skill dirs replace default
     // user / project discovery for this process.
@@ -151,9 +155,13 @@ export async function runV2Print(
   const defaultModel = configService.get<string>('defaultModel') ?? undefined;
   let telemetryEnabled = true;
   try {
-    telemetryEnabled = configService.get('telemetry') !== false;
+    // Native v2 installs the cloud appender directly rather than going
+    // through the v1 bootstrap. Keep the same opt-out contract in both
+    // runners, including the Echadron variable and the legacy Kimi alias.
+    telemetryEnabled =
+      configService.get('telemetry') !== false && !isTelemetryDisabledByEnv(process.env);
   } catch {
-    telemetryEnabled = true;
+    telemetryEnabled = !isTelemetryDisabledByEnv(process.env);
   }
   for (const diagnostic of configService.diagnostics()) {
     if (diagnostic.severity === 'warning') {
@@ -346,7 +354,7 @@ async function resolveNativeSession(
     if (target.cwd !== undefined && resolve(target.cwd) !== resolve(workDir)) {
       stderr.write(
         `Session "${opts.session}" was created under a different directory.\n` +
-          `  cd "${target.cwd}" && kimi -r ${opts.session}\n\n`,
+          `  cd "${target.cwd}" && echadron -r ${opts.session}\n\n`,
       );
       throw new Error(`Session "${opts.session}" was created under a different directory.`);
     }
@@ -685,7 +693,7 @@ export interface PrintBackgroundPolicyInput {
 }
 
 /**
- * Apply the print-mode (`kimi -p`) background-resource policy after the main
+ * Apply the print-mode (`echadron -p`) background-resource policy after the main
  * turn completes. A single loop re-evaluates the Session's live resources in
  * order on every round and stays alive while any of them is pending:
  *  - goal    : while a goal is `active`, keep waiting for its continuation

@@ -100,8 +100,16 @@ async function loadAgentsMdForRoots(
   };
 
   const realHome = deps.homeDir;
-  const brandDir = brandHome ?? join(realHome, '.kimi-code');
-  await collect(join(brandDir, 'AGENTS.md'));
+  const defaultBrandDir = join(realHome, '.echadron');
+  const brandDir = brandHome ?? defaultBrandDir;
+  const loadedBrandFile = await collect(join(brandDir, 'AGENTS.md'));
+  // Keep existing Kimi Code instruction files usable after the product
+  // rename, but only as a fallback when the Echadron file is absent. When a
+  // caller supplies a distinct explicit brand home, that home remains
+  // authoritative.
+  if (normalize(brandDir) === normalize(defaultBrandDir) && !loadedBrandFile) {
+    await collect(join(realHome, '.kimi-code', 'AGENTS.md'));
+  }
 
   const genericDirs = [join(realHome, '.agents')];
   const genericFiles = genericDirs.flatMap((dir) =>
@@ -117,7 +125,10 @@ async function loadAgentsMdForRoots(
     const dirs = dirsRootToLeaf(rootWorkDir, projectRoot);
 
     for (const dir of dirs) {
-      await collect(join(dir, '.kimi-code', 'AGENTS.md'));
+      const loadedEchadronFile = await collect(join(dir, '.echadron', 'AGENTS.md'));
+      if (!loadedEchadronFile) {
+        await collect(join(dir, '.kimi-code', 'AGENTS.md'));
+      }
       for (const fileName of ['AGENTS.md', 'agents.md']) {
         if (await collect(join(dir, fileName))) break;
       }

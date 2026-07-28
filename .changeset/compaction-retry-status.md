@@ -1,5 +1,5 @@
 ---
-"@moonshot-ai/kimi-code": patch
+"@yaseenhq/echadron": patch
 "@moonshot-ai/protocol": minor
 "@moonshot-ai/agent-core": patch
 "@moonshot-ai/agent-core-v2": patch

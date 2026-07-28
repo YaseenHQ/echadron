@@ -90,6 +90,7 @@ export interface GoogleGenAIOptions {
   location?: string | undefined;
   stream?: boolean | undefined;
   defaultHeaders?: Record<string, string>;
+  generationKwargs?: GoogleGenAIGenerationKwargs | undefined;
   clientFactory?: (auth: ProviderRequestAuth) => GenAIClient;
 }
 
@@ -759,7 +760,7 @@ export class GoogleGenAIChatProvider implements ChatProvider {
     this._model = options.model;
     this._vertexai = options.vertexai ?? false;
     this._stream = options.stream ?? true;
-    this._generationKwargs = {};
+    this._generationKwargs = { ...options.generationKwargs };
 
     const apiKey = options.apiKey ?? process.env['GOOGLE_API_KEY'];
     this._apiKey = apiKey === undefined || apiKey.length === 0 ? undefined : apiKey;

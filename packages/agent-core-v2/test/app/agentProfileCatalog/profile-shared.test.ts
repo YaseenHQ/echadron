@@ -34,6 +34,8 @@ describe('systemPromptVars', () => {
     );
 
     expect(vars['role_additional']).toBe('');
+    expect(vars['product_name']).toBe('Echadron');
+    expect(vars['reply_style_guide']).toContain('render as Markdown');
     expect(vars['os']).toBe('macOS');
     expect(vars['windows_notes']).toBe('');
     expect(vars['shell']).toBe('zsh (`/bin/zsh`)');
@@ -78,11 +80,41 @@ describe('systemPromptVars', () => {
     expect(vars['skills']).toBe('SKILLS');
   });
 
+  it('uses host identity overrides for the system prompt', () => {
+    const vars = systemPromptVars(
+      { productName: 'Echadron', replyStyleGuide: 'Use Echadron style.' },
+      { skillActive: true },
+    );
+
+    expect(vars['product_name']).toBe('Echadron');
+    expect(vars['reply_style_guide']).toBe('Use Echadron style.');
+    expect(renderSystemPrompt('', { productName: 'Echadron' }, { skillActive: true })).toContain(
+      'You are Echadron,',
+    );
+  });
+
   it('composes Windows notes only on Windows', () => {
     expect(
       systemPromptVars({ osKind: 'Windows' }, { skillActive: true })['windows_notes'],
     ).toContain('IMPORTANT: You are on Windows');
     expect(systemPromptVars({ osKind: 'macOS' }, { skillActive: true })['windows_notes']).toBe('');
+  });
+
+  it('defaults host-identity variables to the CLI text', () => {
+    const vars = systemPromptVars({}, { skillActive: true });
+
+    expect(vars['product_name']).toBe('Echadron');
+    expect(vars['reply_style_guide']).toContain("render as Markdown in the user's terminal");
+  });
+
+  it('lets the context override host-identity variables', () => {
+    const vars = systemPromptVars(
+      { productName: 'Kimi Desktop', replyStyleGuide: 'GUI_STYLE' },
+      { skillActive: true },
+    );
+
+    expect(vars['product_name']).toBe('Kimi Desktop');
+    expect(vars['reply_style_guide']).toBe('GUI_STYLE');
   });
 });
 
@@ -182,5 +214,20 @@ describe('renderSystemPrompt', () => {
     );
 
     expect(prompt).not.toMatch(/\$\{[A-Za-z_][A-Za-z0-9_]*\}/);
+  });
+
+  it('renders the host identity from the context, defaulting to the CLI text', () => {
+    const fallback = renderSystemPrompt('', {}, { skillActive: true });
+    expect(fallback).toContain('You are Echadron,');
+    expect(fallback).toContain("render as Markdown in the user's terminal");
+
+    const overridden = renderSystemPrompt(
+      '',
+      { productName: 'Kimi Desktop', replyStyleGuide: 'GUI_STYLE' },
+      { skillActive: true },
+    );
+    expect(overridden).toContain('You are Kimi Desktop,');
+    expect(overridden).toContain('GUI_STYLE');
+    expect(overridden).not.toContain('Kimi Code CLI');
   });
 });

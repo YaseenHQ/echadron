@@ -98,7 +98,11 @@ import {
   NO_ACTIVE_SESSION_MESSAGE,
   PRODUCT_NAME,
 } from './constant/kimi-tui';
-import { CHROME_GUTTER } from './constant/rendering';
+import {
+  CHROME_GUTTER,
+  TUI_ANIMATIONS,
+  type UnicodeAnimationName,
+} from './constant/rendering';
 import { MAX_TERMINAL_TITLE_LENGTH } from './constant/terminal';
 import { AuthFlowController } from './controllers/auth-flow';
 import { BtwPanelController } from './controllers/btw-panel';
@@ -181,7 +185,7 @@ export interface KimiTUIStartupInput {
   readonly workDir: string;
   readonly startupNotice?: string;
   readonly migrationPlan?: MigrationPlan | null;
-  /** When true, run only the migration screen, then exit (the `kimi migrate` command). */
+  /** When true, run only the migration screen, then exit (the `echadron migrate` command). */
   readonly migrateOnly?: boolean;
 }
 
@@ -787,7 +791,7 @@ export class KimiTUI {
               `${currentTheme.fg(
                 'warning',
                 `Session "${startup.sessionFlag}" was created under a different directory.\n` +
-                  `  cd "${target.workDir}" && kimi -r ${startup.sessionFlag}`,
+                  `  cd "${target.workDir}" && echadron -r ${startup.sessionFlag}`,
               )}\n\n`,
             );
             throw new Error(
@@ -1728,7 +1732,7 @@ export class KimiTUI {
 
   private async showResumeOtherWorkDirHint(session: SessionRow): Promise<void> {
     this.hideSessionPicker();
-    const command = `cd ${quoteShellArg(session.work_dir)} && kimi --resume ${quoteShellArg(session.id)}`;
+    const command = `cd ${quoteShellArg(session.work_dir)} && echadron --resume ${quoteShellArg(session.id)}`;
     const message = `Current session is in a different working directory.\n  To resume, run: ${command}`;
     try {
       await copyTextToClipboard(command);
@@ -2359,7 +2363,7 @@ export class KimiTUI {
 
   showProgressSpinner(label: string): LoginProgressSpinnerHandle {
     const tint = (s: string): string => currentTheme.fg('primary', s);
-    const spinner = new MoonLoader(this.state.ui, tint, label);
+    const spinner = new MoonLoader(this.state.ui, tint, label, TUI_ANIMATIONS.progress);
     this.state.transcriptContainer.addChild(new Spacer(1));
     this.state.transcriptContainer.addChild(spinner);
     this.state.ui.requestRender();
@@ -2381,7 +2385,7 @@ export class KimiTUI {
     openUrl(auth.verificationUriComplete);
     this.state.transcriptContainer.addChild(
       new DeviceCodeBoxComponent({
-        title: 'Sign in to Kimi Code',
+        title: 'Sign in to Echadron',
         url: auth.verificationUriComplete,
         code: auth.userCode,
         hint: 'Press Ctrl-C to cancel',
@@ -2451,6 +2455,7 @@ export class KimiTUI {
                 this.state.appState.isCompacting ? 'compaction' : 'request',
               ),
           retryStatus === undefined ? undefined : (s) => currentTheme.fg('warning', s),
+          retryStatus === undefined ? TUI_ANIMATIONS.default : TUI_ANIMATIONS.retry,
         );
         this.syncAgentSwarmActivitySpinner(placeSpinnerInAgentSwarm ? spinner : undefined);
         if (placeSpinnerInAgentSwarm) break;
@@ -2471,6 +2476,7 @@ export class KimiTUI {
       case 'composing': {
         const spinner = this.ensureActivitySpinner('working...', (s) =>
           currentTheme.fg('primary', s),
+          TUI_ANIMATIONS.composing,
         );
         this.syncAgentSwarmActivitySpinner(undefined);
         this.state.activityContainer.addChild(
@@ -2483,7 +2489,7 @@ export class KimiTUI {
         break;
       }
       case 'tool': {
-        const spinner = this.ensureActivitySpinner();
+        const spinner = this.ensureActivitySpinner('', undefined, TUI_ANIMATIONS.tool);
         this.syncAgentSwarmActivitySpinner(placeSpinnerInAgentSwarm ? spinner : undefined);
         if (placeSpinnerInAgentSwarm) break;
         this.state.activityContainer.addChild(
@@ -2773,15 +2779,17 @@ export class KimiTUI {
   private ensureActivitySpinner(
     label = '',
     colorFn?: (s: string) => string,
+    animation: UnicodeAnimationName = 'braille',
   ): MoonLoader {
     if (this.state.activitySpinner === null) {
-      const instance = new MoonLoader(this.state.ui, colorFn, label);
+      const instance = new MoonLoader(this.state.ui, colorFn, label, animation);
       this.state.activitySpinner = instance;
       return instance;
     }
 
     this.state.activitySpinner.setLabel(label);
     this.state.activitySpinner.setColorFn(colorFn);
+    this.state.activitySpinner.setAnimation(animation);
     return this.state.activitySpinner;
   }
 
@@ -3026,7 +3034,7 @@ export class KimiTUI {
   private showApprovalPanel(payload: ApprovalPanelData): void {
     this.patchLivePane({ pendingApproval: { data: payload } });
     notifyTerminalOnce(this.state, `approval:${payload.id}`, {
-      title: 'Kimi Code approval required',
+      title: 'Echadron approval required',
       body: payload.tool_name,
     });
     const panel = new ApprovalPanelComponent(
@@ -3093,7 +3101,7 @@ export class KimiTUI {
   private showQuestionDialog(payload: QuestionPanelData): void {
     this.patchLivePane({ pendingQuestion: { data: payload } });
     notifyTerminalOnce(this.state, `question:${payload.id}`, {
-      title: 'Kimi Code needs your answer',
+      title: 'Echadron needs your answer',
       body: payload.questions[0]?.question,
     });
     const dialog = new QuestionDialogComponent(

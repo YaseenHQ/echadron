@@ -733,7 +733,7 @@ describe('kimi provider catalog add', () => {
     expect(exitCodes).toEqual([1]);
     const err = stderr.join('');
     expect(err).toContain('"does-not-exist" is not in provider "anthropic"');
-    expect(err).toContain('kimi provider catalog list anthropic');
+    expect(err).toContain('echadron provider catalog list anthropic');
   });
 
   it('preserves an existing default_model when re-importing the same provider without --default-model', async () => {
@@ -1030,7 +1030,7 @@ describe('kimi provider catalog add', () => {
     },
   };
 
-  it('guesses openai for a vendor-specific SDK and requires --base-url', async () => {
+  it('recognizes an OpenAI-compatible vendor SDK and requires --base-url', async () => {
     mockRegistryFetch(GUESS_CATALOG_BODY);
     const { harness } = makeHarness({ providers: {} } as KimiConfig);
     const { deps, stderr, exitCodes } = makeDeps(harness);
@@ -1042,7 +1042,7 @@ describe('kimi provider catalog add', () => {
     await expect(harness.getConfig().then((c) => c.providers['xai'])).resolves.toBeUndefined();
   });
 
-  it('imports a guessed vendor with --base-url, carrying off_effort and a guess note', async () => {
+  it('imports a recognized vendor with --base-url and carries off_effort', async () => {
     mockRegistryFetch(GUESS_CATALOG_BODY);
     const { harness, current } = makeHarness({ providers: {} } as KimiConfig);
     const { deps, stdout, exitCodes } = makeDeps(harness);
@@ -1061,7 +1061,7 @@ describe('kimi provider catalog add', () => {
       supportEfforts: ['low', 'medium', 'high'],
       offEffort: 'none',
     });
-    expect(stdout.join('')).toContain('guessed "openai"');
+    expect(stdout.join('')).not.toContain('guessed "openai"');
   });
 
   it('refuses a proprietary SDK (bedrock) instead of guessing', async () => {

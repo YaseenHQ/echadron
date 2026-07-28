@@ -293,6 +293,7 @@ describe('resolveUpdateDeviceId', () => {
 
   beforeEach(() => {
     dir = mkdtempSync(join(tmpdir(), 'kimi-rollout-device-id-'));
+    process.env['IMPERIUM_HOME'] = dir;
     process.env['KIMI_CODE_HOME'] = dir;
   });
 

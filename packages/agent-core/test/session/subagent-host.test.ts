@@ -8,7 +8,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import type { Agent, AgentOptions } from '../../src/agent';
 import { AGENT_WIRE_PROTOCOL_VERSION } from '../../src/agent/records';
-import type { ResolvedAgentProfile } from '../../src/profile';
+import { DEFAULT_AGENT_PROFILES, type ResolvedAgentProfile } from '../../src/profile';
 import type { SDKSessionRPC } from '../../src/rpc';
 import { Session } from '../../src/session';
 import { collectGitContext } from '../../src/session/git-context';
@@ -371,6 +371,47 @@ describe('SessionSubagentHost', () => {
         content: [{ type: 'text', text: 'Find the cause' }],
       },
     ]);
+  });
+
+  it('binds a spawned child to the concrete profile model', async () => {
+    const coder = DEFAULT_AGENT_PROFILES['agent']?.subagents?.['coder'];
+    if (coder === undefined) throw new Error('expected bundled coder profile');
+    const originalModel = coder.model;
+    Object.assign(coder, { model: 'profile-model' });
+
+    try {
+      const parent = testAgent();
+      parent.configure();
+
+      const child = testAgent();
+      child.configure();
+      child.configureRuntimeModel({
+        type: 'kimi',
+        apiKey: 'test-key',
+        model: 'profile-model',
+      });
+      child.mockNextResponse({
+        type: 'text',
+        text: 'Completed the delegated task using the model selected by the agent profile and returned enough implementation detail for the parent to continue without repeating the work. Verified that the concrete profile alias replaced the parent model and that model-specific thinking configuration was resolved independently for the child.',
+      });
+
+      const session = fakeSession(parent.agent, child.agent);
+      const host = new SessionSubagentHost(session, 'main');
+      const handle = await host.spawn({
+        profileName: 'coder',
+        parentToolCallId: 'call_agent',
+        prompt: 'Implement the profile-routed task',
+        description: 'Test profile routing',
+        runInBackground: false,
+        signal,
+      });
+
+      await handle.completion;
+      expect(child.agent.config.modelAlias).toBe('profile-model');
+      expect(child.agent.config.thinkingEffort).toBe('off');
+    } finally {
+      Object.assign(coder, { model: originalModel });
+    }
   });
 
   it('inherits active parent user tools when spawning a subagent', async () => {
@@ -1128,16 +1169,18 @@ describe('SessionSubagentHost', () => {
     expect(userTextMessages(histories[1] ?? [])).toEqual(['Implement the retry-safe change']);
   });
 
-  it('realigns a resumed subagent to the parent agent current model', async () => {
+  it('keeps a resumed subagent on its recorded model', async () => {
     const parent = testAgent();
     parent.configure();
     parent.agent.permission.setMode('yolo');
 
     const child = testAgent();
     child.configure({ tools: ['Read'] });
-    // The child was originally spawned with a model that no longer matches the
-    // parent agent's current model (as if the parent ran setModel afterwards).
-    child.agent.config.update({ modelAlias: 'stale-model-from-initial-spawn' });
+    child.configureRuntimeModel({
+      type: 'kimi',
+      apiKey: 'test-key',
+      model: 'recorded-child-model',
+    });
     child.agent.useProfile(
       profile({ name: 'explore', tools: ['Read'], systemPrompt: 'explore prompt' }),
     );
@@ -1165,10 +1208,8 @@ describe('SessionSubagentHost', () => {
     });
 
     await handle.completion;
-    // resume must realign the child to the parent agent's current model rather
-    // than leave it on the stale model from its initial spawn.
-    expect(child.agent.config.modelAlias).toBe(parent.agent.config.modelAlias);
-    expect(child.agent.config.modelAlias).not.toBe('stale-model-from-initial-spawn');
+    expect(child.agent.config.modelAlias).toBe('recorded-child-model');
+    expect(child.agent.config.modelAlias).not.toBe(parent.agent.config.modelAlias);
   });
 });
 

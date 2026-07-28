@@ -1,16 +1,18 @@
 /**
- * Experimental agent-core-v2 engine gate for `kimi -p` (print mode).
+ * Experimental agent-core-v2 engine gate for `echadron -p` (print mode).
  *
- * When the master switch `KIMI_CODE_EXPERIMENTAL_FLAG` is truthy, print mode
+ * When the master switch `ECHADRON_EXPERIMENTAL_FLAG` is truthy, print mode
  * routes to the native agent-core-v2 runner instead of the default v1
  * harness (see `run-prompt.ts`). Read directly from the env (matching
  * `cli/update/rollout.ts`) because the CLI must not depend on the core flag
  * registry. Unset / any non-truthy value keeps the v1 harness.
  *
- * Note: `kimi web` always boots kap-server (the agent-core-v2 engine
+ * Note: `echadron web` always boots kap-server (the agent-core-v2 engine
  * server) — it no longer consults this switch.
  */
 
+export const ECHADRON_V2_ENV = 'ECHADRON_EXPERIMENTAL_FLAG';
+/** @deprecated Use ECHADRON_V2_ENV. Kept for SDK/config compatibility. */
 export const KIMI_V2_ENV = 'KIMI_CODE_EXPERIMENTAL_FLAG';
 
 const TRUTHY_VALUES = new Set(['1', 'true', 'yes', 'on']);
@@ -25,5 +27,5 @@ function isTruthyEnv(
 export function isKimiV2Enabled(
   env: Readonly<Record<string, string | undefined>> = process.env,
 ): boolean {
-  return isTruthyEnv(KIMI_V2_ENV, env);
+  return isTruthyEnv(ECHADRON_V2_ENV, env) || isTruthyEnv(KIMI_V2_ENV, env);
 }

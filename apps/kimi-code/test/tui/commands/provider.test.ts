@@ -52,6 +52,8 @@ describe('provider connection flow', () => {
     expect(render(mounted())).toContain('Kimi Code');
     expect(render(mounted())).toContain('xAI');
     expect(render(mounted())).toContain('OpenAI Codex');
+    expect(render(mounted())).not.toContain('Anthropic');
+    expect(render(mounted())).not.toContain('GitHub Copilot');
 
     mounted().handleInput(ESC);
     await connecting;

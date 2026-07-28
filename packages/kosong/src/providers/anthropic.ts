@@ -121,10 +121,20 @@ export interface AnthropicOptions {
    * keeps the standard endpoint + header behavior.
    */
   betaApi?: boolean | undefined;
+  generationKwargs?: AnthropicGenerationKwargs | undefined;
   clientFactory?: (auth: ProviderRequestAuth) => Anthropic;
+  /**
+   * Vendor error classification, consulted by `convertAnthropicError` with
+   * each raw SDK failure exactly once (after the abort guard and the
+   * already-converted pass-through) before the base rules run. `undefined`
+   * keeps the base classification. A Kimi provider routed over this
+   * transport passes `classifyKimiQuotaError` here so a quota-exhausted 429
+   * fails fast instead of burning the retry budget.
+   */
+  convertError?: (error: unknown) => ChatProviderError | undefined;
 }
 
-interface AnthropicGenerationKwargs {
+export interface AnthropicGenerationKwargs {
   max_tokens?: number | undefined;
   temperature?: number | undefined;
   top_k?: number | undefined;
@@ -133,6 +143,7 @@ interface AnthropicGenerationKwargs {
   output_config?: MessageCreateParams['output_config'] | undefined;
   betaFeatures?: string[] | undefined;
   contextManagement?: AnthropicContextManagement | undefined;
+  [key: string]: unknown;
 }
 
 /**
@@ -582,11 +593,26 @@ function shouldKeepConvertedMessage(message: MessageParam): boolean {
   return message.role !== 'assistant' || message.content.length > 0;
 }
 
-export function convertAnthropicError(error: unknown): ChatProviderError {
+export function convertAnthropicError(
+  error: unknown,
+  convertErrorHook?: (error: unknown) => ChatProviderError | undefined,
+): ChatProviderError {
   // Abort guard FIRST: throws (never returns) the standard abort DOMException
   // for any abort shape, so a user cancellation is never misclassified as a
   // retryable provider failure.
   throwIfAbortError(error);
+  // Already-converted errors pass through untouched — the vendor hook below
+  // sees each raw failure exactly once.
+  if (error instanceof ChatProviderError) {
+    return error;
+  }
+  // Vendor classification next: the hook sees the RAW SDK error (the base
+  // conversion below drops the parsed body detail), and `undefined` keeps
+  // the base classification.
+  const hooked = convertErrorHook?.(error);
+  if (hooked !== undefined) {
+    return hooked;
+  }
   // Check timeout before connection (APIConnectionTimeoutError extends APIConnectionError)
   if (error instanceof AnthropicTimeoutError) {
     return new APITimeoutError(error.message);
@@ -629,7 +655,13 @@ class AnthropicStreamedMessage implements StreamedMessage {
   private _rawFinishReason: string | null = null;
   private readonly _iter: AsyncGenerator<StreamedMessagePart>;
 
-  constructor(response: unknown, isStream: boolean) {
+  constructor(
+    response: unknown,
+    isStream: boolean,
+    private readonly _convertErrorHook?:
+      | ((error: unknown) => ChatProviderError | undefined)
+      | undefined,
+  ) {
     if (isStream) {
       this._iter = this._convertStreamResponse(response as AsyncIterable<MessageStreamEvent>);
     } else {
@@ -873,7 +905,7 @@ class AnthropicStreamedMessage implements StreamedMessage {
         // message_stop: nothing to do
       }
     } catch (error: unknown) {
-      throw convertAnthropicError(error);
+      throw convertAnthropicError(error, this._convertErrorHook);
     }
   }
 }
@@ -901,6 +933,7 @@ export class AnthropicChatProvider implements ChatProvider {
   private _adaptiveThinking: boolean | undefined;
   private readonly _supportEfforts: readonly string[] | undefined;
   private readonly _kimiThinking: boolean;
+  private readonly _convertErrorHook: ((error: unknown) => ChatProviderError | undefined) | undefined;
   private _betaApi: boolean;
   private _explicitMaxTokens: boolean;
 
@@ -911,6 +944,7 @@ export class AnthropicChatProvider implements ChatProvider {
     this._adaptiveThinking = options.adaptiveThinking;
     this._supportEfforts = options.supportEfforts;
     this._kimiThinking = options.kimiThinking ?? false;
+    this._convertErrorHook = options.convertError;
     this._betaApi = options.betaApi ?? false;
     this._apiKey =
       options.apiKey === undefined || options.apiKey.length === 0 ? undefined : options.apiKey;
@@ -920,6 +954,7 @@ export class AnthropicChatProvider implements ChatProvider {
     this._client = this._apiKey === undefined ? undefined : this._buildClient(this._apiKey);
     this._explicitMaxTokens = options.defaultMaxTokens !== undefined;
     this._generationKwargs = {
+      ...options.generationKwargs,
       max_tokens: options.defaultMaxTokens ?? resolveDefaultMaxTokens(options.model),
       betaFeatures: options.betaFeatures ?? [INTERLEAVED_THINKING_BETA],
     };
@@ -1008,7 +1043,8 @@ export class AnthropicChatProvider implements ChatProvider {
     injectCacheControlOnLastBlock(messages);
 
     // Build generation kwargs (excluding betaFeatures)
-    const kwargs: Record<string, unknown> = {};
+    const kwargs: Record<string, unknown> = { ...this._generationKwargs };
+    delete kwargs['betaFeatures'];
     if (this._generationKwargs.max_tokens !== undefined) {
       kwargs['max_tokens'] = this._generationKwargs.max_tokens;
     }
@@ -1032,6 +1068,7 @@ export class AnthropicChatProvider implements ChatProvider {
     if (this._generationKwargs.contextManagement !== undefined) {
       kwargs['context_management'] = this._generationKwargs.contextManagement;
     }
+    delete kwargs['contextManagement'];
 
     // Build the beta feature list. On the standard Messages API these travel
     // via the `anthropic-beta` header; on the beta Messages API (`betaApi`) the
@@ -1054,9 +1091,9 @@ export class AnthropicChatProvider implements ChatProvider {
 
     // Build the create params
     const createParams: Record<string, unknown> = {
+      ...kwargs,
       model: this._model,
       messages,
-      ...kwargs,
     };
 
     if (system !== undefined) {
@@ -1101,9 +1138,9 @@ export class AnthropicChatProvider implements ChatProvider {
               { ...createParams, stream: true } as unknown as MessageCreateParamsStreaming,
               finalRequestOptions,
             );
-        return new AnthropicStreamedMessage(stream, true);
+        return new AnthropicStreamedMessage(stream, true, this._convertErrorHook);
       } catch (error: unknown) {
-        throw convertAnthropicError(error);
+        throw convertAnthropicError(error, this._convertErrorHook);
       }
     }
 
@@ -1118,9 +1155,9 @@ export class AnthropicChatProvider implements ChatProvider {
             { ...createParams, stream: false } as unknown as MessageCreateParams,
             finalRequestOptions,
           );
-      return new AnthropicStreamedMessage(response, false);
+      return new AnthropicStreamedMessage(response, false, this._convertErrorHook);
     } catch (error: unknown) {
-      throw convertAnthropicError(error);
+      throw convertAnthropicError(error, this._convertErrorHook);
     }
   }
 

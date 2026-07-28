@@ -84,7 +84,7 @@ describe('ProviderManagerComponent', () => {
     });
 
     const plain = rendered(component);
-    expect(plain).toContain('Kimi Code (OAuth)');
+    expect(plain).toContain('Echadron (OAuth)');
     expect(plain).toContain('← current');
   });
 

@@ -230,7 +230,7 @@ micro_compaction = false
 
   // Regression for https://github.com/MoonshotAI/kimi-code/issues/988: during
   // ACP `session/new` the tool kaos is the reverse-RPC bridge and the client
-  // does not know the session yet, so reading `.kimi-code/local.toml` through
+  // does not know the session yet, so reading `.echadron/local.toml` through
   // it rejects. The workspace local config is a local system file and must be
   // read through the persistence (local) kaos instead.
   it('reads workspace local.toml through persistenceKaos during createSession', async () => {
@@ -240,10 +240,10 @@ micro_compaction = false
     const sharedDir = join(tmp, 'shared');
     await mkdir(homeDir, { recursive: true });
     await mkdir(join(workDir, '.git'), { recursive: true });
-    await mkdir(join(workDir, '.kimi-code'), { recursive: true });
+    await mkdir(join(workDir, '.echadron'), { recursive: true });
     await mkdir(sharedDir, { recursive: true });
     await writeFile(
-      join(workDir, '.kimi-code', 'local.toml'),
+      join(workDir, '.echadron', 'local.toml'),
       `[workspace]\nadditional_dir = ["../shared"]\n`,
     );
     await writeFile(join(homeDir, 'config.toml'), baseModelConfig());
@@ -477,10 +477,10 @@ max_context_size = 100000
     await mkdir(homeDir, { recursive: true });
     await mkdir(workDir, { recursive: true });
     await mkdir(extraDir, { recursive: true });
-    await mkdir(join(workDir, '.kimi-code'), { recursive: true });
+    await mkdir(join(workDir, '.echadron'), { recursive: true });
     await writeFile(join(homeDir, 'config.toml'), baseModelConfig());
     await writeFile(
-      join(workDir, '.kimi-code', 'local.toml'),
+      join(workDir, '.echadron', 'local.toml'),
       `[workspace]\nadditional_dir = ["extra"]\n`,
     );
 
@@ -516,10 +516,10 @@ max_context_size = 100000
     await mkdir(homeDir, { recursive: true });
     await mkdir(workDir, { recursive: true });
     await mkdir(extraDir, { recursive: true });
-    await mkdir(join(workDir, '.kimi-code'), { recursive: true });
+    await mkdir(join(workDir, '.echadron'), { recursive: true });
     await writeFile(join(homeDir, 'config.toml'), baseModelConfig());
     await writeFile(
-      join(workDir, '.kimi-code', 'local.toml'),
+      join(workDir, '.echadron', 'local.toml'),
       `[workspace]\nadditional_dir = ["extra"]\n`,
     );
 
@@ -551,10 +551,10 @@ max_context_size = 100000
     await mkdir(homeDir, { recursive: true });
     await mkdir(workDir, { recursive: true });
     await mkdir(extraDir, { recursive: true });
-    await mkdir(join(workDir, '.kimi-code'), { recursive: true });
+    await mkdir(join(workDir, '.echadron'), { recursive: true });
     await writeFile(join(homeDir, 'config.toml'), baseModelConfig());
     await writeFile(
-      join(workDir, '.kimi-code', 'local.toml'),
+      join(workDir, '.echadron', 'local.toml'),
       `[workspace]\nadditional_dir = ["extra"]\n`,
     );
 
@@ -593,10 +593,10 @@ max_context_size = 100000
     await mkdir(workDir, { recursive: true });
     await mkdir(localDir, { recursive: true });
     await mkdir(callerDir, { recursive: true });
-    await mkdir(join(workDir, '.kimi-code'), { recursive: true });
+    await mkdir(join(workDir, '.echadron'), { recursive: true });
     await writeFile(join(homeDir, 'config.toml'), baseModelConfig());
     await writeFile(
-      join(workDir, '.kimi-code', 'local.toml'),
+      join(workDir, '.echadron', 'local.toml'),
       `[workspace]\nadditional_dir = ["local"]\n`,
     );
 
@@ -636,10 +636,10 @@ max_context_size = 100000
     await mkdir(homeDir, { recursive: true });
     await mkdir(workDir, { recursive: true });
     await mkdir(sharedDir, { recursive: true });
-    await mkdir(join(workDir, '.kimi-code'), { recursive: true });
+    await mkdir(join(workDir, '.echadron'), { recursive: true });
     await writeFile(join(homeDir, 'config.toml'), baseModelConfig());
     await writeFile(
-      join(workDir, '.kimi-code', 'local.toml'),
+      join(workDir, '.echadron', 'local.toml'),
       `[workspace]\nadditional_dir = ["shared"]\n`,
     );
 
@@ -673,10 +673,10 @@ max_context_size = 100000
     await mkdir(workDir, { recursive: true });
     await mkdir(localDir, { recursive: true });
     await mkdir(callerDir, { recursive: true });
-    await mkdir(join(workDir, '.kimi-code'), { recursive: true });
+    await mkdir(join(workDir, '.echadron'), { recursive: true });
     await writeFile(join(homeDir, 'config.toml'), baseModelConfig());
     await writeFile(
-      join(workDir, '.kimi-code', 'local.toml'),
+      join(workDir, '.echadron', 'local.toml'),
       `[workspace]\nadditional_dir = ["shared"]\n`,
     );
 
@@ -772,7 +772,7 @@ max_context_size = 100000
           content: [
             {
               type: 'text',
-              text: `<local-command-stdout>\nAdded workspace directory:\n  extra\n  Saved to:\n  ${join(workDir, '.kimi-code', 'local.toml')}\n</local-command-stdout>`,
+              text: `<local-command-stdout>\nAdded workspace directory:\n  extra\n  Saved to:\n  ${join(workDir, '.echadron', 'local.toml')}\n</local-command-stdout>`,
             },
           ],
           origin: { kind: 'injection', variant: 'local-command-stdout' },
@@ -814,14 +814,14 @@ max_context_size = 100000
       path: 'extra',
       persist: true,
     });
-    const localToml = await readFile(join(workDir, '.kimi-code', 'local.toml'), 'utf-8');
+    const localToml = await readFile(join(workDir, '.echadron', 'local.toml'), 'utf-8');
     const session = core.sessions.get(created.id);
     const mainAgent = session?.getReadyAgent('main');
 
     expect(result).toMatchObject({
       additionalDirs: [extraDir],
       projectRoot: workDir,
-      configPath: join(workDir, '.kimi-code', 'local.toml'),
+      configPath: join(workDir, '.echadron', 'local.toml'),
       persisted: true,
     });
     expect(localToml).toContain('additional_dir = [');
@@ -865,7 +865,7 @@ max_context_size = 100000
     expect(result).toMatchObject({
       additionalDirs: [extraDir],
       projectRoot: workDir,
-      configPath: join(workDir, '.kimi-code', 'local.toml'),
+      configPath: join(workDir, '.echadron', 'local.toml'),
       persisted: false,
     });
     expect(core.sessions.get(created.id)?.getAdditionalDirs()).toEqual([extraDir]);
@@ -884,7 +884,7 @@ max_context_size = 100000
         }),
       }),
     );
-    await expect(readFile(join(workDir, '.kimi-code', 'local.toml'), 'utf-8')).rejects.toThrow();
+    await expect(readFile(join(workDir, '.echadron', 'local.toml'), 'utf-8')).rejects.toThrow();
   });
 
   it('rejects createSession when shell runtime initialization fails', async () => {
@@ -961,6 +961,11 @@ max_context_size = 100000
     const homeDir = join(tmp, 'home');
     const workDir = join(tmp, 'work');
     const configPath = join(homeDir, 'config.toml');
+    // Keep this assertion independent from the environment-backed service
+    // tests above. Vitest may reuse a worker between files/tests, so an env
+    // stub from another test must not make the initial runtime look configured.
+    vi.stubEnv('KIMI_WEB_SEARCH_BASE_URL', '');
+    vi.stubEnv('KIMI_WEB_SEARCH_API_KEY', '');
     await mkdir(homeDir, { recursive: true });
     await mkdir(workDir, { recursive: true });
     await writeFile(configPath, baseModelConfig());

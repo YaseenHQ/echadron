@@ -6,15 +6,20 @@
  * headers vs the beta endpoint, and the thinking profile matrix (budget vs
  * adaptive) from `anthropic-profile`.
  *
- * The only hook surface is `withThinking` — a vendor dialect running over
- * this transport re-encodes the thinking intent and nothing else. When the
- * per-turn thinking intent carries `keep`, the BASE overlays the
- * context-management edit uniformly on top of whatever thinking encoding
- * happened (hook or base path), so a trait never handles `keep` itself.
+ * The hook surface is `withThinking` plus `convertError`. `withThinking`
+ * lets a vendor dialect running over this transport re-encode the thinking
+ * intent; when the per-turn thinking intent carries `keep`, the BASE
+ * overlays the context-management edit uniformly on top of whatever
+ * thinking encoding happened (hook or base path), so a trait never handles
+ * `keep` itself.
  *
  * `convertAnthropicError`'s FIRST line is the contract's `throwIfAbortError`
  * guard: a user cancellation is THROWN as the standard abort DOMException at
- * the very front of the classification chain.
+ * the very front of the classification chain. After the guard,
+ * already-converted `ChatProviderError`s pass through untouched; only then is
+ * the trait-composed `convertError` hook consulted, so a vendor riding this
+ * transport classifies each RAW SDK failure exactly once before the base
+ * rules run.
  */
 
 import Anthropic, {
@@ -113,25 +118,20 @@ export interface AnthropicGenerationKwargs {
   output_config?: MessageCreateParams['output_config'] | undefined;
   betaFeatures?: string[] | undefined;
   contextManagement?: AnthropicContextManagement;
+  [key: string]: unknown;
 }
 
 interface AnthropicContextManagement {
   edits: Array<{ type: string; keep?: unknown }>;
 }
 
-/**
- * The base-internal hook set: the L1 `withThinking` hook with the context
- * already bound away. It receives a defensive COPY of the seeded kwargs, so a
- * hook can never mutate base state — and a construction-headers synthetic
- * trait can never shadow a real dialect hook (the compositor picks the last
- * declarer).
- */
 export interface AnthropicHooks {
   withThinking?(
     effort: ThinkingEffort,
     options: { readonly keep?: string },
     generationKwargs: AnthropicGenerationKwargs,
   ): AnthropicGenerationKwargs | undefined;
+  convertError?: (error: unknown) => ChatProviderError | undefined;
 }
 
 export interface AnthropicOptions {
@@ -141,6 +141,7 @@ export interface AnthropicOptions {
   defaultMaxTokens?: number | undefined;
   betaFeatures?: string[] | undefined;
   defaultHeaders?: Record<string, string>;
+  generationKwargs?: AnthropicGenerationKwargs | undefined;
   metadata?: Record<string, string> | undefined;
   stream?: boolean | undefined;
   adaptiveThinking?: boolean | undefined;
@@ -513,11 +514,21 @@ function shouldKeepConvertedMessage(message: MessageParam): boolean {
   return message.role !== 'assistant' || message.content.length > 0;
 }
 
-export function convertAnthropicError(error: unknown): ChatProviderError {
+export function convertAnthropicError(
+  error: unknown,
+  convertErrorHook?: (error: unknown) => ChatProviderError | undefined,
+): ChatProviderError {
   // Abort guard FIRST: throws (never returns) the standard abort DOMException
   // for any abort shape, so a user cancellation is never misclassified as a
   // retryable provider failure.
   throwIfAbortError(error);
+  if (error instanceof ChatProviderError) {
+    return error;
+  }
+  const hooked = convertErrorHook?.(error);
+  if (hooked !== undefined) {
+    return hooked;
+  }
   if (error instanceof AnthropicTimeoutError) {
     return new APITimeoutError(error.message);
   }
@@ -554,7 +565,13 @@ class AnthropicStreamedMessage implements StreamedMessage {
   private _rawFinishReason: string | null = null;
   private readonly _iter: AsyncGenerator<StreamedMessagePart>;
 
-  constructor(response: unknown, isStream: boolean) {
+  constructor(
+    response: unknown,
+    isStream: boolean,
+    private readonly _convertErrorHook?:
+      | ((error: unknown) => ChatProviderError | undefined)
+      | undefined,
+  ) {
     if (isStream) {
       this._iter = this._convertStreamResponse(response as AsyncIterable<MessageStreamEvent>);
     } else {
@@ -780,7 +797,7 @@ class AnthropicStreamedMessage implements StreamedMessage {
         }
       }
     } catch (error: unknown) {
-      throw convertAnthropicError(error);
+      throw convertAnthropicError(error, this._convertErrorHook);
     }
   }
 }
@@ -821,6 +838,7 @@ export class AnthropicChatProvider implements ChatProvider {
     this._client = this._apiKey === undefined ? undefined : this._buildClient(this._apiKey);
     this._explicitMaxTokens = options.defaultMaxTokens !== undefined;
     this._generationKwargs = {
+      ...options.generationKwargs,
       max_tokens: options.defaultMaxTokens ?? resolveDefaultMaxTokens(options.model),
       betaFeatures: options.betaFeatures ?? [INTERLEAVED_THINKING_BETA],
     };
@@ -938,7 +956,12 @@ export class AnthropicChatProvider implements ChatProvider {
       };
     }
 
-    const requestKwargs: Record<string, unknown> = {};
+    // Preserve catalog-provided request fields (for example Anthropic's
+    // `speed` fast-mode field) while keeping internal adapter fields out of
+    // the wire payload. First-class values below intentionally win.
+    const requestKwargs: Record<string, unknown> = { ...kwargs };
+    delete requestKwargs['betaFeatures'];
+    delete requestKwargs['contextManagement'];
     if (kwargs.max_tokens !== undefined) {
       requestKwargs['max_tokens'] = kwargs.max_tokens;
     }
@@ -977,9 +1000,9 @@ export class AnthropicChatProvider implements ChatProvider {
     }
 
     const createParams: Record<string, unknown> = {
+      ...requestKwargs,
       model: this._model,
       messages,
-      ...requestKwargs,
     };
 
     if (system !== undefined) {
@@ -1021,9 +1044,9 @@ export class AnthropicChatProvider implements ChatProvider {
               { ...createParams, stream: true } as unknown as MessageCreateParamsStreaming,
               finalRequestOptions,
             );
-        return new AnthropicStreamedMessage(stream, true);
+        return new AnthropicStreamedMessage(stream, true, this._hooks?.convertError);
       } catch (error: unknown) {
-        throw convertAnthropicError(error);
+        throw convertAnthropicError(error, this._hooks?.convertError);
       }
     }
 
@@ -1037,9 +1060,9 @@ export class AnthropicChatProvider implements ChatProvider {
             { ...createParams, stream: false } as unknown as MessageCreateParams,
             finalRequestOptions,
           );
-      return new AnthropicStreamedMessage(response, false);
+      return new AnthropicStreamedMessage(response, false, this._hooks?.convertError);
     } catch (error: unknown) {
-      throw convertAnthropicError(error);
+      throw convertAnthropicError(error, this._hooks?.convertError);
     }
   }
 

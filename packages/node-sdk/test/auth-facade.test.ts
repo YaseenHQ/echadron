@@ -29,6 +29,20 @@ import { ProviderManager } from '../../agent-core/src/session/provider-manager';
 import { TEST_IDENTITY } from './test-identity';
 
 let homeDir: string;
+const managedEndpointEnvNames = [
+  'KIMI_CODE_BASE_URL',
+  'KIMI_CODE_OAUTH_HOST',
+  'KIMI_OAUTH_HOST',
+  'ECHADRON_CODE_BASE_URL',
+  'ECHADRON_CODE_OAUTH_HOST',
+  'ECHADRON_OAUTH_HOST',
+  'IMPERIUM_CODE_BASE_URL',
+  'IMPERIUM_CODE_OAUTH_HOST',
+  'IMPERIUM_OAUTH_HOST',
+] as const;
+const initialManagedEndpointEnv = Object.fromEntries(
+  managedEndpointEnvNames.map((name) => [name, process.env[name]]),
+) as Record<(typeof managedEndpointEnvNames)[number], string | undefined>;
 
 type FetchMock = (
   input: Parameters<typeof fetch>[0],
@@ -52,6 +66,14 @@ function freshToken(): TokenInfo {
   };
 }
 
+function clearManagedEndpointEnvAliases(): void {
+  for (const name of managedEndpointEnvNames) {
+    const value = initialManagedEndpointEnv[name];
+    if (value === undefined) delete process.env[name];
+    else process.env[name] = value;
+  }
+}
+
 beforeEach(async () => {
   homeDir = await mkdtemp(join(tmpdir(), 'kimi-sdk-auth-'));
 });
@@ -59,6 +81,7 @@ beforeEach(async () => {
 afterEach(async () => {
   vi.unstubAllGlobals();
   vi.unstubAllEnvs();
+  clearManagedEndpointEnvAliases();
   await rm(homeDir, { recursive: true, force: true });
 });
 
@@ -662,6 +685,11 @@ oauth = { storage = "file", key = "${configuredOauthKey}", oauth_host = "https:/
       baseUrl: envBaseUrl,
       oauth: { storage: 'file', key: envOauthKey, oauthHost: envOauthHost },
     });
+
+    // SDK construction normalizes KIMI_* endpoint variables into Echadron
+    // aliases. Clear those process-boundary aliases before the next test so
+    // the following default-environment cases cannot inherit this fixture.
+    clearManagedEndpointEnvAliases();
   });
 
   it('starts degraded when a configured model alias does not have max_context_size', async () => {
@@ -899,7 +927,7 @@ max_context_size = 262144
 
     expect(result).toMatchObject({
       kind: 'ok',
-      summary: { label: 'Weekly limit', used: 1, limit: 10 },
+      summary: { name: 'Weekly limit', used: 1, limit: 10 },
     });
     const init = fetchMock.mock.calls[0]?.[1] as RequestInit;
     const headers = new Headers((init.headers ?? {}) as Record<string, string>);
@@ -948,7 +976,7 @@ oauth = { storage = "file", key = "${oauthKey}", oauth_host = "https://auth.dev.
 
     await expect(harness.auth.getManagedUsage()).resolves.toMatchObject({
       kind: 'ok',
-      summary: { label: 'Dev limit', used: 2, limit: 10 },
+      summary: { name: 'Dev limit', used: 2, limit: 10 },
     });
     await expect(
       harness.auth.submitFeedback({
@@ -1032,7 +1060,7 @@ oauth = { storage = "file", key = "${configuredOauthKey}", oauth_host = "https:/
     ).resolves.toBe('env-access-token');
     await expect(harness.auth.getManagedUsage()).resolves.toMatchObject({
       kind: 'ok',
-      summary: { label: 'Env limit', used: 3, limit: 10 },
+      summary: { name: 'Env limit', used: 3, limit: 10 },
     });
     await expect(
       harness.auth.submitFeedback({

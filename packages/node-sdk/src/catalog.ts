@@ -3,6 +3,7 @@ import {
   catalogBaseUrl,
   catalogProviderModels,
   inferWireType,
+  normalizeCatalog,
   resolveCatalogImport,
   type Catalog,
   type CatalogImportInvalidReason,
@@ -53,7 +54,7 @@ export async function fetchCatalog(
   if (typeof payload !== 'object' || payload === null || Array.isArray(payload)) {
     throw new Error(`Unexpected catalog response from ${url}.`);
   }
-  return payload as Catalog;
+  return normalizeCatalog(payload);
 }
 
 function capabilityToStrings(capability: ModelCapability): string[] | undefined {
@@ -72,7 +73,7 @@ export function catalogModelToAlias(providerId: string, model: CatalogModel): Mo
   const caps = capabilityToStrings(model.capability);
   return {
     provider: providerId,
-    model: model.id,
+    model: model.wireModel ?? model.id,
     maxContextSize: model.capability.max_context_tokens,
     maxInputSize: model.capability.max_input_tokens,
     maxOutputSize: model.maxOutputSize,
@@ -85,7 +86,12 @@ export function catalogModelToAlias(providerId: string, model: CatalogModel): Mo
     displayName: model.name,
     reasoningKey: model.reasoningKey,
     supportEfforts: model.supportEfforts === undefined ? undefined : [...model.supportEfforts],
+    thinkingBudgetMin: model.thinkingBudget?.min,
+    thinkingBudgetMax: model.thinkingBudget?.max,
+    defaultEffort: model.defaultEffort,
     offEffort: model.offEffort,
+    ...(model.requestHeaders === undefined ? {} : { requestHeaders: { ...model.requestHeaders } }),
+    ...(model.requestBody === undefined ? {} : { requestBody: { ...model.requestBody } }),
     protocol: model.protocol,
     baseUrl: model.baseUrl,
   };
@@ -98,7 +104,28 @@ export interface ApplyCatalogProviderOptions {
   readonly apiKey: string;
   readonly models: readonly CatalogModel[];
   readonly selectedModelId: string;
-  readonly thinking: boolean;
+  /**
+   * Provenance for an imported catalog provider. Kept on the provider rather
+   * than inferred from its wire type so a later catalog refresh can reconcile
+   * aliases without losing the original adapter or endpoint.
+   */
+  readonly source?: CatalogProviderSource;
+  /** Optional legacy global toggle. Omit it to preserve model-level defaults. */
+  readonly thinking?: boolean;
+}
+
+export interface CatalogProviderSource {
+  readonly kind: 'modelsDev';
+  /** URL of the models.dev-shaped catalog document. */
+  readonly url: string;
+  /** Provider id in that document; may differ from the local provider id. */
+  readonly catalogId: string;
+  /** AI SDK adapter declared by the catalog, when present. */
+  readonly npm?: string;
+  /** Endpoint declared by the catalog, before any local override. */
+  readonly api?: string;
+  /** Effective endpoint used for this import when one was resolved. */
+  readonly baseUrl?: string;
 }
 
 /**
@@ -109,7 +136,7 @@ export interface ApplyCatalogProviderOptions {
 export function loadBuiltInCatalog(text?: string): Catalog | undefined {
   if (typeof text !== 'string' || text.length === 0) return undefined;
   try {
-    return JSON.parse(text) as Catalog;
+    return normalizeCatalog(JSON.parse(text));
   } catch {
     return undefined;
   }
@@ -135,6 +162,7 @@ export function applyCatalogProvider(
     type: options.wire,
     baseUrl: options.baseUrl,
     apiKey: options.apiKey,
+    ...(options.source === undefined ? {} : { source: { ...options.source } }),
   };
 
   const models = config.models ?? {};
@@ -148,6 +176,8 @@ export function applyCatalogProvider(
 
   const defaultModel = `${options.providerId}/${options.selectedModelId}`;
   config.defaultModel = defaultModel;
-  config.thinking = { ...config.thinking, enabled: options.thinking };
+  if (options.thinking !== undefined) {
+    config.thinking = { ...config.thinking, enabled: options.thinking };
+  }
   return { defaultModel };
 }

@@ -6,17 +6,17 @@ describe('buildCodesignArgs', () => {
   it('returns ad-hoc args for identity "-"', () => {
     const args = buildCodesignArgs({
       identity: '-',
-      executable: '/path/kimi',
+      executable: '/path/imperium',
       entitlementsPath: '/path/entitlements.plist',
       keychainPath: null,
     });
-    expect(args).toEqual(['--sign', '-', '/path/kimi']);
+    expect(args).toEqual(['--sign', '-', '/path/imperium']);
   });
 
   it('returns hardened-runtime args for Developer ID identity', () => {
     const args = buildCodesignArgs({
       identity: 'Developer ID Application: Moonshot AI (ABCD1234)',
-      executable: '/path/kimi',
+      executable: '/path/imperium',
       entitlementsPath: '/path/entitlements.plist',
       keychainPath: '/tmp/sign.keychain-db',
     });
@@ -31,14 +31,14 @@ describe('buildCodesignArgs', () => {
       '--keychain',
       '/tmp/sign.keychain-db',
       '--force',
-      '/path/kimi',
+      '/path/imperium',
     ]);
   });
 
   it('omits --keychain when keychainPath is null but uses Developer ID otherwise', () => {
     const args = buildCodesignArgs({
       identity: 'Developer ID Application: Moonshot AI (ABCD1234)',
-      executable: '/path/kimi',
+      executable: '/path/imperium',
       entitlementsPath: '/path/entitlements.plist',
       keychainPath: null,
     });

@@ -161,7 +161,7 @@ export const sessionHandlers: Record<string, Handler<any, any>> = {
       ctx.broadcast(Events.FileChangesUpdated, [], ctx.webviewId);
       void Promise.resolve(
         vscode.window.showWarningMessage(
-          "Kimi: This conversation opened, but its file change history is unavailable.",
+          "Echadron: This conversation opened, but its file change history is unavailable.",
           "Show Logs",
         ),
       )

@@ -1,6 +1,11 @@
 import type { Logger } from '#/logging/types';
 import type { ProviderConfig as KosongProviderConfig, ModelCapability, ProviderRequestAuth } from '@moonshot-ai/kosong';
-import { APIStatusError, getModelCapability, UNKNOWN_CAPABILITY } from '@moonshot-ai/kosong';
+import {
+  APIStatusError,
+  classifyKimiQuotaError,
+  getModelCapability,
+  UNKNOWN_CAPABILITY,
+} from '@moonshot-ai/kosong';
 import { parseKimiCodeCustomHeaders } from '@moonshot-ai/kimi-code-oauth';
 import {
   effectiveModelAlias,
@@ -133,6 +138,7 @@ export class ProviderManager implements ModelProvider {
       alias.wire,
       alias.baseUrl,
       this.options.kimiRequestHeaders,
+      effectiveAlias.requestHeaders,
       effectiveAlias.maxOutputSize,
       effectiveAlias.reasoningKey,
       this.options.promptCacheKey,
@@ -140,6 +146,7 @@ export class ProviderManager implements ModelProvider {
       effectiveAlias.offEffort,
       effectiveAlias.adaptiveThinking,
       alias.betaApi,
+      effectiveAlias.requestBody,
     );
 
     return {
@@ -270,6 +277,7 @@ function toKosongProviderConfig(
   modelWire: ModelAlias['wire'],
   modelBaseUrl: string | undefined,
   kimiRequestHeaders: Record<string, string> | undefined,
+  modelRequestHeaders: Record<string, string> | undefined,
   maxOutputSize: number | undefined,
   reasoningKey: string | undefined,
   promptCacheKey: string | undefined,
@@ -277,6 +285,7 @@ function toKosongProviderConfig(
   offEffort: string | undefined,
   adaptiveThinking: boolean | undefined,
   betaApi: boolean | undefined,
+  requestBody: Record<string, unknown> | undefined,
 ): KosongProviderConfig {
   const effectiveType = modelWire ?? (modelProtocol === 'anthropic' ? 'anthropic' : provider.type);
   const envCustomHeaders = parseKimiCodeCustomHeaders();
@@ -295,9 +304,15 @@ function toKosongProviderConfig(
             : baseUrl,
         apiKey: providerApiKey(provider),
         ...(maxOutputSize !== undefined ? { defaultMaxTokens: maxOutputSize } : {}),
+        ...(requestBody !== undefined ? { generationKwargs: requestBody } : {}),
         supportEfforts,
         ...(adaptiveThinking !== undefined ? { adaptiveThinking } : {}),
-        ...(provider.type === 'kimi' ? { kimiThinking: true } : {}),
+        // Kimi routed over the Anthropic transport keeps its vendor error
+        // classification: a Moonshot quota-exhausted 429 must fail fast here
+        // exactly as it does on the Kimi OpenAI transport.
+        ...(provider.type === 'kimi'
+          ? { kimiThinking: true, convertError: classifyKimiQuotaError }
+          : {}),
         ...(betaApi !== undefined ? { betaApi } : {}),
         // Session affinity: Anthropic's analog of OpenAI `prompt_cache_key` is
         // `metadata.user_id` on the Messages API (cache-affinity / end-user id).
@@ -311,8 +326,18 @@ function toKosongProviderConfig(
         // still win on conflict.
         ...defaultHeadersField(
           provider.type === 'kimi' && modelProtocol === 'anthropic'
-            ? { ...envCustomHeaders, ...kimiRequestHeaders, ...provider.customHeaders }
-            : { ...envCustomHeaders, ...kimiUserAgentHeader(kimiRequestHeaders), ...provider.customHeaders },
+            ? {
+                ...envCustomHeaders,
+                ...kimiRequestHeaders,
+                ...provider.customHeaders,
+                ...modelRequestHeaders,
+              }
+            : {
+                ...envCustomHeaders,
+                ...kimiUserAgentHeader(kimiRequestHeaders),
+                ...provider.customHeaders,
+                ...modelRequestHeaders,
+              },
         ),
       };
     }
@@ -331,11 +356,12 @@ function toKosongProviderConfig(
         // same provider-side prompt cache (the OpenAI analog of Anthropic
         // `metadata.user_id` above). Undefined values are stripped at
         // generate time, matching the `kimi` branch below.
-        generationKwargs: { prompt_cache_key: promptCacheKey },
+        generationKwargs: { ...requestBody, prompt_cache_key: promptCacheKey },
         ...defaultHeadersField({
           ...envCustomHeaders,
           ...kimiUserAgentHeader(kimiRequestHeaders),
           ...provider.customHeaders,
+          ...modelRequestHeaders,
         }),
       };
     case 'kimi':
@@ -344,11 +370,12 @@ function toKosongProviderConfig(
         model,
         baseUrl: modelBaseUrl ?? providerValue(provider.baseUrl, provider.env, 'KIMI_BASE_URL'),
         apiKey: providerApiKey(provider),
-        generationKwargs: { prompt_cache_key: promptCacheKey },
+        generationKwargs: { ...requestBody, prompt_cache_key: promptCacheKey },
         ...defaultHeadersField({
           ...envCustomHeaders,
           ...kimiRequestHeaders,
           ...provider.customHeaders,
+          ...modelRequestHeaders,
         }),
       };
     case 'google-genai':
@@ -358,10 +385,12 @@ function toKosongProviderConfig(
         baseUrl:
           modelBaseUrl ?? providerValue(provider.baseUrl, provider.env, 'GOOGLE_GEMINI_BASE_URL'),
         apiKey: providerApiKey(provider),
+        ...(requestBody !== undefined ? { generationKwargs: requestBody } : {}),
         ...defaultHeadersField({
           ...envCustomHeaders,
           ...kimiUserAgentHeader(kimiRequestHeaders),
           ...provider.customHeaders,
+          ...modelRequestHeaders,
         }),
       };
     case 'openai_responses':
@@ -374,11 +403,12 @@ function toKosongProviderConfig(
         offEffort,
         // Session affinity: same `prompt_cache_key` intent as the `openai`
         // branch; the Responses API accepts it as a top-level request field.
-        generationKwargs: { prompt_cache_key: promptCacheKey },
+        generationKwargs: { ...requestBody, prompt_cache_key: promptCacheKey },
         ...defaultHeadersField({
           ...envCustomHeaders,
           ...kimiUserAgentHeader(kimiRequestHeaders),
           ...provider.customHeaders,
+          ...modelRequestHeaders,
         }),
       };
     case 'vertexai': {
@@ -402,6 +432,7 @@ function toKosongProviderConfig(
           ...envCustomHeaders,
           ...kimiUserAgentHeader(kimiRequestHeaders),
           ...provider.customHeaders,
+          ...modelRequestHeaders,
         }),
       };
     }

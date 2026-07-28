@@ -32,12 +32,15 @@ Add a shared abstraction only after a concrete provider requires behavior the
 existing Kimi interfaces cannot represent. Document that requirement here and
 cover the compatibility boundary with tests before adding another provider.
 
-The first adaptations are xAI, OpenAI Codex, Anthropic, and GitHub Copilot. They are
-expressed through the callback seam already provided by Kimi's `OAuthManager`;
-token storage, refresh locking, status, logout, configuration, and UI remain
-owned by the existing Kimi layers. Anthropic adds a browser/manual-code callback;
-Codex, Anthropic, and Copilot derive their provider-specific request headers from
-the fresh access token through the existing request-auth boundary.
+The OAuth adapters include xAI, OpenAI Codex, Anthropic, and GitHub Copilot. They
+are expressed through the callback seam already provided by Kimi's
+`OAuthManager`; token storage, refresh locking, status, logout, configuration,
+and UI remain owned by the existing Kimi layers. Anthropic adds a
+browser/manual-code callback; Codex, Anthropic, and Copilot derive their
+provider-specific request headers from the fresh access token through the
+existing request-auth boundary. Echadron currently advertises only Kimi, xAI,
+and OpenAI Codex for new interactive login; the Anthropic and Copilot adapters
+remain for existing credential compatibility.
 
 ## License
 

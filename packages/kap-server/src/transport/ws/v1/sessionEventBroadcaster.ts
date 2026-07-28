@@ -122,9 +122,12 @@ export interface SessionSnapshotState {
   subagents: SnapshotSubagent[];
 }
 
+/** Internal transport lane: only subscription traffic enters the timed buffer. */
+export type BroadcastDelivery = 'subscription' | 'immediate';
+
 /** A connection (or test double) that receives sequenced envelopes. */
 export interface BroadcastTarget {
-  send(envelope: EventEnvelope): void;
+  send(envelope: EventEnvelope, delivery?: BroadcastDelivery): void;
 }
 
 /**
@@ -838,7 +841,7 @@ export class SessionEventBroadcaster {
       // like `session.meta.updated` below. Without this, clients that didn't
       // issue the create never learn the session exists, so a later
       // `sessionStatusChanged` reducer is a no-op for the unknown session and
-      // kimi-web's Stop button (gated on session.status === 'running') never
+      // The web client's Stop button (gated on session.status === 'running') never
       // renders. Mirrors v1's `isGlobalSessionEvent` broadcast of creation.
       void this.dispatchSessionEvent(payload.sessionId, {
         type: 'event.session.created',
@@ -1208,7 +1211,7 @@ export class SessionEventBroadcaster {
       for (const target of this.allTargets()) recipients.add(target);
       for (const target of recipients) {
         try {
-          target.send(envelope);
+          target.send(envelope, 'immediate');
         } catch {
           // best-effort fan-out; a broken target is dropped, not fatal
         }
@@ -1285,7 +1288,7 @@ function isVolatileSignal(type: string): boolean {
  * through the same dispatch / journal / agent-filter path as the native event.
  *
  * Exists so unchanged v1 consumers (kimi-code TUI / `kimi -p`, node-sdk) keep
- * working while v2-shaped consumers (kimi-web) keep the native event and ignore
+ * working while v2-shaped consumers (the web client) keep the native event and ignore
  * the alias (registered as known, no handler). Remove once every consumer has
  * migrated to `task.*`.
  */

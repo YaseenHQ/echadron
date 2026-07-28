@@ -59,7 +59,7 @@ describe('TabbedModelSelectorComponent', () => {
   it('renders an "All" + per-provider tab strip', () => {
     const out = strip(make().component.render(120).join('\n'));
     expect(out).toContain('All');
-    expect(out).toContain('Kimi Code');
+    expect(out).toContain('Echadron');
     expect(out).toContain('openai');
   });
 
@@ -97,7 +97,7 @@ describe('TabbedModelSelectorComponent', () => {
 
   it('cycles provider tabs with Tab', () => {
     const { component } = make();
-    // tabs = [All, Kimi Code, openai]; active starts on All.
+    // tabs = [All, Echadron, openai]; active starts on All.
     // Two Tabs → openai, whose list shows GPT-5 and not Kimi K2.
     component.handleInput(TAB);
     component.handleInput(TAB);

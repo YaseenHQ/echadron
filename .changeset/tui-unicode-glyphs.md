@@ -1,5 +1,5 @@
 ---
-"@moonshot-ai/kimi-code": patch
+"@yaseenhq/echadron": patch
 ---
 
 Replace decorative terminal emoji with restrained Unicode markers and semantic tool glyphs.

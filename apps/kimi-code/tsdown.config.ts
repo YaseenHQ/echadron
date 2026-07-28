@@ -3,7 +3,11 @@ import { resolve } from 'node:path';
 import { defineConfig } from 'tsdown';
 
 import { rawTextPlugin } from '../../build/raw-text-plugin.mjs';
-import { BUILT_IN_CATALOG_DEFINE, builtInCatalogDefine } from './scripts/built-in-catalog.mjs';
+import {
+  BUILT_IN_CATALOG_DEFINE,
+  LEGACY_BUILT_IN_CATALOG_DEFINE,
+  builtInCatalogDefine,
+} from './scripts/built-in-catalog.mjs';
 
 const appRoot = import.meta.dirname;
 
@@ -19,8 +23,13 @@ export default defineConfig({
       '#!/usr/bin/env node',
       "import { fileURLToPath as __cjsShimFileURLToPath } from 'node:url';",
       "import { dirname as __cjsShimDirname } from 'node:path';",
+      "import { join as __echadronJoin } from 'node:path';",
+      "import { homedir as __echadronHomedir } from 'node:os';",
       'const __filename = __cjsShimFileURLToPath(import.meta.url);',
       'const __dirname = __cjsShimDirname(__filename);',
+      "process.env.ECHADRON_HOME ??= __echadronJoin(__echadronHomedir(), '.echadron');",
+      "process.env.IMPERIUM_HOME ??= process.env.ECHADRON_HOME;",
+      "process.env.KIMI_CODE_HOME ??= process.env.ECHADRON_HOME;",
     ].join('\n'),
   },
   plugins: [rawTextPlugin()],
@@ -29,6 +38,7 @@ export default defineConfig({
   },
   define: {
     [BUILT_IN_CATALOG_DEFINE]: builtInCatalogDefine(),
+    [LEGACY_BUILT_IN_CATALOG_DEFINE]: builtInCatalogDefine(),
   },
   deps: {
     onlyBundle: false,

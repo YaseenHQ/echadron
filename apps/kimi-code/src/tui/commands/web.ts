@@ -35,7 +35,7 @@ export async function handleWebCommand(host: SlashCommandHost): Promise<void> {
  * the TUI has shut down (where `process.exit` would normally happen): the
  * server stays attached to this terminal until Ctrl+C, and the session deep
  * link opens from the ready hook once the server is actually listening. The
- * terminal shows the same ready banner as `kimi web` plus the deep link.
+ * terminal shows the same ready banner as `echadron web` plus the deep link.
  */
 function startNewServerAfterExit(host: SlashCommandHost, sessionId: string): void {
   host.setExitForegroundTask(async () => {
@@ -74,7 +74,7 @@ function sessionLine(url: string): string {
 /**
  * Build the deep-link URL the web UI recognises for a session. When a token is
  * known it rides in the `#token=` fragment (never sent to the server, so never
- * logged), so the browser authenticates on load just like `kimi web`.
+ * logged), so the browser authenticates on load just like `echadron web`.
  */
 export function webSessionUrl(origin: string, sessionId: string, token?: string): string {
   const base = `${origin.replace(/\/+$/, '')}/sessions/${encodeURIComponent(sessionId)}`;

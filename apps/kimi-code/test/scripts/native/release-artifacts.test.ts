@@ -16,7 +16,7 @@ const packageScript = resolve(appRoot, 'scripts/native/package.mjs');
 const manifestScript = resolve(appRoot, 'scripts/native/produce-manifest.mjs');
 const artifactsDir = resolve(appRoot, 'dist-native/artifacts');
 const target = 'test-zip-artifact';
-const executableName = process.platform === 'win32' ? 'kimi.exe' : 'kimi';
+const executableName = process.platform === 'win32' ? 'echadron.exe' : 'echadron';
 const fakeBinary = resolve(appRoot, 'dist-native/bin', target, executableName);
 
 function sha256(bytes: Buffer | string): string {
@@ -92,8 +92,8 @@ function findEndOfCentralDirectory(zip: Buffer): number {
 describe('native release artifacts', () => {
   afterEach(() => {
     rmSync(resolve(appRoot, 'dist-native/bin', target), { recursive: true, force: true });
-    rmSync(resolve(artifactsDir, `kimi-code-${target}.zip`), { force: true });
-    rmSync(resolve(artifactsDir, `kimi-code-${target}.zip.sha256`), { force: true });
+    rmSync(resolve(artifactsDir, `echadron-${target}.zip`), { force: true });
+    rmSync(resolve(artifactsDir, `echadron-${target}.zip.sha256`), { force: true });
   });
 
   it('packages the native binary as a zip archive and checksums the archive', async () => {
@@ -106,14 +106,14 @@ describe('native release artifacts', () => {
       env: { ...process.env, KIMI_CODE_BUILD_TARGET: target },
     });
 
-    const archivePath = resolve(artifactsDir, `kimi-code-${target}.zip`);
+    const archivePath = resolve(artifactsDir, `echadron-${target}.zip`);
     const checksumPath = `${archivePath}.sha256`;
     expect(existsSync(archivePath)).toBe(true);
     expect(existsSync(checksumPath)).toBe(true);
     expect(zipEntryNames(archivePath)).toEqual([executableName]);
     expect(readZipEntry(archivePath, executableName).toString('utf-8')).toBe(binaryContent);
     expect(readFileSync(checksumPath, 'utf-8')).toBe(
-      `${sha256(readFileSync(archivePath))}  kimi-code-${target}.zip\n`,
+      `${sha256(readFileSync(archivePath))}  echadron-${target}.zip\n`,
     );
   });
 
@@ -121,10 +121,10 @@ describe('native release artifacts', () => {
     const releaseDir = await mkdtemp(join(tmpdir(), 'kimi-manifest-zip-'));
     const archiveBytes = Buffer.from('fake zip bytes');
     const checksum = sha256(archiveBytes);
-    await writeFile(join(releaseDir, 'kimi-code-darwin-arm64.zip'), archiveBytes);
+    await writeFile(join(releaseDir, 'echadron-darwin-arm64.zip'), archiveBytes);
     await writeFile(
-      join(releaseDir, 'kimi-code-darwin-arm64.zip.sha256'),
-      `${checksum}  kimi-code-darwin-arm64.zip\n`,
+      join(releaseDir, 'echadron-darwin-arm64.zip.sha256'),
+      `${checksum}  echadron-darwin-arm64.zip\n`,
     );
 
     await execFileAsync(process.execPath, [manifestScript, releaseDir, '@moonshot-ai/kimi-code@0.5.0']);
@@ -141,7 +141,7 @@ describe('native release artifacts', () => {
       tag: '@moonshot-ai/kimi-code@0.5.0',
       platforms: {
         'darwin-arm64': {
-          filename: 'kimi-code-darwin-arm64.zip',
+          filename: 'echadron-darwin-arm64.zip',
           checksum,
         },
       },

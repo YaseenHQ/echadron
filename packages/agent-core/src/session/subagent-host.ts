@@ -182,7 +182,6 @@ export class SessionSubagentHost {
     const completion = this.runWithActiveChild(agentId, options, async (runOptions) => {
       this.emitSubagentSpawned(parent, agentId, profileName, runOptions);
       try {
-        child.config.update({ modelAlias: parent.config.modelAlias });
         return await this.runPromptTurn(parent, agentId, child, profileName, runOptions);
       } catch (error) {
         this.emitSubagentFailed(parent, agentId, runOptions, error);
@@ -198,7 +197,6 @@ export class SessionSubagentHost {
     const completion = this.runWithActiveChild(agentId, options, async (runOptions) => {
       try {
         runOptions.signal.throwIfAborted();
-        child.config.update({ modelAlias: parent.config.modelAlias });
         this.emitSubagentStarted(parent, agentId);
         const turnId = child.turn.retry('agent-host');
         if (turnId === null) {
@@ -401,11 +399,12 @@ export class SessionSubagentHost {
     child: Agent,
     profile: ResolvedAgentProfile,
   ): Promise<void> {
-    // A subagent always inherits the parent agent's model.
+    const modelAlias = profile.model ?? parent.config.modelAlias;
     child.config.update({
       cwd: parent.config.cwd,
-      modelAlias: parent.config.modelAlias,
-      thinkingEffort: parent.config.thinkingEffort,
+      modelAlias,
+      thinkingEffort:
+        modelAlias === parent.config.modelAlias ? parent.config.thinkingEffort : undefined,
     });
 
     const context = await prepareSystemPromptContext(

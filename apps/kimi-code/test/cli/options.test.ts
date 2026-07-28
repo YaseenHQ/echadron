@@ -305,7 +305,7 @@ describe('CLI options parsing', () => {
     });
   });
 
-  describe('KIMI_MODEL_OUTPUT_FORMAT', () => {
+  describe('ECHADRON_MODEL_OUTPUT_FORMAT', () => {
     it('defaults to text when unset in prompt mode', () => {
       expect(resolveOutputFormat({ prompt: 'run this', outputFormat: undefined }, {})).toBe('text');
     });
@@ -367,7 +367,7 @@ describe('CLI options parsing', () => {
           { prompt: 'run this', outputFormat: undefined },
           { [OUTPUT_FORMAT_ENV]: 'json' },
         ),
-      ).toThrow('Invalid KIMI_MODEL_OUTPUT_FORMAT value "json"');
+      ).toThrow('Invalid ECHADRON_MODEL_OUTPUT_FORMAT value "json"');
     });
 
     it('fails validation fast for an invalid env value in prompt mode', () => {
@@ -549,7 +549,7 @@ describe('CLI options parsing', () => {
         'doctor',
         'vis',
         'migrate',
-        'upgrade',
+        'update',
       ]);
     });
   });

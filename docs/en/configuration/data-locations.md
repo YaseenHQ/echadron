@@ -1,37 +1,39 @@
 # Data locations
 
-Kimi Code CLI stores all runtime data — the config file, session history, login credentials, and diagnostic logs — under `~/.kimi-code/`. This page helps you understand where each type of data lives, what it is for, and how to clean up or relocate it when needed.
+Echadron stores all runtime data — the config file, session history, login credentials, and diagnostic logs — under `~/.echadron/`. This page helps you understand where each type of data lives, what it is for, and how to clean up or relocate it when needed.
 
 ## Data root directory
 
-The default data root is `~/.kimi-code/`. The actual path varies by platform:
+The default data root is `~/.echadron/`. The actual path varies by platform:
 
-- macOS: `/Users/<name>/.kimi-code`
-- Linux: `/home/<name>/.kimi-code`
-- Windows: `C:\Users\<name>\.kimi-code`
+- macOS: `/Users/<name>/.echadron`
+- Linux: `/home/<name>/.echadron`
+- Windows: `C:\Users\<name>\.echadron`
 
-If you need to move the data directory elsewhere (for example, to isolate configs for different projects with independent environments), set `KIMI_CODE_HOME`:
+If you need to move the data directory elsewhere (for example, to isolate configs for different projects with independent environments), set `ECHADRON_HOME`:
 
 ```sh
-export KIMI_CODE_HOME="$HOME/.config/kimi-code"
+export ECHADRON_HOME="$HOME/.config/echadron"
 ```
 
-Once set, **all** Kimi Code data — config, sessions, logs, OAuth credentials, Kimi-specific user Skills, global `AGENTS.md`, and more — lands under the new path. For the full reference on `KIMI_CODE_HOME`, see [Environment variables](./env-vars.md).
+Once set, **all** Echadron data — config, sessions, logs, OAuth credentials, Echadron-specific user Skills, global `AGENTS.md`, and more — lands under the new path. For the full reference on `ECHADRON_HOME`, see [Environment variables](./env-vars.md).
+
+The legacy `IMPERIUM_HOME` and `KIMI_CODE_HOME` variables, and the `kimi` executable, remain supported as compatibility aliases.
 
 ::: tip Note
 
-**Generic `.agents` resources** stay under the real OS home so they can be shared across tools. For example, user-level generic Skills remain at `~/.agents/skills/`, while Kimi-specific user Skills move with `KIMI_CODE_HOME` as `$KIMI_CODE_HOME/skills/`.
+**Generic `.agents` resources** stay under the real OS home so they can be shared across tools. For example, user-level generic Skills remain at `~/.agents/skills/`, while Echadron-specific user Skills move with `ECHADRON_HOME` as `$ECHADRON_HOME/skills/`.
 :::
 
 ## Directory layout
 
 ```
-$KIMI_CODE_HOME  (default: ~/.kimi-code)
+$ECHADRON_HOME  (default: ~/.echadron)
 ├── config.toml             # User configuration
 ├── tui.toml                # Terminal UI preferences (including auto-update toggle)
-├── AGENTS.md               # Global Kimi-specific agent instructions (optional)
+├── AGENTS.md               # Global Echadron-specific agent instructions (optional)
 ├── mcp.json                # User-level MCP server declarations (optional)
-├── skills/                 # Kimi-specific user-level Skills (optional)
+├── skills/                 # Echadron-specific user-level Skills (optional)
 ├── plugins/
 │   ├── installed.json      # Installed plugin records and enabled state
 │   └── managed/            # Plugin copies installed from zip/local paths
@@ -62,9 +64,9 @@ Each top-level file under the data root serves a specific purpose; most are mana
 
 - **`config.toml`**: the main runtime configuration file, storing user-level settings such as providers, models, and loop control. See [Configuration files](./config-files.md).
 - **`tui.toml`**: terminal UI client preferences, including `[upgrade].auto_install` (auto-update, on by default). You can disable it in `/settings` or by manually setting `auto_install = false`.
-- **`AGENTS.md`**: global Kimi-specific agent instructions. This file moves with `KIMI_CODE_HOME`; generic cross-tool instructions can still live under `~/.agents/AGENTS.md`.
-- **`mcp.json`**: user-level MCP server declarations, merged with the project-local `.kimi-code/mcp.json` on startup. See [MCP](../customization/mcp.md).
-- **`skills/`**: Kimi-specific user-level Skills. This directory moves with `KIMI_CODE_HOME`; generic cross-tool Skills can still live under `~/.agents/skills/`. See [Agent Skills](../customization/skills.md).
+- **`AGENTS.md`**: global Echadron-specific agent instructions. This file moves with `ECHADRON_HOME`; generic cross-tool instructions can still live under `~/.agents/AGENTS.md`.
+- **`mcp.json`**: user-level MCP server declarations, merged with the project-local `.echadron/mcp.json` on startup. The legacy `.kimi-code/mcp.json` path is also read when present. See [MCP](../customization/mcp.md).
+- **`skills/`**: Echadron-specific user-level Skills. This directory moves with `ECHADRON_HOME`; generic cross-tool Skills can still live under `~/.agents/skills/`. See [Agent Skills](../customization/skills.md).
 - **`plugins/installed.json`**: records installed plugins, each plugin's enabled state, and MCP server capability state changes made via `/plugins` or `/plugins mcp disable|enable`. Files installed from local paths or zip URLs are copied to `plugins/managed/<id>/`. See [Plugins](../customization/plugins.md).
 - **`credentials/`**: OAuth credential directory, with permissions `0o700` (directory) / `0o600` (files), readable and writable only by the current user. Managed provider credentials are stored as `credentials/<name>.json`; MCP server credentials are stored under `credentials/mcp/`. Credentials are written using an atomic flow (tmp → fsync → rename) to prevent corruption.
 
@@ -81,7 +83,7 @@ Inside each session directory:
 - **`agents/agent-0/` etc.**: sub-Agent instance directories, each containing their own `wire.jsonl`.
 - **`logs/kimi-code.log`**: diagnostic log for this session; only present when a diagnostic event occurs.
 - **`tasks/`**: background task persistence — `tasks/<task_id>.json` stores status/pid/exit code; `tasks/<task_id>/output.log` stores output.
-- **`cron/`**: scheduled task persistence; reloaded into the scheduler when the session is resumed with `kimi --session`. See [Scheduled tasks](../reference/tools.md#scheduled-tasks).
+- **`cron/`**: scheduled task persistence; reloaded into the scheduler when the session is resumed with `echadron --session`. See [Scheduled tasks](../reference/tools.md#scheduled-tasks).
 
 ## Built-in tool cache
 
@@ -92,7 +94,7 @@ The first time the `Grep` tool needs ripgrep, the CLI can automatically download
 - **`logs/kimi-code.log`** (global): records startup, login, export, and other cross-session events.
 - **`<sessionDir>/logs/kimi-code.log`** (session-level): records diagnostic events within a single session.
 
-When reporting a bug, prefer exporting the relevant session with `kimi export` (see [kimi command](../reference/kimi-command.md)); the session log is included in the export by default. Add `--no-include-global-log` if you do not want to share the global log.
+When reporting a bug, prefer exporting the relevant session with `echadron export` (see [Echadron command reference](../reference/kimi-command.md)); the session log is included in the export by default. Add `--no-include-global-log` if you do not want to share the global log.
 
 The files under `updates/` (`latest.json`, `install.json`, `install.lock`, `rollout.log`) are maintained automatically by the auto-update mechanism and normally do not need manual editing. `rollout.log` records which staged-rollout case each update check hit, which helps explain when a device will receive a new release.
 
@@ -102,25 +104,25 @@ Terminal input history is saved separately per working directory, at `user-histo
 
 ## Clearing data
 
-Deleting the data root directory (`~/.kimi-code/` or the path set by `KIMI_CODE_HOME`) removes all runtime data. To clear only part of the data:
+Deleting the data root directory (`~/.echadron/` or the path set by `ECHADRON_HOME`) removes all runtime data. To clear only part of the data:
 
 | Goal | Action |
 | --- | --- |
-| Reset configuration | Delete `~/.kimi-code/config.toml` |
-| Reset terminal UI preferences | Delete `~/.kimi-code/tui.toml` |
-| Clear all sessions | Delete `~/.kimi-code/sessions/` and `session_index.jsonl` |
-| Clear diagnostic logs | Delete `~/.kimi-code/logs/` |
-| Clear input history | Delete `~/.kimi-code/user-history/` |
-| Reset update state | Delete `~/.kimi-code/updates/latest.json` |
-| Force re-download of managed `rg` and `fd` | Delete `~/.kimi-code/bin/` |
+| Reset configuration | Delete `~/.echadron/config.toml` |
+| Reset terminal UI preferences | Delete `~/.echadron/tui.toml` |
+| Clear all sessions | Delete `~/.echadron/sessions/` and `session_index.jsonl` |
+| Clear diagnostic logs | Delete `~/.echadron/logs/` |
+| Clear input history | Delete `~/.echadron/user-history/` |
+| Reset update state | Delete `~/.echadron/updates/latest.json` |
+| Force re-download of managed `rg` and `fd` | Delete `~/.echadron/bin/` |
 | Clear provider OAuth login state | Run `/logout`, or delete the corresponding `credentials/<name>.json` |
 | Clear MCP server OAuth login state | Delete `credentials/mcp/` (`/logout` does not clear MCP credentials) |
-| Remove user-level MCP declarations | Delete `$KIMI_CODE_HOME/mcp.json` (default `~/.kimi-code/mcp.json`) |
-| Clear global Kimi-specific agent instructions | Delete `$KIMI_CODE_HOME/AGENTS.md` (default `~/.kimi-code/AGENTS.md`) |
-| Clear plugin install records | Delete `$KIMI_CODE_HOME/plugins/` (local plugin source directories are not affected) |
-| Clear Kimi-specific user-level Skills | Delete `$KIMI_CODE_HOME/skills/` (default `~/.kimi-code/skills/`) |
+| Remove user-level MCP declarations | Delete `$ECHADRON_HOME/mcp.json` (default `~/.echadron/mcp.json`) |
+| Clear global Echadron-specific agent instructions | Delete `$ECHADRON_HOME/AGENTS.md` (default `~/.echadron/AGENTS.md`) |
+| Clear plugin install records | Delete `$ECHADRON_HOME/plugins/` (local plugin source directories are not affected) |
+| Clear Echadron-specific user-level Skills | Delete `$ECHADRON_HOME/skills/` (default `~/.echadron/skills/`) |
 
 ## Next steps
 
 - [Configuration files](./config-files.md) — full reference for `config.toml` fields
-- [Environment variables](./env-vars.md) — detailed usage of `KIMI_CODE_HOME` and related path variables
+- [Environment variables](./env-vars.md) — detailed usage of `ECHADRON_HOME` and related path variables

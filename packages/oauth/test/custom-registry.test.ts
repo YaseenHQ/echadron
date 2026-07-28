@@ -112,6 +112,45 @@ describe('fetchCustomRegistry', () => {
     });
   });
 
+  it('parses reasoning options and sanitizes custom mode request overlays', async () => {
+    const body = makeKokubResponseBody();
+    body['registry_chat-completions']!.models['gpt-5.5'] = {
+      id: 'gpt-5.5',
+      reasoning_options: [
+        { type: 'toggle' },
+        { type: 'effort', values: ['low', null, 'high'] },
+        { type: 'budget_tokens', min: 1024, max: 32768 },
+      ],
+      experimental: {
+        modes: {
+          fast: {
+            provider: {
+              headers: { 'x-mode': 'fast', authorization: 'drop-me' },
+              body: { service_tier: 'priority', messages: ['drop-me'] },
+            },
+          },
+        },
+      },
+    };
+    const fetchMock = vi.fn(async () => makeJsonResponse(body));
+
+    const result = await fetchCustomRegistry(KOKUB_SOURCE, {
+      fetchImpl: fetchMock as unknown as typeof fetch,
+    });
+    expect(result['registry_chat-completions']?.models['gpt-5.5']).toMatchObject({
+      reasoning_options: [
+        { type: 'toggle' },
+        { type: 'effort', values: ['low', null, 'high'] },
+        { type: 'budget_tokens', min: 1024, max: 32768 },
+      ],
+      experimental: {
+        modes: {
+          fast: { provider: { headers: { 'x-mode': 'fast' }, body: { service_tier: 'priority' } } },
+        },
+      },
+    });
+  });
+
   it('omits the Authorization header when the apiKey is empty', async () => {
     const fetchMock = vi.fn(async () => makeJsonResponse(makeKokubResponseBody()));
 
@@ -432,6 +471,48 @@ describe('applyCustomRegistryProvider', () => {
     const alias = config.models?.['rich/rich-thinker'] as Record<string, unknown>;
     expect(alias['supportEfforts']).toEqual(['low', 'high', 'max']);
     expect(alias['defaultEffort']).toBe('high');
+  });
+
+  it('derives effort aliases and request overlays from custom registry metadata', () => {
+    const config: ManagedKimiConfigShape = { providers: {} };
+    const entry: CustomRegistryProviderEntry = {
+      id: 'rich',
+      name: 'Rich Provider',
+      api: 'https://rich.example/v1',
+      type: 'openai',
+      models: {
+        'rich-thinker': {
+          id: 'rich-thinker',
+          name: 'Rich Thinker',
+          reasoning_options: [
+            { type: 'toggle' },
+            { type: 'effort', values: ['low', null, 'high'] },
+            { type: 'budget_tokens', min: 1024, max: 32768 },
+          ],
+          experimental: {
+            modes: {
+              fast: { provider: { headers: { 'x-mode': 'fast' }, body: { service_tier: 'priority' } } },
+            },
+          },
+        },
+      },
+    };
+
+    applyCustomRegistryProvider(config, entry, {
+      kind: 'apiJson',
+      url: 'https://rich.example/api.json',
+      apiKey: 'sk-rich',
+    });
+
+    expect(config.models?.['rich/rich-thinker-fast']).toMatchObject({
+      model: 'rich-thinker',
+      displayName: 'Rich Thinker Fast',
+      supportEfforts: ['low', 'high'],
+      thinkingBudgetMin: 1024,
+      thinkingBudgetMax: 32768,
+      requestHeaders: { 'x-mode': 'fast' },
+      requestBody: { service_tier: 'priority' },
+    });
   });
 
   it('treats support_efforts as a thinking capability hint without reasoning: true', () => {

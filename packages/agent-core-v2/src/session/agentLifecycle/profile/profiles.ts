@@ -79,7 +79,6 @@ const CODER_TOOLS = [
 ] as const;
 
 const EXPLORE_TOOLS = [
-  'Bash',
   'Read',
   'ReadMediaFile',
   'Glob',
@@ -104,7 +103,7 @@ const DEFAULT_SUMMARY_POLICY = {
 
 registerAgentProfile({
   name: 'agent',
-  description: 'Default Kimi Code agent',
+  description: 'Default Echadron agent',
   tools: AGENT_TOOLS,
   systemPrompt: (context) =>
     renderSystemPrompt('', context, { skillActive: skillActiveFor(AGENT_TOOLS) }),

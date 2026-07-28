@@ -47,6 +47,22 @@ export interface CustomRegistryModelEntry {
   };
   readonly support_efforts?: readonly string[];
   readonly default_effort?: string;
+  readonly reasoning_options?: readonly CustomRegistryReasoningOption[];
+  readonly experimental?: {
+    readonly modes?: Record<string, CustomRegistryModelMode>;
+  };
+}
+
+export type CustomRegistryReasoningOption =
+  | { readonly type: 'toggle' }
+  | { readonly type: 'effort'; readonly values: readonly (string | null)[] }
+  | { readonly type: 'budget_tokens'; readonly min?: number; readonly max?: number };
+
+export interface CustomRegistryModelMode {
+  readonly provider?: {
+    readonly headers?: Record<string, string>;
+    readonly body?: Record<string, unknown>;
+  };
 }
 
 export interface CustomRegistryProviderEntry {
@@ -98,6 +114,130 @@ function toStringArrayOrUndefined(value: unknown): readonly string[] | undefined
   return out;
 }
 
+function isSafeObjectKey(key: string): boolean {
+  return key !== '__proto__' && key !== 'constructor' && key !== 'prototype';
+}
+
+function toReasoningOptions(value: unknown): readonly CustomRegistryReasoningOption[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  const out: CustomRegistryReasoningOption[] = [];
+  for (const option of value) {
+    if (!isRecord(option) || typeof option['type'] !== 'string') continue;
+    if (option['type'] === 'toggle') {
+      out.push({ type: 'toggle' });
+      continue;
+    }
+    if (option['type'] === 'effort' && Array.isArray(option['values'])) {
+      const values = option['values'].filter(
+        (item): item is string | null => item === null || typeof item === 'string',
+      );
+      if (values.length > 0) out.push({ type: 'effort', values });
+      continue;
+    }
+    if (option['type'] === 'budget_tokens') {
+      const min =
+        typeof option['min'] === 'number' && Number.isFinite(option['min'])
+          ? option['min']
+          : undefined;
+      const max =
+        typeof option['max'] === 'number' && Number.isFinite(option['max'])
+          ? option['max']
+          : undefined;
+      out.push({
+        type: 'budget_tokens',
+        ...(min === undefined ? {} : { min }),
+        ...(max === undefined ? {} : { max }),
+      });
+    }
+  }
+  return out.length > 0 ? out : undefined;
+}
+
+function safeRequestHeaders(value: unknown): Record<string, string> | undefined {
+  if (!isRecord(value)) return undefined;
+  const out: Record<string, string> = {};
+  for (const [name, item] of Object.entries(value)) {
+    const key = name.trim();
+    if (
+      key.length === 0 ||
+      /[\r\n]/.test(key) ||
+      typeof item !== 'string' ||
+      /[\r\n]/.test(item) ||
+      [
+        'authorization',
+        'x-api-key',
+        'api-key',
+        'proxy-authorization',
+        'cookie',
+        'set-cookie',
+        'host',
+        'content-length',
+      ].includes(
+        key.toLowerCase(),
+      )
+    ) {
+      continue;
+    }
+    out[key] = item;
+  }
+  return out;
+}
+
+function isJsonValue(value: unknown): boolean {
+  if (
+    value === null ||
+    typeof value === 'string' ||
+    typeof value === 'number' ||
+    typeof value === 'boolean'
+  ) {
+    return true;
+  }
+  if (Array.isArray(value)) return value.every(isJsonValue);
+  if (!isRecord(value)) return false;
+  return Object.entries(value).every(([key, item]) => key.length > 0 && isJsonValue(item));
+}
+
+function safeRequestBody(value: unknown): Record<string, unknown> | undefined {
+  if (!isRecord(value)) return undefined;
+  const out: Record<string, unknown> = {};
+  for (const [key, item] of Object.entries(value)) {
+    if (
+      !isSafeObjectKey(key) ||
+      key.trim().length === 0 ||
+      ['model', 'messages', 'input', 'tools', 'stream'].includes(key.toLowerCase())
+    ) {
+      continue;
+    }
+    if (isJsonValue(item)) out[key] = item;
+  }
+  return out;
+}
+
+function toModes(value: unknown): Record<string, CustomRegistryModelMode> | undefined {
+  if (!isRecord(value)) return undefined;
+  const out: Record<string, CustomRegistryModelMode> = {};
+  for (const [name, raw] of Object.entries(value)) {
+    if (!isSafeObjectKey(name)) continue;
+    if (!isRecord(raw)) continue;
+    const provider = isRecord(raw['provider']) ? raw['provider'] : undefined;
+    // OpenCode materializes a mode even when it carries no request overlay;
+    // preserve that identity for custom registries too.
+    if (provider === undefined) {
+      out[name] = {};
+      continue;
+    }
+    const headers = safeRequestHeaders(provider['headers']);
+    const body = safeRequestBody(provider['body']);
+    out[name] = {
+      provider: {
+        ...(headers === undefined ? {} : { headers }),
+        ...(body === undefined ? {} : { body }),
+      },
+    };
+  }
+  return Object.keys(out).length > 0 ? out : undefined;
+}
+
 function toModelEntry(value: unknown): CustomRegistryModelEntry | undefined {
   if (!isRecord(value)) return undefined;
   const id = value['id'];
@@ -112,6 +252,8 @@ function toModelEntry(value: unknown): CustomRegistryModelEntry | undefined {
     modalities?: { input?: readonly string[]; output?: readonly string[] };
     support_efforts?: readonly string[];
     default_effort?: string;
+    reasoning_options?: readonly CustomRegistryReasoningOption[];
+    experimental?: { modes?: Record<string, CustomRegistryModelMode> };
   } = { id };
 
   const name = value['name'];
@@ -142,6 +284,13 @@ function toModelEntry(value: unknown): CustomRegistryModelEntry | undefined {
   if (typeof defaultEffort === 'string' && defaultEffort.length > 0) {
     entry.default_effort = defaultEffort;
   }
+
+  const reasoningOptions = toReasoningOptions(value['reasoning_options']);
+  if (reasoningOptions !== undefined) entry.reasoning_options = reasoningOptions;
+  const modes = toModes(
+    isRecord(value['experimental']) ? value['experimental']['modes'] : undefined,
+  );
+  if (modes !== undefined) entry.experimental = { modes };
 
   const modalities = value['modalities'];
   if (isRecord(modalities)) {
@@ -174,6 +323,7 @@ function toProviderEntry(value: unknown): CustomRegistryProviderEntry | undefine
 
   const parsedModels: Record<string, CustomRegistryModelEntry> = {};
   for (const [key, raw] of Object.entries(models)) {
+    if (!isSafeObjectKey(key)) continue;
     const modelEntry = toModelEntry(raw);
     if (modelEntry === undefined) continue;
     parsedModels[key] = modelEntry;
@@ -235,12 +385,14 @@ export async function fetchCustomRegistry(
 
   const out: Record<string, CustomRegistryProviderEntry> = {};
   for (const [key, raw] of Object.entries(payload)) {
+    if (!isSafeObjectKey(key)) continue;
     const entry = toProviderEntry(raw);
     if (entry === undefined) {
       // Skip invalid/unknown provider entries instead of aborting the whole
       // fetch, mirroring `toModelEntry`'s skip-on-invalid behavior. This keeps
       // existing providers working when kokub adds a new provider type that
       // this client doesn't yet recognize.
+      // oxlint-disable-next-line no-console -- invalid registry entries are diagnostic input errors.
       console.warn(
         `[custom-registry] Skipping invalid entry "${key}" at ${source.url}: missing required fields or unsupported type (id, name, api, type, models).`,
       );
@@ -263,7 +415,11 @@ export function capabilitiesFromCustomEntry(model: CustomRegistryModelEntry): st
   if (model.tool_call === true) caps.add('tool_use');
   // Declaring concrete effort levels implies thinking support even when the
   // legacy `reasoning` boolean is absent.
-  if (model.reasoning === true || (model.support_efforts?.length ?? 0) > 0) {
+  if (
+    model.reasoning === true ||
+    (model.support_efforts?.length ?? 0) > 0 ||
+    (model.reasoning_options?.length ?? 0) > 0
+  ) {
     caps.add('thinking');
   }
   if (model.modalities?.input?.includes('image') === true) caps.add('image_in');
@@ -273,12 +429,39 @@ export function capabilitiesFromCustomEntry(model: CustomRegistryModelEntry): st
   return [...caps];
 }
 
+function effortsFromReasoningOptions(
+  options: readonly CustomRegistryReasoningOption[] | undefined,
+): readonly string[] | undefined {
+  if (options === undefined) return undefined;
+  const values = options.flatMap((option) => (option.type === 'effort' ? option.values : []));
+  const unique = new Map<string, string>();
+  for (const value of values) {
+    if (typeof value !== 'string' || value.trim().length === 0) continue;
+    const normalized = value.trim().toLowerCase();
+    if (normalized === 'none' || normalized === 'default') continue;
+    unique.set(normalized, value.trim());
+  }
+  return unique.size > 0 ? [...unique.values()] : undefined;
+}
+
+function budgetFromReasoningOptions(
+  options: readonly CustomRegistryReasoningOption[] | undefined,
+): { readonly min?: number; readonly max?: number } | undefined {
+  const budget = options?.find((option) => option.type === 'budget_tokens');
+  if (budget?.type !== 'budget_tokens') return undefined;
+  return {
+    ...(budget.min === undefined ? {} : { min: budget.min }),
+    ...(budget.max === undefined ? {} : { max: budget.max }),
+  };
+}
+
 function hasRichCapabilityHints(model: CustomRegistryModelEntry): boolean {
   return (
     typeof model.tool_call === 'boolean' ||
     typeof model.reasoning === 'boolean' ||
     model.modalities !== undefined ||
-    model.support_efforts !== undefined
+    model.support_efforts !== undefined ||
+    model.reasoning_options !== undefined
   );
 }
 
@@ -315,6 +498,7 @@ export function applyCustomRegistryProvider(
   source: CustomRegistrySource,
 ): void {
   const providerKey = entry.id;
+  if (!isSafeObjectKey(providerKey)) return;
 
   config.providers[providerKey] = {
     type: entry.type,
@@ -328,9 +512,14 @@ export function applyCustomRegistryProvider(
   // the user added by hand (or that upstream does not declare) survive a
   // refresh. Models that upstream no longer lists are removed; the rest are
   // merged field-by-field.
-  const upstreamKeys = new Set(
-    Object.keys(entry.models).map((modelKey) => `${providerKey}/${modelKey}`),
-  );
+  const upstreamKeys = new Set<string>();
+  for (const [modelKey, model] of Object.entries(entry.models)) {
+    upstreamKeys.add(`${providerKey}/${modelKey}`);
+    for (const mode of Object.keys(model.experimental?.modes ?? {})) {
+      const modeId = mode.trim();
+      if (modeId.length > 0) upstreamKeys.add(`${providerKey}/${modelKey}-${modeId}`);
+    }
+  }
   for (const [key, alias] of Object.entries(existingModels)) {
     if (isRecord(alias) && alias['provider'] === providerKey && !upstreamKeys.has(key)) {
       delete existingModels[key];
@@ -338,27 +527,49 @@ export function applyCustomRegistryProvider(
   }
 
   for (const [modelKey, model] of Object.entries(entry.models)) {
-    const aliasKey = `${providerKey}/${modelKey}`;
     const maxContextSize = resolveMaxContextSize(model);
     const capabilities = resolveCapabilities(model);
     const displayName =
       typeof model.name === 'string' && model.name.length > 0 ? model.name : model.id;
-    const existing = isRecord(existingModels[aliasKey]) ? existingModels[aliasKey] : {};
-
-    const remoteAlias: ManagedKimiModelAlias = {
-      provider: providerKey,
-      model: model.id,
-      maxContextSize,
-      capabilities,
-      displayName,
-      ...(model.support_efforts !== undefined ? { supportEfforts: model.support_efforts } : {}),
-      ...(model.default_effort !== undefined ? { defaultEffort: model.default_effort } : {}),
+    const efforts =
+      model.support_efforts ?? effortsFromReasoningOptions(model.reasoning_options);
+    const budget = budgetFromReasoningOptions(model.reasoning_options);
+    const writeAlias = (
+      aliasKey: string,
+      aliasName: string,
+      mode: CustomRegistryModelMode | undefined,
+    ): void => {
+      const existing = isRecord(existingModels[aliasKey]) ? existingModels[aliasKey] : {};
+      const request = mode?.provider;
+      const remoteAlias: ManagedKimiModelAlias = {
+        provider: providerKey,
+        model: model.id,
+        maxContextSize,
+        capabilities,
+        displayName: aliasName,
+        ...(efforts === undefined ? {} : { supportEfforts: efforts }),
+        ...(budget?.min === undefined ? {} : { thinkingBudgetMin: budget.min }),
+        ...(budget?.max === undefined ? {} : { thinkingBudgetMax: budget.max }),
+        ...(model.default_effort === undefined ? {} : { defaultEffort: model.default_effort }),
+        ...(request?.headers === undefined ? {} : { requestHeaders: request.headers }),
+        ...(request?.body === undefined ? {} : { requestBody: request.body }),
+      };
+      existingModels[aliasKey] = mergeRefreshedModelAlias(
+        existing,
+        remoteAlias,
+        CUSTOM_REGISTRY_MODEL_FIELDS,
+      );
     };
-    existingModels[aliasKey] = mergeRefreshedModelAlias(
-      existing,
-      remoteAlias,
-      CUSTOM_REGISTRY_MODEL_FIELDS,
-    );
+    writeAlias(`${providerKey}/${modelKey}`, displayName, undefined);
+    for (const [modeId, mode] of Object.entries(model.experimental?.modes ?? {})) {
+      const trimmed = modeId.trim();
+      if (trimmed.length === 0) continue;
+      writeAlias(
+        `${providerKey}/${modelKey}-${trimmed}`,
+        `${displayName} ${trimmed.charAt(0).toUpperCase()}${trimmed.slice(1)}`,
+        mode,
+      );
+    }
   }
 
   config.models = existingModels;

@@ -9,11 +9,11 @@
  *
  * The cadence is config-driven: the `[model_catalog]` config section
  * (`refresh_interval_ms`, `refresh_on_start`) is read first, with the
- * `KIMI_CODE_MODEL_CATALOG_REFRESH_INTERVAL_MS` /
- * `KIMI_CODE_MODEL_CATALOG_REFRESH_ON_START` env vars as overrides (matching
- * v1). When the config section is absent, the env vars / built-in defaults
- * apply. Failures are logged and swallowed so one bad tick does not break the
- * schedule.
+ * `ECHADRON_MODEL_CATALOG_REFRESH_INTERVAL_MS` /
+ * `ECHADRON_MODEL_CATALOG_REFRESH_ON_START` env vars as overrides. The old
+ * Kimi-prefixed spellings remain accepted for existing installations. When
+ * the config section is absent, the env vars / built-in defaults apply.
+ * Failures are logged and swallowed so one bad tick does not break the schedule.
  */
 
 import {
@@ -26,8 +26,10 @@ import {
 import type { ServerLogger } from '../pinoLoggerService';
 
 const DEFAULT_REFRESH_INTERVAL_MS = 6 * 60 * 60 * 1000;
-const INTERVAL_ENV = 'KIMI_CODE_MODEL_CATALOG_REFRESH_INTERVAL_MS';
-const REFRESH_ON_START_ENV = 'KIMI_CODE_MODEL_CATALOG_REFRESH_ON_START';
+const INTERVAL_ENV = 'ECHADRON_MODEL_CATALOG_REFRESH_INTERVAL_MS';
+const LEGACY_INTERVAL_ENV = 'KIMI_CODE_MODEL_CATALOG_REFRESH_INTERVAL_MS';
+const REFRESH_ON_START_ENV = 'ECHADRON_MODEL_CATALOG_REFRESH_ON_START';
+const LEGACY_REFRESH_ON_START_ENV = 'KIMI_CODE_MODEL_CATALOG_REFRESH_ON_START';
 
 export class ModelCatalogRefreshScheduler {
   private timer: ReturnType<typeof setInterval> | undefined;
@@ -90,7 +92,7 @@ export class ModelCatalogRefreshScheduler {
 
 /** Env wins when set and valid; otherwise the config value; otherwise the default. */
 function resolveIntervalMs(env: NodeJS.ProcessEnv, configValue: number | undefined): number {
-  const raw = env[INTERVAL_ENV];
+  const raw = env[INTERVAL_ENV] ?? env[LEGACY_INTERVAL_ENV];
   if (raw !== undefined && raw.trim().length > 0) {
     const parsed = Number(raw);
     if (Number.isFinite(parsed) && parsed >= 0) return parsed;
@@ -100,7 +102,7 @@ function resolveIntervalMs(env: NodeJS.ProcessEnv, configValue: number | undefin
 
 /** Env wins when set; otherwise the config value; otherwise refresh-on-start defaults to on. */
 function resolveRefreshOnStart(env: NodeJS.ProcessEnv, configValue: boolean | undefined): boolean {
-  const raw = env[REFRESH_ON_START_ENV];
+  const raw = env[REFRESH_ON_START_ENV] ?? env[LEGACY_REFRESH_ON_START_ENV];
   if (raw !== undefined && raw.trim().length > 0) {
     const normalized = raw.trim().toLowerCase();
     return normalized === '1' || normalized === 'true' || normalized === 'yes';

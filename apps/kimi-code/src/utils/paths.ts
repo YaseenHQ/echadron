@@ -10,14 +10,18 @@ import { homedir } from 'node:os';
 import { join } from 'node:path';
 
 import {
+  ECHADRON_DATA_DIR_NAME,
+  ECHADRON_CODE_HOME_ENV,
+  ECHADRON_MODELS_CACHE_FILE_NAME,
+  IMPERIUM_HOME_ENV,
+  ECHADRON_HOME_ENV,
   KIMI_CODE_BANNER_DIR_NAME,
   KIMI_CODE_BANNER_STATE_FILE_NAME,
   KIMI_CODE_BIN_DIR_NAME,
   KIMI_CODE_CACHE_DIR_NAME,
-  KIMI_CODE_DATA_DIR_NAME,
-  KIMI_CODE_HOME_ENV,
   KIMI_CODE_INPUT_HISTORY_DIR_NAME,
   KIMI_CODE_LOG_DIR_NAME,
+  KIMI_CODE_PLUGIN_UPDATE_NOTICE_STATE_FILE_NAME,
   KIMI_CODE_UPDATE_INSTALL_LOCK_FILE_NAME,
   KIMI_CODE_UPDATE_INSTALL_STATE_FILE_NAME,
   KIMI_CODE_UPDATE_DIR_NAME,
@@ -26,16 +30,24 @@ import {
 } from '#/constant/app';
 
 /**
- * Return the root data directory for Kimi Code.
+ * Return the root data directory for Echadron.
  *
- * Priority: `KIMI_CODE_HOME` env var > `~/.kimi-code`.
+ * Priority: `ECHADRON_HOME` > `ECHADRON_CODE_HOME` > legacy `IMPERIUM_HOME` > the Echadron
+ * `~/.echadron` home.
+ *
+ * This intentionally does not read `KIMI_CODE_HOME`: the fork must be able to
+ * run beside an upstream Kimi Code installation without sharing credentials,
+ * sessions, logs, or model state.
  */
 export function getDataDir(): string {
-  const envDir = process.env[KIMI_CODE_HOME_ENV];
+  const envDir =
+    process.env[ECHADRON_HOME_ENV] ??
+    process.env[ECHADRON_CODE_HOME_ENV] ??
+    process.env[IMPERIUM_HOME_ENV];
   if (envDir) {
     return envDir;
   }
-  return join(homedir(), KIMI_CODE_DATA_DIR_NAME);
+  return join(homedir(), ECHADRON_DATA_DIR_NAME);
 }
 
 /**
@@ -50,6 +62,11 @@ export function getLogDir(): string {
  */
 export function getCacheDir(): string {
   return join(getDataDir(), KIMI_CODE_CACHE_DIR_NAME);
+}
+
+/** Return the persistent models.dev catalog snapshot used by `update --models`. */
+export function getModelsDevCacheFile(): string {
+  return join(getCacheDir(), ECHADRON_MODELS_CACHE_FILE_NAME);
 }
 
 /**
@@ -85,6 +102,17 @@ export function getUpdateInstallLockFile(): string {
  */
 export function getUpdateRolloutLogFile(): string {
   return join(getDataDir(), KIMI_CODE_UPDATE_DIR_NAME, KIMI_CODE_UPDATE_ROLLOUT_LOG_FILE_NAME);
+}
+
+/**
+ * Return the plugin update notice state file: `<dataDir>/updates/plugin-notices.json`.
+ */
+export function getPluginUpdateNoticeStateFile(): string {
+  return join(
+    getDataDir(),
+    KIMI_CODE_UPDATE_DIR_NAME,
+    KIMI_CODE_PLUGIN_UPDATE_NOTICE_STATE_FILE_NAME,
+  );
 }
 
 /**

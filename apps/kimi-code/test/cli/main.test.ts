@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ErrorCodes, KimiError } from '@moonshot-ai/kimi-code-sdk';
 
 import { validateOptions } from '#/cli/options';
@@ -50,6 +50,12 @@ const mocks = vi.hoisted(() => {
     KimiHarness: vi.fn(),
     createKimiHarness: vi.fn(),
   };
+});
+
+const originalKimiHome = process.env['KIMI_CODE_HOME'];
+afterAll(() => {
+  if (originalKimiHome === undefined) delete process.env['KIMI_CODE_HOME'];
+  else process.env['KIMI_CODE_HOME'] = originalKimiHome;
 });
 
 vi.mock('@moonshot-ai/kimi-telemetry', () => ({
@@ -222,20 +228,16 @@ describe('main entry command handling', () => {
     mocks.flushDiagnosticLogs.mockResolvedValue(undefined);
   });
 
-  it('runs update preflight before starting the shell', async () => {
+  it('starts the shell without contacting Kimi Code update infrastructure', async () => {
     const opts = defaultOpts();
     mocks.validateOptions.mockReturnValue({ options: opts, uiMode: 'shell' });
-    mocks.runUpdatePreflight.mockResolvedValue('continue');
     mocks.runShell.mockResolvedValue(void 0);
 
     const exitCode = await runHandleMainCommand(opts);
 
     expect(exitCode).toBeNull();
     expect(validateOptions).toHaveBeenCalledWith(opts);
-    expect(runUpdatePreflight).toHaveBeenCalledWith('0.0.1-alpha.2', { track: expect.any(Function) });
-    expect(mocks.runUpdatePreflight.mock.invocationCallOrder[0]).toBeLessThan(
-      mocks.runShell.mock.invocationCallOrder[0]!,
-    );
+    expect(runUpdatePreflight).not.toHaveBeenCalled();
     expect(runShell).toHaveBeenCalledWith(opts, '0.0.1-alpha.2');
   });
 
@@ -245,16 +247,12 @@ describe('main entry command handling', () => {
       prompt: 'explain the repo',
     };
     mocks.validateOptions.mockReturnValue({ options: opts, uiMode: 'print' });
-    mocks.runUpdatePreflight.mockResolvedValue('continue');
     mocks.runPrompt.mockResolvedValue(void 0);
 
     const exitCode = await runHandleMainCommand(opts);
 
     expect(exitCode).toBeNull();
-    expect(runUpdatePreflight).toHaveBeenCalledWith('0.0.1-alpha.2', {
-      track: expect.any(Function),
-      isTTY: false,
-    });
+    expect(runUpdatePreflight).not.toHaveBeenCalled();
     expect(runPrompt).toHaveBeenCalledWith(opts, '0.0.1-alpha.2');
     expect(runShell).not.toHaveBeenCalled();
   });
@@ -262,7 +260,6 @@ describe('main entry command handling', () => {
   it('does not force-exit from the reusable handler in print mode', async () => {
     const opts: CLIOptions = { ...defaultOpts(), prompt: 'explain the repo' };
     mocks.validateOptions.mockReturnValue({ options: opts, uiMode: 'print' });
-    mocks.runUpdatePreflight.mockResolvedValue('continue');
     mocks.runPrompt.mockResolvedValue(void 0);
 
     const outcome = await handleMainCommand(opts, '0.0.1-alpha.2');
@@ -277,7 +274,6 @@ describe('main entry command handling', () => {
   it('reports no headless completion for interactive (shell) mode', async () => {
     const opts = defaultOpts();
     mocks.validateOptions.mockReturnValue({ options: opts, uiMode: 'shell' });
-    mocks.runUpdatePreflight.mockResolvedValue('continue');
     mocks.runShell.mockResolvedValue(void 0);
 
     const outcome = await handleMainCommand(opts, '0.0.1-alpha.2');
@@ -343,9 +339,7 @@ describe('main entry command handling', () => {
     const exitCode = await runHandleMainCommand(opts);
 
     expect(exitCode).toBeNull();
-    expect(runUpdatePreflight).toHaveBeenCalledWith('0.0.1-alpha.2', {
-      track: expect.any(Function),
-    });
+    expect(runUpdatePreflight).not.toHaveBeenCalled();
     expect(runShell).toHaveBeenCalledWith(opts, '0.0.1-alpha.2');
   });
 
@@ -365,60 +359,37 @@ describe('main entry command handling', () => {
       process.title = 'kimi-test-runner';
       main();
 
-      expect(process.title).toBe('kimi-code');
+      expect(process.title).toBe('echadron');
     } finally {
       process.title = originalTitle;
     }
   });
 
-  it('exits early when update preflight requests process exit', async () => {
+  it('does not let the disabled legacy preflight suppress startup', async () => {
     const opts = defaultOpts();
     mocks.validateOptions.mockReturnValue({ options: opts, uiMode: 'shell' });
-    mocks.runUpdatePreflight.mockResolvedValue('exit');
     mocks.runShell.mockResolvedValue(void 0);
 
     const exitCode = await runHandleMainCommand(opts);
 
-    expect(exitCode).toBe(0);
-    expect(runShell).not.toHaveBeenCalled();
+    expect(exitCode).toBeNull();
+    expect(runUpdatePreflight).not.toHaveBeenCalled();
+    expect(runShell).toHaveBeenCalled();
   });
 
-  it('initializes and flushes telemetry around the upgrade command', async () => {
-    const exitCode = await runHandleUpgradeCommand();
-
-    expect(exitCode).toBe(0);
-    expect(mocks.createCliTelemetryBootstrap).toHaveBeenCalledTimes(1);
-    expect(mocks.createKimiHarness).toHaveBeenCalledWith(expect.objectContaining({
-      homeDir: '/tmp/kimi-home',
-      telemetry: {
-        track: mocks.track,
-        withContext: mocks.withTelemetryContext,
-        setContext: mocks.setTelemetryContext,
-      },
-    }));
-    expect(mocks.harness.ensureConfigFile).toHaveBeenCalledTimes(1);
-    expect(mocks.initializeCliTelemetry).toHaveBeenCalledWith(expect.objectContaining({
-      harness: expect.objectContaining({
-        homeDir: '/tmp/kimi-home',
-      }),
-      bootstrap: {
-        homeDir: '/tmp/kimi-home',
-        deviceId: 'device-id',
-        firstLaunch: false,
-      },
-      config: {
-        defaultModel: 'kimi-k2',
-        telemetry: true,
-      },
-      version: '0.0.1-alpha.2',
-      uiMode: 'shell',
-    }));
-    expect(mocks.handleUpgrade).toHaveBeenCalledWith('0.0.1-alpha.2', {
-      track: mocks.track,
-      logger: mocks.log,
+  it('does not invoke Kimi Code self-update code', async () => {
+    const output: string[] = [];
+    const write = vi.spyOn(process.stdout, 'write').mockImplementation((chunk) => {
+      output.push(String(chunk));
+      return true;
     });
-    expect(mocks.shutdownTelemetry).toHaveBeenCalledWith({ timeoutMs: 3000 });
-    expect(mocks.harness.close).toHaveBeenCalledTimes(1);
+    try {
+      await handleUpgradeCommand('0.0.1-alpha.2');
+    } finally {
+      write.mockRestore();
+    }
+      expect(output.join('')).toContain('Echadron self-update is not configured yet');
+    expect(mocks.handleUpgrade).not.toHaveBeenCalled();
   });
 
   it('formats Kimi startup errors with structured fields', () => {

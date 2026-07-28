@@ -11,7 +11,11 @@ export const MANAGED_KIMI_MODEL_FIELDS: ReadonlySet<string> = new Set([
   'betaApi',
   'adaptiveThinking',
   'supportEfforts',
+  'thinkingBudgetMin',
+  'thinkingBudgetMax',
   'defaultEffort',
+  'requestHeaders',
+  'requestBody',
 ]);
 
 export const CUSTOM_REGISTRY_MODEL_FIELDS: ReadonlySet<string> = new Set([
@@ -21,7 +25,11 @@ export const CUSTOM_REGISTRY_MODEL_FIELDS: ReadonlySet<string> = new Set([
   'capabilities',
   'displayName',
   'supportEfforts',
+  'thinkingBudgetMin',
+  'thinkingBudgetMax',
   'defaultEffort',
+  'requestHeaders',
+  'requestBody',
 ]);
 
 function cloneOverrides(

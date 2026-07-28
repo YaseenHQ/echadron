@@ -1,13 +1,17 @@
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 
-/** Resolve KIMI_CODE_HOME (env > ~/.kimi-code). */
+/** Resolve Echadron's home (ECHADRON_HOME, legacy IMPERIUM_HOME/KIMI_CODE_HOME, then ~/.echadron). */
 export function resolveKimiCodeHome(): string {
-  const envHome = process.env['KIMI_CODE_HOME'];
+  const envHome =
+    process.env['ECHADRON_HOME'] ??
+    process.env['ECHADRON_CODE_HOME'] ??
+    process.env['IMPERIUM_HOME'] ??
+    process.env['KIMI_CODE_HOME'];
   if (envHome !== undefined && envHome.length > 0) {
     return envHome;
   }
-  return join(homedir(), '.kimi-code');
+  return join(homedir(), '.echadron');
 }
 
 /** HTTP port for the vis API server. */
@@ -60,4 +64,5 @@ export function resolveVisAuthToken(host: string = resolveHost()): string | unde
   return undefined;
 }
 
+/** Compatibility export; the resolved path is now Echadron's data root. */
 export const KIMI_CODE_HOME: string = resolveKimiCodeHome();

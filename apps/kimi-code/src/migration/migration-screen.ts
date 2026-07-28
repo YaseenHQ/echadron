@@ -288,9 +288,9 @@ export class MigrationScreenComponent extends Container implements Focusable {
         lines.push(chalk.hex(colors.text)(` Reason: ${this.migrationFailureReason}`));
       }
       lines.push('');
-      lines.push(chalk.hex(colors.text)(' You can retry later by running "kimi migrate".'));
+      lines.push(chalk.hex(colors.text)(' You can retry later by running "echadron migrate".'));
       lines.push('');
-      lines.push(chalk.hex(colors.textMuted)(' ⏎ continue to kimi-code'));
+      lines.push(chalk.hex(colors.textMuted)(' ⏎ continue to Echadron'));
       lines.push(chalk.hex(colors.primary)('─'.repeat(width)));
       return lines.map((l) => truncateToWidth(l, width));
     }
@@ -326,7 +326,7 @@ export class MigrationScreenComponent extends Container implements Focusable {
         );
       }
       // OAuth credentials are deliberately not migrated (refresh tokens cannot
-      // safely be held by two installs at once). kimi-code's normal auth flow
+      // safely be held by two installs at once). Echadron's normal auth flow
       // will prompt for /login when the user first picks a model — surfacing a
       // separate notice here reads as a migration limitation, which it is not.
       if (sum.config.droppedHooks > 0) {
@@ -423,7 +423,7 @@ export class MigrationScreenComponent extends Container implements Focusable {
       );
     }
     lines.push('');
-    lines.push(chalk.hex(colors.textMuted)(' ⏎ continue to kimi-code'));
+    lines.push(chalk.hex(colors.textMuted)(' ⏎ continue to Echadron'));
     lines.push(chalk.hex(colors.primary)('─'.repeat(width)));
     return lines.map((l) => truncateToWidth(l, width));
   }
@@ -545,7 +545,7 @@ function summarizePlan(plan: MigrationPlan): string {
 function stepFor(phase: Phase, plan: MigrationPlan): StepDef {
   if (phase === 'ask1') {
     return {
-      title: 'Migrate this data to kimi-code?',
+      title: 'Migrate this data to Echadron?',
       options: [
         { label: 'Migrate now', value: 'now' satisfies Prompt1Choice },
         { label: 'Ask me later', value: 'later' satisfies Prompt1Choice },

@@ -9,10 +9,12 @@ import { createKimiHarness } from '@moonshot-ai/kimi-code-sdk';
 
 import { createKimiCodeHostIdentity } from '#/cli/version';
 import { openUrl } from '#/utils/open-url';
+import { getDataDir } from '#/utils/paths';
 
 export async function runLoginFlow(): Promise<never> {
   const identity = createKimiCodeHostIdentity();
   const harness = createKimiHarness({
+    homeDir: getDataDir(),
     identity,
     uiMode: 'cli',
   });
@@ -31,7 +33,7 @@ export async function runLoginFlow(): Promise<never> {
         process.stderr.write(
           [
             '',
-            `Opening browser for Kimi device login: ${url}`,
+            `Opening browser for Echadron managed-account login: ${url}`,
             `If the browser did not open, paste the URL above and enter code: ${data.userCode}`,
             data.expiresIn !== null && data.expiresIn !== undefined
               ? `Code expires in ${data.expiresIn}s.`

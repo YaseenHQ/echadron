@@ -3,7 +3,8 @@ import { Methods } from "../../shared/bridge";
 import type { Handler } from "./types";
 import type { WorkspaceStatus } from "shared/types";
 
-const INPUT_HISTORY_KEY = "kimi.inputHistory";
+const INPUT_HISTORY_KEY = "echadron.inputHistory";
+const LEGACY_INPUT_HISTORY_KEY = "kimi.inputHistory";
 const MAX_HISTORY_SIZE = 100;
 
 const checkWorkspace: Handler<void, WorkspaceStatus> = async (_, ctx) => {
@@ -20,11 +21,14 @@ const openFolder: Handler<void, { ok: boolean }> = async () => {
 };
 
 const getInputHistory: Handler<void, string[]> = async (_, ctx) => {
-  return ctx.workspaceState.get<string[]>(INPUT_HISTORY_KEY, []);
+  return ctx.workspaceState.get<string[]>(
+    INPUT_HISTORY_KEY,
+    ctx.workspaceState.get<string[]>(LEGACY_INPUT_HISTORY_KEY, []),
+  );
 };
 
 const addInputHistory: Handler<{ text: string }, { ok: boolean }> = async ({ text }, ctx) => {
-  const history = ctx.workspaceState.get<string[]>(INPUT_HISTORY_KEY, []);
+  const history = await getInputHistory(undefined, ctx);
   // 避免重复添加相同的最近一条
   if (history[history.length - 1] !== text) {
     history.push(text);

@@ -32,8 +32,8 @@ afterEach(async () => {
 
 describe('loadAgentsMd user-level discovery', () => {
   it('loads user-level branded and generic files before project-level', async () => {
-    await mkdir(join(homeDir, '.kimi-code'), { recursive: true });
-    await writeFile(join(homeDir, '.kimi-code', 'AGENTS.md'), 'user branded', 'utf-8');
+    await mkdir(join(homeDir, '.echadron'), { recursive: true });
+    await writeFile(join(homeDir, '.echadron', 'AGENTS.md'), 'user branded', 'utf-8');
     await mkdir(join(homeDir, '.agents'), { recursive: true });
     await writeFile(join(homeDir, '.agents', 'AGENTS.md'), 'user generic', 'utf-8');
     await writeFile(join(workDir, 'AGENTS.md'), 'project instructions', 'utf-8');
@@ -66,8 +66,8 @@ describe('loadAgentsMd user-level discovery', () => {
   });
 
   it('does not load the same file twice when the work dir is the home dir', async () => {
-    await mkdir(join(homeDir, '.kimi-code'), { recursive: true });
-    await writeFile(join(homeDir, '.kimi-code', 'AGENTS.md'), 'home branded', 'utf-8');
+    await mkdir(join(homeDir, '.echadron'), { recursive: true });
+    await writeFile(join(homeDir, '.echadron', 'AGENTS.md'), 'home branded', 'utf-8');
 
     const result = await loadAgentsMd({ fs, homeDir }, homeDir);
 
@@ -84,8 +84,8 @@ describe('loadAgentsMd symlinked files', () => {
     await writeFile(brandTarget, 'brand via symlink', 'utf-8');
     await writeFile(projectTarget, 'project via symlink', 'utf-8');
 
-    await mkdir(join(homeDir, '.kimi-code'), { recursive: true });
-    await symlink(brandTarget, join(homeDir, '.kimi-code', 'AGENTS.md'));
+    await mkdir(join(homeDir, '.echadron'), { recursive: true });
+    await symlink(brandTarget, join(homeDir, '.echadron', 'AGENTS.md'));
     await symlink(projectTarget, join(workDir, 'AGENTS.md'));
 
     const result = await loadAgentsMd({ fs, homeDir }, workDir);

@@ -99,6 +99,17 @@ export {
 export type { KimiHostIdentity, KimiIdentityOptions } from './identity';
 
 export { KIMI_CODE_FLOW_CONFIG } from './constants';
+export {
+  applyEchadronEnvironmentAliases,
+  ECHADRON_DISABLE_TELEMETRY_ENV,
+  ECHADRON_ENV_PREFIX,
+  ECHADRON_HOME_ENV,
+  IMPERIUM_ENV_PREFIX,
+  KIMI_ENV_PREFIX,
+  LEGACY_IMPERIUM_HOME_ENV,
+  LEGACY_KIMI_CODE_HOME_ENV,
+  LEGACY_TELEMETRY_DISABLE_ENV,
+} from './env-aliases';
 
 export {
   applyManagedApiKeyProviderModels,
@@ -139,7 +150,6 @@ export type {
 export {
   fetchManagedUsage,
   formatDuration,
-  formatResetTime,
   isManagedKimiCode,
   isManagedKimiCodeBaseUrl,
   kimiCodeBaseUrl,
@@ -151,6 +161,7 @@ export type {
   FetchManagedUsageResult,
   ParsedManagedUsage,
   UsageRow,
+  UsageWindow,
 } from './managed-usage';
 
 export { fetchSubmitFeedback, kimiCodeFeedbackUrl } from './managed-feedback';

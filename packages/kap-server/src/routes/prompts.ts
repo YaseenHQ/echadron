@@ -773,7 +773,7 @@ function imageExtensionForMime(mediaType: string): string {
   return ext.length > 0 ? ext : 'img';
 }
 
-// This notice's exact shape is a client contract: kimi-web's messagesToTurns
+// This notice's exact shape is a client contract: the web client's messagesToTurns
 // parses it (ATTACHED_FILE_NOTICE_RE) to rebuild the attachment chip after a
 // resync — change the wording there too.
 function buildAttachedFileNotice(name: string, mediaType: string, size: number, path: string): string {

@@ -14,6 +14,9 @@ import type { EnrichedTelemetryEvent, TelemetryPrimitive } from './types';
 import { isTelemetryPrimitive } from './types';
 
 export const TELEMETRY_ENDPOINT = 'https://telemetry-logs.kimi.com/v1/event';
+/** Optional Echadron-owned endpoint override; the Kimi URL remains the legacy default. */
+export const TELEMETRY_ENDPOINT_ENV = 'ECHADRON_TELEMETRY_ENDPOINT';
+export const LEGACY_TELEMETRY_ENDPOINT_ENV = 'KIMI_TELEMETRY_ENDPOINT';
 export const SERVER_EVENT_PREFIX = 'kfc_';
 export const USER_ID_PREFIX = 'kfc_device_id_';
 export const DISK_EVENT_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;

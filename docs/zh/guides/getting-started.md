@@ -108,7 +108,7 @@ kimi -c
 需要退出登录时，输入 `/logout` 清除当前凭证。
 
 ::: tip 使用其他 AI 供应商
-如需接入 Anthropic、OpenAI、Google 等其他供应商，请运行 `/login` 并选择账号（OAuth）或 API key 方式；也可以直接编辑 `~/.kimi-code/config.toml`。详见[平台与模型](../configuration/providers.md)。
+如需接入 Anthropic、OpenAI API、Google 等其他供应商，请在 `/login` 中选择 API key 方式，或直接编辑 `~/.kimi-code/config.toml`。目前交互式订阅 OAuth 支持 Kimi、xAI 和 OpenAI Codex（ChatGPT）。详见[平台与模型](../configuration/providers.md)。
 :::
 
 ## 第一个对话

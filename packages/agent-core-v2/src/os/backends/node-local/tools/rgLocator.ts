@@ -3,7 +3,7 @@
  *
  * Resolves the `rg` command used by Glob and Grep, preferring a file found on
  * PATH, then the vendor hook, then the app cache, and finally bootstrapping a
- * pinned ripgrep archive into `<KIMI_CODE_HOME|~/.kimi-code>/bin` when the
+ * pinned ripgrep archive into `<ECHADRON_HOME|~/.echadron>/bin` when the
  * caller permits it. File lookup intentionally avoids spawning `rg --version`
  * so tool resolution has the same observable shape as v1.
  */
@@ -65,9 +65,13 @@ function rgBinaryName(): string {
 }
 
 function getShareDir(): string {
-  const override = process.env['KIMI_CODE_HOME'];
+  const override =
+    process.env['ECHADRON_HOME'] ??
+    process.env['ECHADRON_CODE_HOME'] ??
+    process.env['IMPERIUM_HOME'] ??
+    process.env['KIMI_CODE_HOME'];
   if (override !== undefined && override !== '') return override;
-  return join(homedir(), '.kimi-code');
+  return join(homedir(), '.echadron');
 }
 
 export function getShareBinRgPath(): string {
@@ -143,7 +147,11 @@ async function downloadRgWithLock(probe: RgProbe, shareDir: string): Promise<RgR
 }
 
 function getVendorRgPath(_binName: string): string | undefined {
-  return undefined;
+  const configured =
+    process.env['ECHADRON_RG_PATH'] ??
+    process.env['KIMI_RG_PATH'] ??
+    process.env['KIMI_CODE_RG_PATH'];
+  return configured !== undefined && configured.trim().length > 0 ? configured.trim() : undefined;
 }
 
 async function findRgOnPath(): Promise<string | undefined> {

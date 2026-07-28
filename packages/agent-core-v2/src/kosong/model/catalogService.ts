@@ -47,9 +47,8 @@
 
 import { parseKimiCodeCustomHeaders } from '@moonshot-ai/kimi-code-oauth';
 
-import { InstantiationType } from '#/_base/di/extensions';
 import { Disposable } from '#/_base/di/lifecycle';
-import { LifecycleScope, registerScopedService } from '#/_base/di/scope';
+import { LifecycleScope, ScopeActivation, registerScopedService } from '#/_base/di/scope';
 import { Error2 } from '#/_base/errors/errors';
 import type { ModelCapability } from '#/kosong/contract/capability';
 import type { ProviderRequestAuth } from '#/kosong/contract/provider';
@@ -414,6 +413,7 @@ export class ModelCatalog extends Disposable implements IModelCatalog {
         providerConfig?.type,
         providerConfig?.customHeaders,
         this.hostRequestHeaders.headers,
+        model.requestHeaders,
       ),
       capabilities,
       maxContextSize: model.maxContextSize,
@@ -422,6 +422,8 @@ export class ModelCatalog extends Disposable implements IModelCatalog {
       displayName: model.displayName,
       reasoningKey: model.reasoningKey,
       supportEfforts: model.supportEfforts,
+      thinkingBudgetMin: model.thinkingBudgetMin,
+      thinkingBudgetMax: model.thinkingBudgetMax,
       defaultEffort: model.defaultEffort,
       alwaysThinking: declared.has('always_thinking'),
       providerType,
@@ -586,6 +588,7 @@ export function resolveOutboundHeaders(
   providerType: string | undefined,
   customHeaders: Readonly<Record<string, string>> | undefined,
   hostHeaders: Readonly<Record<string, string>>,
+  modelHeaders?: Readonly<Record<string, string>>,
 ): Readonly<Record<string, string>> {
   // How much of the host identity a vendor receives is declared on its
   // provider definition (`hostHeaders: 'full'`); unregistered vendors get the
@@ -594,7 +597,7 @@ export function resolveOutboundHeaders(
     providerType !== undefined &&
     getProviderDefinition(providerType)?.hostHeaders === 'full';
   const hostLayer = forwardsAll ? hostHeaders : userAgentOnly(hostHeaders);
-  return { ...parseKimiCodeCustomHeaders(), ...hostLayer, ...customHeaders };
+  return { ...parseKimiCodeCustomHeaders(), ...hostLayer, ...customHeaders, ...modelHeaders };
 }
 
 function userAgentOnly(headers: Readonly<Record<string, string>>): Record<string, string> {
@@ -670,6 +673,8 @@ function buildProtocolProviderOptions(
     }
   }
 
+  if (model.requestBody !== undefined) options.requestBody = { ...model.requestBody };
+
   return Object.values(options).some((value) => value !== undefined)
     ? options
     : undefined;
@@ -737,6 +742,6 @@ registerScopedService(
   LifecycleScope.App,
   IModelCatalog,
   ModelCatalog,
-  InstantiationType.Eager,
+  ScopeActivation.OnScopeCreated,
   'modelCatalog',
 );

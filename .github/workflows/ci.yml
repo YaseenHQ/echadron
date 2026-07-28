@@ -125,10 +125,10 @@ jobs:
             echo "Typechecking ${config}"
             pnpm dlx --package @typescript/native-preview@beta tsgo -p "${config}" --noEmit
           done
-      - name: Typecheck VS Code extension
-        run: pnpm --filter kimi-code run typecheck
-      - name: Typecheck kimi-web (vue-tsc)
-        run: pnpm --filter @moonshot-ai/kimi-web run typecheck
+      - name: Typecheck Echadron VS Code extension
+        run: pnpm --filter echadron-code run typecheck
+      - name: Typecheck Echadron web (vue-tsc)
+        run: pnpm --filter @yaseenhq/echadron-web run typecheck
       - name: Typecheck vis-server
         run: pnpm --filter @moonshot-ai/vis-server run typecheck
       - name: Typecheck vis-web

@@ -1,5 +1,5 @@
 ---
-"@moonshot-ai/kimi-code": minor
+"@yaseenhq/echadron": minor
 "@moonshot-ai/agent-core": minor
 "@moonshot-ai/kimi-code-sdk": minor
 ---

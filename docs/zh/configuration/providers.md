@@ -23,7 +23,7 @@ Kimi Code CLI 支持同时接入多家 LLM 平台——用 Kimi Code 托管服�
 
 运行 `/login`，通过以下两种认证方式之一连接供应商：
 
-- **Sign in with an account (OAuth)**：支持 Kimi Code、xAI、使用 ChatGPT Plus 或 Pro 账号的 OpenAI Codex、Anthropic Claude Pro/Max，以及 GitHub Copilot。
+- **Sign in with an account (OAuth)**：支持 Kimi Code、xAI，以及使用 ChatGPT Plus 或 Pro 账号的 OpenAI Codex。交互式登录暂不提供 Anthropic 和 GitHub Copilot 订阅 OAuth；如需使用，请改用 API 密钥或 `config.toml` 配置。
 - **Connect with an API key**：选择 Kimi Platform 区域、[models.dev](https://models.dev/) 目录中的已知供应商，或自定义 `api.json` registry。
 
 OAuth token 与 `config.toml` 分开存储；供应商引用和模型元数据仍使用 Kimi 现有配置格式。`/logout` 会逐一列出凭据，账号会标记为 **(OAuth)**，静态凭据会标记为 **(API key)**；即使两者使用相同的供应商 ID，也会作为两个独立选项显示。也可清除 **All OAuth accounts**、**All API-key providers** 或 **All credentials**。每个组合都会显示所包含的凭据。普通登出只清除凭据，并保留供应商、模型配置和已保存会话。活动 OAuth 会话保持打开；活动 API key 会话会关闭，以免在内存中继续保留已清除的 key。
@@ -154,9 +154,9 @@ kimi
 
 ## OAuth 与凭证注入
 
-Kimi Code、xAI、OpenAI Codex、Anthropic 与 GitHub Copilot 可以使用 OAuth 而非静态 API 密钥。运行 `/login` 并选择 **Sign in with an account (OAuth)** 后，内置认证工具链会存储并刷新凭证，同时自动写入供应商与模型配置。Anthropic 使用浏览器 PKCE，并通过本地回调服务器自动捕获重定向（手动粘贴作为回退）；OpenAI Codex 提供浏览器或设备码两种选择；GitHub Copilot 支持填写 GitHub Enterprise 域名；其余供应商使用各自支持的设备码流程。
+Kimi Code、xAI 和 OpenAI Codex 可以使用 OAuth 而非静态 API 密钥。运行 `/login` 并选择 **Sign in with an account (OAuth)** 后，内置认证工具链会存储并刷新凭证，同时自动写入供应商与模型配置。OpenAI Codex 提供浏览器或设备码两种选择，其余支持的供应商使用各自的设备码流程。Anthropic 和 GitHub Copilot OAuth 适配器仍保留，用于兼容已有凭证，但不会出现在新登录选项中。
 
-xAI、Anthropic 与 GitHub Copilot 每次登录时都会重新获取 models.dev 元数据；Copilot 还会按当前账户实际启用的模型进行过滤。这是登录时刷新，而不是后台自动更新。Kimi Code 使用托管模型端点，OpenAI Codex 则使用下文说明的显式列表。
+xAI 每次登录时都会重新获取 models.dev 元数据。这是登录时刷新，而不是后台自动更新。Kimi Code 使用托管模型端点，OpenAI Codex 则使用下文说明的显式列表。
 
 例如，xAI 与其他供应商一样使用现有的 `config.toml` 架构：
 

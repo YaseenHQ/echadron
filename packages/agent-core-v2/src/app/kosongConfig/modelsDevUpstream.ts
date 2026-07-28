@@ -12,6 +12,9 @@
  * global default pointers).
  */
 
+import { mkdir, readFile, rename, unlink, writeFile } from 'node:fs/promises';
+import { dirname, join } from 'node:path';
+
 import { Error2 } from '#/_base/errors/errors';
 import type { ModelCapability } from '#/kosong/contract/capability';
 import type { ModelRecord } from '#/kosong/model/model';
@@ -20,6 +23,7 @@ import { BUILT_IN_MODELS_DEV_JSON } from './builtInModelsDev';
 import { ModelsDevImportErrors } from './errors';
 import {
   modelsDevProviderModels,
+  normalizeModelsDevCatalog,
   resolveModelsDevImport,
   type ModelsDevCatalog,
   type ModelsDevModel,
@@ -28,7 +32,8 @@ import {
 import type { ModelsDevModelItem, ModelsDevProviderItem } from './modelsDevImport';
 
 export const MODELS_DEV_URL = 'https://models.dev/api.json';
-const CACHE_TTL_MS = 10 * 60 * 1000;
+/** Keep the in-process browser aligned with Echadron's persisted catalog window. */
+export const MODELS_DEV_CACHE_TTL_MS = 4 * 60 * 60 * 1000;
 /** Shared upstream timeout for both the models.dev and registry fetches. */
 export const UPSTREAM_FETCH_TIMEOUT_MS = 10_000;
 
@@ -36,7 +41,7 @@ export const UPSTREAM_FETCH_TIMEOUT_MS = 10_000;
 export function loadBuiltInModelsDevCatalog(text?: string): ModelsDevCatalog | undefined {
   if (typeof text !== 'string' || text.length === 0) return undefined;
   try {
-    return JSON.parse(text) as ModelsDevCatalog;
+    return normalizeModelsDevCatalog(JSON.parse(text));
   } catch {
     return undefined;
   }
@@ -45,6 +50,8 @@ export function loadBuiltInModelsDevCatalog(text?: string): ModelsDevCatalog | u
 interface ModelsDevCacheEntry {
   readonly catalog: ModelsDevCatalog;
   readonly fetchedAt: number;
+  readonly etag?: string;
+  readonly lastModified?: string;
 }
 
 let cache: ModelsDevCacheEntry | undefined;
@@ -52,6 +59,8 @@ let inFlight: Promise<ModelsDevCatalog> | undefined;
 let builtInMemo: ModelsDevCatalog | undefined | null = null;
 let fetchImpl: typeof fetch = fetch;
 let nowImpl: () => number = Date.now;
+let persistedSeed: Promise<void> | undefined;
+let cacheHomeDir: string | undefined;
 
 /**
  * Test hook: swap the fetch/clock used by `getModelsDevCatalog`. The cache is
@@ -74,6 +83,8 @@ export function resetModelsDevUpstreamForTest(): void {
   builtInMemo = null;
   fetchImpl = fetch;
   nowImpl = Date.now;
+  persistedSeed = undefined;
+  cacheHomeDir = undefined;
 }
 
 /** The currently injected fetch — shared by the models.dev and registry upstreams. */
@@ -85,32 +96,64 @@ export function upstreamFetch(): typeof fetch {
  * Returns the models.dev directory: fresh cache hit → one shared network
  * fetch (concurrent misses join the same in-flight promise; cached on
  * success) → stale cache on fetch failure → built-in snapshot → throws
- * `modelsDev.catalog_unavailable`.
+ * `modelsDev.catalog_unavailable`. `homeDir` is supplied by the bootstrap
+ * service so the v2 server reads the same Echadron cache that
+ * `update --models` writes; the environment fallback remains for standalone
+ * SDK consumers.
  */
-export async function getModelsDevCatalog(): Promise<ModelsDevCatalog> {
+export async function getModelsDevCatalog(homeDir?: string): Promise<ModelsDevCatalog> {
+  if (cacheHomeDir !== homeDir) {
+    cache = undefined;
+    inFlight = undefined;
+    persistedSeed = undefined;
+    cacheHomeDir = homeDir;
+  }
+  persistedSeed ??= readPersistedCache(homeDir).then((persisted) => {
+    cache ??= persisted;
+  });
+  await persistedSeed;
   const now = nowImpl();
-  if (cache !== undefined && now - cache.fetchedAt < CACHE_TTL_MS) return cache.catalog;
-  inFlight ??= fetchAndCache().finally(() => {
+  if (cache !== undefined && now - cache.fetchedAt < MODELS_DEV_CACHE_TTL_MS) return cache.catalog;
+  inFlight ??= fetchAndCache(homeDir).finally(() => {
     inFlight = undefined;
   });
   return inFlight;
 }
 
-async function fetchAndCache(): Promise<ModelsDevCatalog> {
+async function fetchAndCache(homeDir?: string): Promise<ModelsDevCatalog> {
   const now = nowImpl();
   try {
+    const headers: Record<string, string> = {
+      Accept: 'application/json',
+      'User-Agent': 'echadron-kap-server',
+    };
+    if (cache?.etag !== undefined) headers['If-None-Match'] = cache.etag;
+    if (cache?.lastModified !== undefined) headers['If-Modified-Since'] = cache.lastModified;
     const res = await fetchImpl(MODELS_DEV_URL, {
-      headers: { Accept: 'application/json', 'User-Agent': 'kimi-code-kap-server' },
+      headers,
       signal: AbortSignal.timeout(UPSTREAM_FETCH_TIMEOUT_MS),
     });
+    if (res.status === 304 && cache !== undefined) {
+      cache = { ...cache, fetchedAt: now };
+      await writePersistedCache(cache, homeDir);
+      return cache.catalog;
+    }
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const payload: unknown = await res.json();
     if (typeof payload !== 'object' || payload === null || Array.isArray(payload)) {
       throw new Error('unexpected catalog payload shape');
     }
-    cache = { catalog: payload as ModelsDevCatalog, fetchedAt: now };
+    cache = {
+      catalog: normalizeModelsDevCatalog(payload),
+      fetchedAt: now,
+      ...(res.headers.get('etag') === null ? {} : { etag: res.headers.get('etag')! }),
+      ...(res.headers.get('last-modified') === null
+        ? {}
+        : { lastModified: res.headers.get('last-modified')! }),
+    };
+    await writePersistedCache(cache, homeDir);
     return cache.catalog;
-  } catch (err) {
+  } catch (error) {
     if (cache !== undefined) return cache.catalog;
     const builtIn = builtInCatalog();
     if (builtIn !== undefined) {
@@ -121,9 +164,92 @@ async function fetchAndCache(): Promise<ModelsDevCatalog> {
     }
     throw new Error2(
       ModelsDevImportErrors.codes.CATALOG_UNAVAILABLE,
-      `models.dev catalog unavailable: ${err instanceof Error ? err.message : String(err)}`,
+      `models.dev catalog unavailable: ${error instanceof Error ? error.message : String(error)}`,
     );
   }
+}
+
+/**
+ * Seed the core browser from the host's persisted `update --models` snapshot.
+ * Composition roots pass their home explicitly; the Echadron home variables
+ * are the primary fallback, with the historical names retained only for
+ * migration.
+ */
+async function readPersistedCache(homeDir?: string): Promise<ModelsDevCacheEntry | undefined> {
+  const home =
+    homeDir ??
+    process.env['ECHADRON_HOME'] ??
+    process.env['ECHADRON_CODE_HOME'] ??
+    process.env['IMPERIUM_HOME'] ??
+    process.env['KIMI_CODE_HOME'];
+  if (home === undefined || home.length === 0) return undefined;
+  try {
+    const parsed: unknown = JSON.parse(
+      await readFile(join(home, 'cache', 'models.dev.json'), 'utf8'),
+    );
+    if (!isPersistedCache(parsed)) return undefined;
+    return {
+      catalog: normalizeModelsDevCatalog(parsed.catalog),
+      fetchedAt: Date.parse(parsed.checkedAt),
+      ...(parsed.etag === undefined ? {} : { etag: parsed.etag }),
+      ...(parsed.lastModified === undefined ? {} : { lastModified: parsed.lastModified }),
+    };
+  } catch {
+    return undefined;
+  }
+}
+
+async function writePersistedCache(entry: ModelsDevCacheEntry, homeDir?: string): Promise<void> {
+  const home =
+    homeDir ??
+    process.env['ECHADRON_HOME'] ??
+    process.env['ECHADRON_CODE_HOME'] ??
+    process.env['IMPERIUM_HOME'] ??
+    process.env['KIMI_CODE_HOME'];
+  if (home === undefined || home.length === 0) return;
+  let tempPath: string | undefined;
+  try {
+    const filePath = join(home, 'cache', 'models.dev.json');
+    await mkdir(dirname(filePath), { recursive: true });
+    tempPath = `${filePath}.${process.pid}.${Date.now()}.tmp`;
+    await writeFile(
+      tempPath,
+      `${JSON.stringify({
+        schemaVersion: 1,
+        source: MODELS_DEV_URL,
+        checkedAt: new Date(entry.fetchedAt).toISOString(),
+        ...(entry.etag === undefined ? {} : { etag: entry.etag }),
+        ...(entry.lastModified === undefined ? {} : { lastModified: entry.lastModified }),
+        catalog: entry.catalog,
+      })}\n`,
+      'utf8',
+    );
+    await rename(tempPath, filePath);
+  } catch {
+    // A read-only or unwritable cache must never make model discovery fail.
+    if (tempPath !== undefined) await unlink(tempPath).catch(() => {});
+  }
+}
+
+function isPersistedCache(value: unknown): value is {
+  readonly source: typeof MODELS_DEV_URL;
+  readonly checkedAt: string;
+  readonly catalog: ModelsDevCatalog;
+  readonly etag?: string;
+  readonly lastModified?: string;
+} {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return false;
+  const record = value as Record<string, unknown>;
+  return (
+    record['source'] === MODELS_DEV_URL &&
+    typeof record['checkedAt'] === 'string' &&
+    Number.isFinite(Date.parse(record['checkedAt'])) &&
+    typeof record['catalog'] === 'object' &&
+    record['catalog'] !== null &&
+    !Array.isArray(record['catalog']) &&
+    (record['etag'] === undefined || typeof record['etag'] === 'string') &&
+    (record['lastModified'] === undefined || typeof record['lastModified'] === 'string')
+  );
 }
 
 /** The built-in snapshot, parsed at most once per process (it can be MBs). */
@@ -164,6 +290,17 @@ function toModelItem(model: ModelsDevModel): ModelsDevModelItem {
     id: model.id,
     max_context_size: model.capability.max_context_tokens,
     reasoning: model.capability.thinking,
+    ...(model.supportEfforts === undefined ? {} : { support_efforts: [...model.supportEfforts] }),
+    ...(model.thinkingBudget?.min === undefined
+      ? {}
+      : { thinking_budget_min: model.thinkingBudget.min }),
+    ...(model.thinkingBudget?.max === undefined
+      ? {}
+      : { thinking_budget_max: model.thinkingBudget.max }),
+    ...(model.defaultEffort === undefined ? {} : { default_effort: model.defaultEffort }),
+    ...(model.offEffort === undefined ? {} : { off_effort: model.offEffort }),
+    ...(model.alwaysThinking === undefined ? {} : { always_thinking: model.alwaysThinking }),
+    ...(model.mode === undefined ? {} : { request_mode: model.mode }),
   };
 }
 
@@ -234,7 +371,7 @@ export function modelsDevModelToRecord(providerId: string, model: ModelsDevModel
       : caps;
   const record: ModelRecord = {
     provider: providerId,
-    model: model.id,
+    model: model.wireModel ?? model.id,
     maxContextSize: model.capability.max_context_tokens,
   };
   if (model.capability.max_input_tokens !== undefined) {
@@ -245,7 +382,16 @@ export function modelsDevModelToRecord(providerId: string, model: ModelsDevModel
   if (model.name !== undefined) record.displayName = model.name;
   if (model.reasoningKey !== undefined) record.reasoningKey = model.reasoningKey;
   if (model.supportEfforts !== undefined) record.supportEfforts = [...model.supportEfforts];
+  if (model.thinkingBudget?.min !== undefined) {
+    record.thinkingBudgetMin = model.thinkingBudget.min;
+  }
+  if (model.thinkingBudget?.max !== undefined) {
+    record.thinkingBudgetMax = model.thinkingBudget.max;
+  }
+  if (model.defaultEffort !== undefined) record.defaultEffort = model.defaultEffort;
   if (model.offEffort !== undefined) record.offEffort = model.offEffort;
+  if (model.requestHeaders !== undefined) record.requestHeaders = { ...model.requestHeaders };
+  if (model.requestBody !== undefined) record.requestBody = { ...model.requestBody };
   if (model.protocol !== undefined) record.protocol = model.protocol;
   if (model.baseUrl !== undefined) record.baseUrl = model.baseUrl;
   return record;

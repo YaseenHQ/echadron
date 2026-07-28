@@ -46,7 +46,12 @@ function makeInMemoryStreamPair(): {
 }
 
 interface CapturedCall {
-  options: { id?: string; workDir: string; mcpServers?: Record<string, unknown> };
+  options: {
+    id?: string;
+    workDir: string;
+    mcpServers?: Record<string, unknown>;
+    additionalDirs?: readonly string[];
+  };
 }
 
 function makeHarness(
@@ -107,6 +112,7 @@ describe('AcpServer session/new', () => {
     const request: NewSessionRequest = {
       cwd: '/tmp/work',
       mcpServers: [],
+      additionalDirectories: ['/tmp/shared'],
     };
 
     const response = await client.newSession(request);
@@ -117,6 +123,7 @@ describe('AcpServer session/new', () => {
     expect(captured[0]?.options.workDir).toBe('/tmp/work');
     expect(captured[0]?.options.id).toBe(response.sessionId);
     expect(captured[0]?.options.mcpServers).toEqual({});
+    expect(captured[0]?.options.additionalDirs).toEqual(['/tmp/shared']);
 
     // The wrapper is stashed in the map under the same id we returned to
     // the client (so Phase 3.3/3.4 can look it up by sessionId).

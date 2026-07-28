@@ -13,7 +13,11 @@ import {
 } from '#/tui/components/dialogs/plugins-selector';
 import { currentTheme } from '#/tui/theme';
 import { darkColors, lightColors } from '#/tui/theme/colors';
-import { isOfficialPluginSource, pluginTrustLabel } from '#/tui/utils/plugin-source-label';
+import {
+  isOfficialPluginInstall,
+  isOfficialPluginSource,
+  pluginTrustLabel,
+} from '#/tui/utils/plugin-source-label';
 
 const ANSI_SGR = /\u001B\[[0-9;]*m/g;
 
@@ -150,18 +154,95 @@ describe('plugins selector dialogs', () => {
     })).toBe('third-party');
   });
 
+  it('recognizes installed plugin provenance for a configured source', () => {
+    const base = {
+      id: 'kimi-datasource',
+      displayName: 'Kimi Datasource',
+      enabled: true,
+      state: 'ok' as const,
+      skillCount: 0,
+      mcpServerCount: 0,
+      enabledMcpServerCount: 0,
+      hookCount: 0,
+      commandCount: 0,
+      hasErrors: false,
+    };
+    // Zip installs from the official CDN path.
+    expect(isOfficialPluginInstall({
+      ...base,
+      source: 'zip-url',
+      originalSource: 'https://code.kimi.com/kimi-code/plugins/official/kimi-datasource.zip',
+    })).toBe(true);
+    // Same manifest id from a local path, GitHub, a loopback URL, or a
+    // third-party URL is not the official build.
+    expect(isOfficialPluginInstall({ ...base, source: 'local-path' })).toBe(false);
+    expect(isOfficialPluginInstall({ ...base, source: 'github' })).toBe(false);
+    expect(isOfficialPluginInstall({
+      ...base,
+      source: 'zip-url',
+      originalSource: 'http://127.0.0.1:58627/kimi-code/plugins/official/kimi-datasource.zip',
+    })).toBe(false);
+    expect(isOfficialPluginInstall({
+      ...base,
+      source: 'zip-url',
+      originalSource: 'https://example.test/kimi-code/plugins/official/kimi-datasource.zip',
+    })).toBe(false);
+  });
+
   it('treats only the official Kimi CDN path as a trusted install source', () => {
     expect(isOfficialPluginSource('https://code.kimi.com/kimi-code/plugins/official/kimi-datasource.zip')).toBe(true);
     // Curated and other Kimi CDN paths are not "official" for the install gate.
     expect(isOfficialPluginSource('https://code.kimi.com/kimi-code/plugins/curated/superpowers.zip')).toBe(false);
     expect(isOfficialPluginSource('https://code.kimi.com/kimi-code/plugins/foo.zip')).toBe(false);
-    // Non-Kimi hosts, non-https schemes, local paths, and GitHub sources are unofficial.
+    // Non-Kimi hosts (loopback included), non-https schemes, local paths, and
+    // GitHub sources are unofficial.
     expect(isOfficialPluginSource('https://example.test/kimi-code/plugins/official/x.zip')).toBe(false);
     expect(isOfficialPluginSource('http://code.kimi.com/kimi-code/plugins/official/x.zip')).toBe(false);
+    expect(isOfficialPluginSource('http://127.0.0.1:58627/kimi-code/plugins/official/x.zip')).toBe(false);
     expect(isOfficialPluginSource('./plugins/kimi-datasource')).toBe(false);
     expect(isOfficialPluginSource('/abs/path/to/plugin')).toBe(false);
     expect(isOfficialPluginSource('github.com/owner/repo')).toBe(false);
     expect(isOfficialPluginSource('not a url')).toBe(false);
+  });
+
+  it('recognizes installed plugins by official provenance', () => {
+    const base = {
+      id: 'kimi-datasource',
+      displayName: 'Kimi Datasource',
+      enabled: true,
+      state: 'ok' as const,
+      skillCount: 0,
+      mcpServerCount: 0,
+      enabledMcpServerCount: 0,
+      hookCount: 0,
+      commandCount: 0,
+      hasErrors: false,
+    };
+    expect(
+      isOfficialPluginInstall({
+        ...base,
+        source: 'zip-url',
+        originalSource: 'https://code.kimi.com/kimi-code/plugins/official/kimi-datasource.zip',
+      }),
+    ).toBe(true);
+    expect(isOfficialPluginInstall({ ...base, source: 'local-path' })).toBe(false);
+    expect(isOfficialPluginInstall({ ...base, source: 'github' })).toBe(false);
+    expect(
+      isOfficialPluginInstall({
+        ...base,
+        source: 'zip-url',
+        originalSource:
+          'http://127.0.0.1:58627/kimi-code/plugins/official/kimi-datasource.zip',
+      }),
+    ).toBe(false);
+    expect(
+      isOfficialPluginInstall({
+        ...base,
+        source: 'zip-url',
+        originalSource:
+          'https://example.test/kimi-code/plugins/official/kimi-datasource.zip',
+      }),
+    ).toBe(false);
   });
 
   it('opens on the Installed tab with the four panel tabs', () => {
@@ -289,62 +370,14 @@ describe('plugins selector dialogs', () => {
     expect(out).toContain('0 installed · 1 available');
   });
 
-  it('renders the hardcoded Web Bridge entry on the Official tab while loading', () => {
-    const { panel } = makePanel({ initialTab: 'official' });
-    // The catalog is still loading, but the built-in Web Bridge entry is shown
-    // immediately because it is baked into the TUI, not fetched.
-    const out = strip(renderRaw(panel));
-    expect(out).toContain('Kimi WebBridge  open in browser');
-    expect(out).toContain('Loading marketplace');
-  });
-
-  it('keeps the Web Bridge entry visible when the Official catalog errors', () => {
-    const { panel } = makePanel({ initialTab: 'official' });
-    panel.setMarketplaceError('fetch failed');
-    const out = strip(renderRaw(panel));
-    expect(out).toContain('Kimi WebBridge  open in browser');
-    expect(out).toContain('Marketplace unavailable: fetch failed');
-  });
-
-  it('opens the Web Bridge webpage on Enter instead of installing', () => {
+  it('installs the selected official catalog entry on Enter', () => {
     const { panel, onSelect } = makePanel({ initialTab: 'official' });
     panel.setMarketplace(marketplaceEntries, '/tmp/marketplace.json');
-    // Web Bridge is pinned at index 0, so Enter selects it directly.
-    panel.handleInput('\r');
-    expect(onSelect).toHaveBeenCalledWith({
-      kind: 'open-url',
-      url: 'https://www.kimi.com/features/webbridge#local-agent',
-      label: 'Kimi WebBridge',
-    });
-  });
-
-  it('installs a catalog official entry after navigating past Web Bridge', () => {
-    const { panel, onSelect } = makePanel({ initialTab: 'official' });
-    panel.setMarketplace(marketplaceEntries, '/tmp/marketplace.json');
-    panel.handleInput('\u001B[B'); // ↓ → kimi-datasource
     panel.handleInput('\r');
     expect(onSelect).toHaveBeenCalledWith({
       kind: 'install',
       entry: expect.objectContaining({ id: 'kimi-datasource' }),
     });
-  });
-
-  it('does not duplicate Web Bridge when the catalog also lists it', () => {
-    const entries = [
-      {
-        id: 'kimi-webbridge',
-        tier: 'official' as const,
-        displayName: 'Kimi WebBridge',
-        source: 'https://x/w.zip',
-      },
-      ...officialEntries,
-    ];
-    const { panel } = makePanel({ initialTab: 'official' });
-    panel.setMarketplace(entries, '/tmp/marketplace.json');
-    const out = strip(renderRaw(panel));
-    // The label should appear exactly once — the hardcoded row wins, the
-    // catalog copy is filtered out.
-    expect(out.split('Kimi WebBridge').length - 1).toBe(1);
   });
 
   it('installs a Third-party entry whose id matches the pinned WebBridge', () => {
@@ -355,14 +388,14 @@ describe('plugins selector dialogs', () => {
       {
         id: 'kimi-webbridge',
         tier: 'curated' as const,
-        displayName: 'Kimi WebBridge',
+        displayName: 'Browser Bridge',
         source: 'https://x/w.zip',
       },
     ];
     const { panel, onSelect } = makePanel({ initialTab: 'third-party' });
     panel.setMarketplace(entries, '/tmp/marketplace.json');
     const out = strip(renderRaw(panel));
-    expect(out).toContain('Kimi WebBridge  install');
+    expect(out).toContain('Browser Bridge  install');
     panel.handleInput('\r');
     expect(onSelect).toHaveBeenCalledWith({
       kind: 'install',
@@ -604,7 +637,7 @@ describe('plugins selector dialogs', () => {
     expect(out).toContain('    Install this third-party plugin anyway.');
     // The warning explains why confirmation is required and uses the
     // design-system warning color rather than muted/default text.
-    expect(out.some((line) => line.includes('Kimi has not reviewed'))).toBe(true);
+    expect(out.some((line) => line.includes('Echadron has not reviewed'))).toBe(true);
     expect(out.some((line) => line.includes('trust the source'))).toBe(true);
     expect(raw).toContain(warningMark());
 

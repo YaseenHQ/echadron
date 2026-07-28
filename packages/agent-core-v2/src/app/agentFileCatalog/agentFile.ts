@@ -79,6 +79,8 @@ export function parseAgentFileText(options: ParseAgentFileOptions): AgentFileDef
     'description',
     options.path,
   );
+  const declaredModel = optionalNonEmptyString(frontmatter['model'], 'model', options.path);
+  const model = declaredModel === 'inherit' ? undefined : declaredModel;
 
   const override = parseBoolean(frontmatter['override'], 'override', options.path);
   const rawTools = parseStringList(frontmatter['tools'], 'tools', options.path);
@@ -102,6 +104,7 @@ export function parseAgentFileText(options: ParseAgentFileOptions): AgentFileDef
     name,
     description,
     whenToUse: nonEmptyString(frontmatter['whenToUse']),
+    model,
     override,
     tools,
     disallowedTools,
@@ -111,6 +114,20 @@ export function parseAgentFileText(options: ParseAgentFileOptions): AgentFileDef
     path: options.path,
     source: options.source,
   };
+}
+
+function optionalNonEmptyString(
+  value: unknown,
+  field: string,
+  filePath: string,
+): string | undefined {
+  if (value === undefined || value === null) return undefined;
+  if (typeof value !== 'string' || value.trim() === '') {
+    throw new AgentFileParseError(
+      `Frontmatter field "${field}" in ${filePath} must be a non-empty string`,
+    );
+  }
+  return value.trim();
 }
 
 function parseModelPreference(

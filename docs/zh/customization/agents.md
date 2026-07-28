@@ -78,8 +78,8 @@ Agent 文件是带 Frontmatter 的普通 Markdown：
 name: reviewer
 description: 严格的代码审查 Agent，按严重度分级报告问题
 whenToUse: 代码评审与 PR 检查
+model: reviewer-model
 override: false
-model_preference: primary
 tools:
   - Read
   - Grep
@@ -97,8 +97,9 @@ disallowedTools:
 | `name` | 否 | kebab-case 唯一标识。缺省时取文件名（去掉扩展名，如 `review.md` → `review`）；解析后名字缺失或不是 kebab-case 的文件会被跳过并告警 |
 | `description` | 是 | Agent 的用途。主 Agent 挑选子 Agent 时会看到，请围绕委派决策来写 |
 | `whenToUse` | 否 | 补充说明何时应使用该 Agent |
+| `model` | 否 | 此 Profile 作为子 Agent 启动时使用的具体已配置模型别名。省略或写 `inherit` 时继续使用常规的主模型/次主力模型选择逻辑 |
 | `override` | 否 | 是否允许覆盖同名内置 Agent，默认 `false`。`--agent-file` 属于显式启动意图，无需设置此字段 |
-| `model_preference` | 否 | `Agent` 或 `AgentSwarm` 启动该 profile 时的符号默认值：`primary` 选择调用方的主模型，`secondary` 选择 `[secondary_model] model`。工具调用显式传入的 `model` 优先；两者均未设置时，已配置的次主力模型仍为默认值。未配置次主力模型时，子 Agent 继承调用方模型 |
+| `model_preference` | 否 | `Agent` 或 `AgentSwarm` 启动该 profile 时的符号默认值：`primary` 选择调用方的主模型，`secondary` 选择 `[secondary_model] model`。优先级依次为工具调用显式传入的 `model`、Profile 的具体 `model`、`model_preference`；三者均未设置时，已配置的次主力模型仍为默认值。未配置次主力模型时，子 Agent 继承调用方模型 |
 | `tools` | 否 | 工具名允许列表，如 `Read`、`Bash`；MCP 工具用 glob 匹配，如 `mcp__github__*`。支持 YAML 列表或逗号分隔字符串（`tools: Read, Grep`）两种写法。缺省表示允许全部工具；单独的 `*` 同样表示允许全部工具；空列表（`tools: []`）表示禁用全部工具 |
 | `disallowedTools` | 否 | 禁止列表，写法与匹配规则相同，在 `tools` 之后应用 |
 | `subagents` | 否 | 允许委派的子 Agent 名称列表，写法与 `tools` 相同（YAML 列表或逗号分隔字符串）。缺省表示可委派所有类型；单独的 `*` 同样表示全部 |
@@ -107,7 +108,9 @@ disallowedTools:
 
 正文即 Agent 的系统提示词，每次构建提示词时都会作为模板渲染：`${var}` 占位符替换为实时上下文值——未知变量保持原样，单独的 `$` 没有特殊含义，上下文中缺失的变量渲染为空字符串。`${base_prompt}` 会在你放置它的位置嵌入有效默认系统提示词（内置默认，或存在时为你的 `SYSTEM.md` 覆盖），因此文件可以"包裹"默认行为而不是替换它。可用变量见下文 SYSTEM.md 变量表。
 
-未知字段会被忽略，新版本写的文件在旧版本上仍可读取。其他 Agent 工具的字段（如 Claude Code 的 `model`、OpenCode 的 `mode`）同样会被忽略；加上 `tools` 的逗号分隔写法和 `name` 缺省回退到文件名，Claude Code 与 OpenCode 风格的 Agent 文件一般可直接加载 —— 只含 `description` 和正文的最小文件可跨工具通用。
+未知字段会被忽略，新版本写的文件在旧版本上仍可读取。`model` 字段兼容 Claude Code 的 `inherit` 约定，也可以填写任意 Kimi 已配置的模型别名；OpenCode 的 `mode` 仍作为兼容字段忽略。加上 `tools` 的逗号分隔写法和 `name` 缺省回退到文件名，Claude Code 与 OpenCode 风格的 Agent 文件一般可直接加载 —— 只含 `description` 和正文的最小文件可跨工具通用。
+
+子 Agent 启动时会固定模型绑定。恢复该子 Agent 时会保留其已记录的模型，即使 Profile 或父 Agent 后来发生变化也不会改绑。委派到其他模型不会修改父 Agent 的模型、系统提示词或工具列表，因此不会破坏父 Agent 的提示词缓存前缀。
 
 `model_preference` 仅在次主力模型实验功能启用时对新启动的子 Agent 生效。在 `kimi web` 下，设置 `KIMI_CODE_EXPERIMENTAL_SECONDARY_MODEL=1`；在实验性 `kimi -p` 下，必需的 `KIMI_CODE_EXPERIMENTAL_FLAG=1` 也会启用该功能。TUI 目前会忽略此字段。该字段不用于填写具体模型 alias，已恢复的子 Agent 也会保持原模型。主 Agent 会在 profile 描述中看到这项偏好，因此仍可在某项任务需要不同选择时显式传入 `model`。
 

@@ -4,9 +4,9 @@
  *
  * A profile is "how an Agent runs": the full system prompt it renders for a
  * given context, the tool set it may use, plus optional per-invocation and
- * summary-distillation behavior for child agents. A profile is model-agnostic:
- * the same profile can be bound to any Model. Together with a bound Model, a
- * profile uniquely determines an Agent's behavior (`Profile + Model ⇒ Agent`).
+ * summary-distillation behavior for child agents. Profiles are model-agnostic
+ * by default; an optional `model` binds children of that profile to a
+ * configured model alias instead of inheriting the caller's current model.
  *
  * Every profile is self-contained: `systemPrompt(context)` returns the complete
  * prompt (base + role overlay are merged at definition time, not at spawn
@@ -23,7 +23,7 @@
  * (`undefined` = any type).
  *
  * Profiles are contributed at module load via `registerAgentProfile(...)`, the
- * same "import = register" pattern used by `registerTool` and
+ * same "import = register" pattern used by `registerAgentToolService` and
  * `registerConfigSection`. `AgentProfileCatalogService` consumes the accumulated
  * contributions on construction and exposes `get(name)` / `getDefault()` /
  * `list()` to callers (the `Agent` tool, the swarm scheduler, and the per-agent
@@ -63,6 +63,8 @@ export interface AgentProfileContext {
   readonly now?: string;
   readonly skills?: string;
   readonly skillActive?: boolean;
+  readonly productName?: string;
+  readonly replyStyleGuide?: string;
   readonly [key: string]: unknown;
 }
 
@@ -70,6 +72,8 @@ export interface AgentProfile {
   readonly name: string;
   readonly description?: string;
   readonly whenToUse?: string;
+  /** Configured model alias for child agents; omitted means inherit the caller model. */
+  readonly model?: string;
   readonly override?: boolean;
   readonly tools?: readonly string[];
   readonly disallowedTools?: readonly string[];

@@ -25,7 +25,7 @@ async function ensureExecutableExists() {
   }
 }
 
-async function runKimi(args) {
+async function runEchadron(args) {
   try {
     const { stdout, stderr } = await execFileAsync(executablePath, args, {
       cwd: appRoot,
@@ -40,7 +40,7 @@ async function runKimi(args) {
   }
 }
 
-async function runKimiWithEnv(args, env) {
+async function runEchadronWithEnv(args, env) {
   try {
     const { stdout, stderr } = await execFileAsync(executablePath, args, {
       cwd: appRoot,
@@ -64,17 +64,17 @@ function assertIncludes(output, expected, command) {
 
 await ensureExecutableExists();
 
-const versionOutput = await runKimi(['--version']);
+const versionOutput = await runEchadron(['--version']);
 assertIncludes(versionOutput, expectedVersion, '--version');
 
-const helpOutput = await runKimi(['--help']);
-assertIncludes(helpOutput, 'Usage: kimi', '--help');
+const helpOutput = await runEchadron(['--help']);
+assertIncludes(helpOutput, 'Usage: echadron', '--help');
 
-const exportHelpOutput = await runKimi(['export', '--help']);
-assertIncludes(exportHelpOutput, 'Usage: kimi export', 'export --help');
+const exportHelpOutput = await runEchadron(['export', '--help']);
+assertIncludes(exportHelpOutput, 'Usage: echadron export', 'export --help');
 
-const nativeAssetOutput = await runKimiWithEnv(['--version'], {
-  KIMI_CODE_HOME: smokeHome,
+const nativeAssetOutput = await runEchadronWithEnv(['--version'], {
+  IMPERIUM_HOME: smokeHome,
   KIMI_CODE_NATIVE_ASSET_SMOKE: '1',
 });
 assertIncludes(nativeAssetOutput, `Native asset smoke passed: ${target}`, 'native asset smoke');

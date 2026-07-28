@@ -29,6 +29,13 @@ export interface ModelsDevModelItem {
   readonly max_context_size: number;
   readonly capabilities?: readonly string[];
   readonly reasoning: boolean;
+  readonly support_efforts?: readonly string[];
+  readonly thinking_budget_min?: number;
+  readonly thinking_budget_max?: number;
+  readonly default_effort?: string;
+  readonly off_effort?: string;
+  readonly always_thinking?: boolean;
+  readonly request_mode?: string;
 }
 
 export interface ModelsDevProviderItem {

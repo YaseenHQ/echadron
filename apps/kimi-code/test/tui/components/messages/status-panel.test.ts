@@ -41,17 +41,17 @@ describe('status panel report lines', () => {
         summary: null,
         limits: [
           {
-            label: '5h limit',
+            window: { duration: 5, unit: 'hour' },
             used: 8,
             limit: 100,
-            resetHint: 'resets in 1h',
+            resetAt: new Date(Date.now() + 3600_000).toISOString(),
           },
         ],
       },
     }).map(strip);
 
     const output = lines.join('\n');
-    expect(output).toContain('>_ Kimi Code (v1.2.3)');
+    expect(output).toContain('>_ Echadron (v1.2.3)');
     expect(output).toContain('Model        Kimi K2 (thinking high)');
     expect(output).toContain('Directory    /tmp/project');
     expect(output).toContain('Permissions  auto');
@@ -62,6 +62,7 @@ describe('status panel report lines', () => {
     expect(output).toContain('25%');
     expect(output).toContain('(2.9k / 11.7k)');
     expect(output).toContain('Plan usage');
+    expect(output).toContain('5h limit');
     expect(output).toContain('8% used');
     expect(output).not.toContain('Account');
     expect(output).not.toContain('AGENTS.md');

@@ -32,6 +32,7 @@ export type { ProviderConfig, ProviderType } from './providers';
 // kwargs, `thinking.keep` extra body).
 export { KimiChatProvider } from './providers/kimi';
 export type { ExtraBody, GenerationKwargs, KimiOptions, ThinkingConfig } from './providers/kimi';
+export { classifyKimiQuotaError } from './providers/kimi-errors';
 
 // Model capability matrix
 export { isUnknownCapability, UNKNOWN_CAPABILITY } from './capability';
@@ -43,12 +44,15 @@ export {
   catalogModelToCapability,
   catalogProviderModels,
   inferWireType,
+  normalizeCatalog,
   resolveCatalogImport,
 } from './catalog';
 export type {
   Catalog,
   CatalogModel,
   CatalogModelEntry,
+  CatalogModelExperimentalMode,
+  CatalogThinkingBudget,
   CatalogProviderEntry,
   CatalogImportInvalidReason,
   CatalogImportResolution,
@@ -70,6 +74,7 @@ export {
   APIConnectionError,
   APIContextOverflowError,
   APIEmptyResponseError,
+  APIProviderQuotaExhaustedError,
   APIProviderRateLimitError,
   APIRequestTooLargeError,
   APIStatusError,

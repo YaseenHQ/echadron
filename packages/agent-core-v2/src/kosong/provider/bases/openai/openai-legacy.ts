@@ -26,7 +26,7 @@
 
 import OpenAI from 'openai';
 
-import { parseTraceId } from '#/kosong/contract/errors';
+import { parseTraceId, type ChatProviderError } from '#/kosong/contract/errors';
 import type {
   ContentPart,
   Message,
@@ -105,6 +105,7 @@ export const OPENAI_CHAT_TOOL_CALL_ID_POLICY: ToolCallIdPolicy = {
  */
 export interface OpenAIChatCompletionsHooks {
   convertTool?: (tool: Tool) => Record<string, unknown> | undefined;
+  convertError?: (error: unknown) => ChatProviderError | undefined;
   convertMessage?: (
     message: Message,
     converted: Record<string, unknown>,
@@ -141,6 +142,7 @@ export interface OpenAILegacyOptions {
   thinkingEffort?: ThinkingEffort | undefined;
   httpClient?: unknown;
   defaultHeaders?: Record<string, string>;
+  generationKwargs?: OpenAILegacyGenerationKwargs | undefined;
   toolMessageConversion?: ToolMessageConversion | undefined;
   clientFactory?: (auth: ProviderRequestAuth) => OpenAI;
   hooks?: OpenAIChatCompletionsHooks | undefined;
@@ -381,6 +383,9 @@ export class OpenAILegacyStreamedMessage implements StreamedMessage {
     private readonly _extractUsageHook?:
       | ((chunk: Record<string, unknown>) => Record<string, unknown> | null | undefined)
       | undefined,
+    private readonly _convertErrorHook?:
+      | ((error: unknown) => ChatProviderError | undefined)
+      | undefined,
   ) {
     if (isStream) {
       this._iter = this._convertStreamResponse(
@@ -515,7 +520,7 @@ export class OpenAILegacyStreamedMessage implements StreamedMessage {
         }
       }
     } catch (error: unknown) {
-      throw convertOpenAIError(error);
+      throw convertOpenAIError(error, this._convertErrorHook);
     }
   }
 }
@@ -569,7 +574,12 @@ export class OpenAILegacyChatProvider implements ChatProvider {
     this._offEffort = options.offEffort;
     this._generationKwargs = normalizeGenerationKwargs(
       this._model,
-      options.maxTokens !== undefined ? completionTokenKwargs(this._model, options.maxTokens) : {},
+      {
+        ...options.generationKwargs,
+        ...(options.maxTokens !== undefined
+          ? completionTokenKwargs(this._model, options.maxTokens)
+          : {}),
+      },
     );
     this._toolMessageConversion = options.toolMessageConversion ?? null;
     this._httpClient = options.httpClient;
@@ -645,10 +655,10 @@ export class OpenAILegacyChatProvider implements ChatProvider {
     const finalMessages = merged ?? messages;
 
     const createParams: Record<string, unknown> = {
+      ...kwargs,
       model: this._model,
       messages: finalMessages,
       stream: this._stream,
-      ...kwargs,
     };
 
     if (tools.length > 0) {
@@ -690,9 +700,10 @@ export class OpenAILegacyChatProvider implements ChatProvider {
         this._reasoningKeyDialect,
         parseTraceId(response.headers),
         this._hooks?.extractUsage,
+        this._hooks?.convertError,
       );
     } catch (error: unknown) {
-      throw convertOpenAIError(error);
+      throw convertOpenAIError(error, this._hooks?.convertError);
     }
   }
 

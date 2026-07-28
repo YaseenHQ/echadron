@@ -35,6 +35,7 @@ export type {
   CatalogImportResolution,
   CatalogModel,
   CatalogProviderEntry,
+  CatalogProviderSource,
   FetchCatalogOptions,
 } from '#/catalog';
 

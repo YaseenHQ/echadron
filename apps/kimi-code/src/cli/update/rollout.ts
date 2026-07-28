@@ -198,13 +198,13 @@ export function resolveUpdateDeviceId(): string {
  * The experimental master switch opts a device out of staged rollouts: the
  * newest version is always visible to the passive update surfaces, exactly as
  * if every release were fully rolled out. Read directly from the env (same
- * truthy values as `KIMI_CODE_NO_AUTO_UPDATE`) — the update preflight runs
+ * truthy values as `ECHADRON_NO_AUTO_UPDATE`) — the update preflight runs
  * before the harness exists, so the core flag registry is not consulted.
- * `KIMI_CODE_NO_AUTO_UPDATE` still wins: disabling updates beats opting in.
+ * `ECHADRON_NO_AUTO_UPDATE` still wins: disabling updates beats opting in.
  */
 export function isRolloutBypassedByExperimentalEnv(
   env: Readonly<Record<string, string | undefined>> = process.env,
 ): boolean {
-  const value = (env['KIMI_CODE_EXPERIMENTAL_FLAG'] ?? '').trim().toLowerCase();
+  const value = (env['ECHADRON_EXPERIMENTAL_FLAG'] ?? env['KIMI_CODE_EXPERIMENTAL_FLAG'] ?? '').trim().toLowerCase();
   return ['1', 'true', 'yes', 'on'].includes(value);
 }

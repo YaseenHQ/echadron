@@ -38,7 +38,7 @@ export async function loadWorkspaceLocalConfig(
 ): Promise<WorkspaceLocalConfig> {
   const projectRoot = await findProjectRoot(kaos, workDir);
   const configPath = getWorkspaceLocalConfigPath(projectRoot);
-  const file = await readWorkspaceLocalToml(kaos, configPath);
+  const file = await readWorkspaceLocalTomlWithLegacyFallback(kaos, projectRoot);
 
   const additionalDirs = file?.parsed.workspace?.additional_dir;
   if (additionalDirs === undefined) {
@@ -76,7 +76,10 @@ export async function appendWorkspaceAdditionalDir(
   const projectRoot = await findProjectRoot(kaos, workDir);
   const configPath = getWorkspaceLocalConfigPath(projectRoot);
   const additionalDir = await resolveAdditionalDir(kaos, workDir, inputPath);
-  const file = (await readWorkspaceLocalToml(kaos, configPath)) ?? { raw: {}, parsed: {} };
+  const file = (await readWorkspaceLocalTomlWithLegacyFallback(kaos, projectRoot)) ?? {
+    raw: {},
+    parsed: {},
+  };
   const fileAdditionalDirs = file.parsed.workspace?.additional_dir ?? [];
   const fileExistingDirs = resolveExistingAdditionalDirs(kaos, projectRoot, fileAdditionalDirs);
 
@@ -109,7 +112,21 @@ export function normalizeAdditionalDirs(additionalDirs: readonly string[]): stri
 }
 
 function getWorkspaceLocalConfigPath(projectRoot: string): string {
+  return join(projectRoot, '.echadron', 'local.toml');
+}
+
+function getLegacyWorkspaceLocalConfigPath(projectRoot: string): string {
   return join(projectRoot, '.kimi-code', 'local.toml');
+}
+
+async function readWorkspaceLocalTomlWithLegacyFallback(
+  kaos: Kaos,
+  projectRoot: string,
+): Promise<WorkspaceLocalTomlFile | undefined> {
+  const canonical = getWorkspaceLocalConfigPath(projectRoot);
+  const file = await readWorkspaceLocalToml(kaos, canonical);
+  if (file !== undefined) return file;
+  return readWorkspaceLocalToml(kaos, getLegacyWorkspaceLocalConfigPath(projectRoot));
 }
 
 async function findProjectRoot(kaos: Kaos, workDir: string): Promise<string> {

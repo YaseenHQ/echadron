@@ -1,6 +1,7 @@
-import { NPM_PACKAGE_NAME } from '#/constant/app';
+import { LEGACY_NPM_PACKAGE_NAME, NPM_PACKAGE_NAME } from '#/constant/app';
 
 export { NPM_PACKAGE_NAME };
+export { LEGACY_NPM_PACKAGE_NAME };
 
 /** Where the running CLI was installed from. Drives update command + spawn. */
 export type InstallSource =

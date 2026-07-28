@@ -1,14 +1,15 @@
 /**
- * `kimi acp` sub-command.
+ * `echadron acp` sub-command.
  *
  * Starts the Agent Client Protocol (ACP) server over stdio so that
  * ACP-compatible clients (editors, IDEs, custom front-ends) can drive
- * a kimi-code session.
+ * an Echadron session.
  *
  * Wire-up:
- *  - A {@link KimiHarness} is constructed with the kimi-code host identity
- *    and a dedicated `uiMode: 'acp'` so downstream telemetry can
- *    distinguish ACP sessions from the TUI.
+ *  - A {@link KimiHarness} is constructed with the Echadron host identity
+ *    and a dedicated `uiMode: 'acp'`. Hosts that inject a telemetry client
+ *    can use that mode to distinguish ACP sessions from the TUI; the CLI ACP
+ *    entry point intentionally uses the SDK's no-op telemetry default.
  *  - {@link runAcpServer} owns the JSON-RPC stdio bridge and redirects
  *    rogue `console.*` traffic to stderr.
  *  - `--login` pivots into the device-code login flow instead of
@@ -29,16 +30,21 @@ import {
 } from '@moonshot-ai/acp-adapter';
 import { createKimiHarness, type Session, type SkillSummary } from '@moonshot-ai/kimi-code-sdk';
 
-import { KIMI_CODE_HOME_ENV } from '#/constant/app';
+import {
+  ECHADRON_HOME_ENV,
+  IMPERIUM_HOME_ENV,
+  KIMI_CODE_HOME_ENV,
+} from '#/constant/app';
 import { createKimiCodeHostIdentity, getVersion } from '#/cli/version';
 import { buildSkillSlashCommands } from '#/tui/commands/skills';
+import { getDataDir } from '#/utils/paths';
 
 import { runLoginFlow } from './login-flow';
 
 export function registerAcpCommand(parent: Command): void {
   parent
     .command('acp')
-    .description('Run kimi-code as an Agent Client Protocol (ACP) server over stdio.')
+    .description('Run Echadron as an Agent Client Protocol (ACP) server over stdio.')
     .option(
       '--login',
       'Run the device-code login flow then exit (entry point for ACP terminal-auth).',
@@ -50,27 +56,40 @@ export function registerAcpCommand(parent: Command): void {
         return;
       }
       const identity = createKimiCodeHostIdentity();
+      // Capture the caller's home before constructing the harness. Harness
+      // startup normalizes environment aliases for legacy SDK consumers; it
+      // must not make an unset terminal-auth sandbox appear configured.
+      const sandboxHome =
+        process.env[ECHADRON_HOME_ENV] ??
+        process.env['ECHADRON_CODE_HOME'] ??
+        process.env[IMPERIUM_HOME_ENV] ??
+        process.env[KIMI_CODE_HOME_ENV];
+      const terminalAuthEnv =
+        sandboxHome !== undefined && sandboxHome.length > 0
+          ? {
+              [ECHADRON_HOME_ENV]: sandboxHome,
+              ECHADRON_CODE_HOME: sandboxHome,
+              [IMPERIUM_HOME_ENV]: sandboxHome,
+              [KIMI_CODE_HOME_ENV]: sandboxHome,
+            }
+          : undefined;
       const harness = createKimiHarness({
+        homeDir: getDataDir(),
         identity,
         uiMode: 'acp',
       });
-      // Forward `KIMI_CODE_HOME` (if set) into `authMethods[0].env` so the
-      // `kimi login` subprocess clients spawn for terminal-auth writes its
-      // token under the same data root the ACP server reads from. Used for
-      // sandboxed test setups (Zed's `agent_servers.*.env.KIMI_CODE_HOME =
-      // /tmp/...`). Production runs leave the env unset and the field stays
-      // empty.
-      const sandboxHome = process.env[KIMI_CODE_HOME_ENV];
-      const terminalAuthEnv =
-        sandboxHome !== undefined && sandboxHome.length > 0
-          ? { [KIMI_CODE_HOME_ENV]: sandboxHome }
-          : undefined;
+      // Forward the resolved data root into terminal-auth so the login
+      // subprocess writes credentials where this ACP server reads them. Send
+      // the modern Echadron spelling plus both migration aliases: ACP clients
+      // may launch the auth subprocess with a clean environment and older
+      // clients may still understand only the historical variable names.
       // Legacy `_meta.terminal-auth` fallback for clients that don't yet
       // honor the first-class `type:'terminal'` (Zed without the
       // AcpBetaFeatureFlag, current JetBrains plugin, etc.). `command` is
       // the absolute path to this very binary (`process.argv[1]`) so the
       // client can spawn it with `args:['login']` for the top-level
-      // `kimi login` subcommand — matches kimi-cli `acp/server.py:77-96`.
+      // The top-level login subcommand matches the historical ACP adapter
+      // contract (`acp/server.py:77-96`).
       const legacyCommand = process.argv[1];
       const builtinCommands: AvailableCommand[] = (ACP_BUILTIN_SLASH_COMMANDS as readonly AvailableCommand[]).map((cmd) => ({
         name: cmd.name,
@@ -110,7 +129,7 @@ export function registerAcpCommand(parent: Command): void {
       };
       try {
         await runAcpServer(harness, {
-          agentInfo: { name: 'Kimi Code CLI', version: getVersion() },
+          agentInfo: { name: 'Echadron', version: getVersion() },
           slashCommands: resolveSlashCommands,
           ...(terminalAuthEnv ? { terminalAuthEnv } : {}),
           ...(legacyCommand !== undefined && legacyCommand.length > 0

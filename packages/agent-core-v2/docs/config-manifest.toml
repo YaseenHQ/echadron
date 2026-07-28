@@ -230,8 +230,12 @@ merge_all_available_skills = true
   # adaptive_thinking: boolean
   # beta_api: boolean
   # support_efforts: string[]
+  # thinking_budget_min: number
+  # thinking_budget_max: number
   # default_effort: string
   # off_effort: string
+  # request_headers: record<string, string>
+  # request_body: record<string, any>
   # overrides: object
     # max_context_size: integer
     # max_input_size: integer
@@ -241,8 +245,12 @@ merge_all_available_skills = true
     # reasoning_key: string
     # adaptive_thinking: boolean
     # support_efforts: string[]
+    # thinking_budget_min: number
+    # thinking_budget_max: number
     # default_effort: string
     # off_effort: string
+    # request_headers: record<string, string>
+    # request_body: record<string, any>
 
 # ##########################################################################
 # permission
@@ -305,8 +313,12 @@ merge_all_available_skills = true
 # reasoning_key: string
 # adaptive_thinking: boolean
 # support_efforts: string[]
+# thinking_budget_min: number
+# thinking_budget_max: number
 # default_effort: string
 # off_effort: string
+# request_headers: record<string, string>
+# request_body: record<string, any>
 # model: string
 
 # ##########################################################################

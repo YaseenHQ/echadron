@@ -104,7 +104,7 @@ describe('AgentProfileService.bind', () => {
     expect(svc.data().modelAlias).toBe(MOCK_MODEL);
     expect(svc.isRunnable()).toBe(true);
     expect(svc.getActiveToolNames()?.length).toBeGreaterThan(0);
-    expect(svc.getSystemPrompt()).toContain('Kimi Code CLI');
+    expect(svc.getSystemPrompt()).toContain('Echadron');
   });
 
   it('persists the complete binding in one journal record', async () => {
@@ -148,7 +148,7 @@ describe('AgentProfileService.bind', () => {
       profileName: DEFAULT_AGENT_PROFILE_NAME,
       modelAlias: MOCK_MODEL,
       thinkingEffort: 'on',
-      systemPrompt: expect.stringContaining('Kimi Code CLI'),
+      systemPrompt: expect.stringContaining('Echadron'),
       activeToolNames: expect.arrayContaining(['Read', 'Write', 'Bash']),
       disallowedTools: [],
     });

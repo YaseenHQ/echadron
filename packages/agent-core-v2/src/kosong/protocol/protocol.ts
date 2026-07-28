@@ -64,6 +64,8 @@ export interface ProtocolProviderOptions {
   readonly vertexai?: boolean;
   readonly project?: string;
   readonly location?: string;
+  /** Safe catalog-provided request fields (for models.dev experimental modes). */
+  readonly requestBody?: Readonly<Record<string, unknown>>;
 }
 
 export interface ProtocolAdapterConfig {
