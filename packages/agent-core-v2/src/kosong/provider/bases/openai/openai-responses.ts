@@ -4,15 +4,20 @@
  * Speaks the Responses wire format: `input` items, `instructions`,
  * `reasoning` blocks with encrypted content, and the native
  * `prompt_cache_key` field (a cache key is encoded directly — no hook
- * needed). This base carries no hook surface today; per-turn intents are
- * encoded inline in the fixed contract order. The developer-role model
- * detection lives here.
+ * needed). Per-turn intents are encoded inline in the fixed contract order;
+ * the base's only hook surface is the trait-composed `convertError` option,
+ * consulted with each raw failure exactly once — the SDK error on HTTP
+ * paths, the raw event on in-stream error paths — before the base's own
+ * classification (already-converted errors crossing an outer catch pass
+ * through without re-consulting). The developer-role model detection lives
+ * here.
  */
 
 import OpenAI from 'openai';
 
 import {
   APIContextOverflowError,
+  APIProviderQuotaExhaustedError,
   APIProviderRateLimitError,
   ChatProviderError,
   isContextOverflowErrorCode,
@@ -42,6 +47,7 @@ import {
   convertOpenAIError,
   hasModelPrefix,
   isMediaPart,
+  isOpenAIInsufficientQuotaCode,
   isOpenAIReasoningModel,
   OPENAI_REASONING_CAPABILITY,
   OPENAI_VISION_TOOL_CAPABILITY,
@@ -265,11 +271,22 @@ function errorFromOpenAIResponsesEvent(
   code: string | null,
   message: string,
   param: string | null,
+  options?: {
+    readonly rawEvent?: unknown;
+    readonly convertErrorHook?: (error: unknown) => ChatProviderError | undefined;
+  },
 ): ChatProviderError {
   const formatted = formatResponsesErrorEvent(code, message, param);
   const fullMessage = `${prefix}: ${formatted}`;
+  const hooked = options?.convertErrorHook?.(options.rawEvent ?? { code, message, param });
+  if (hooked !== undefined) {
+    return hooked;
+  }
   if (isContextOverflowErrorCode(code)) {
     return new APIContextOverflowError(400, fullMessage);
+  }
+  if (isOpenAIInsufficientQuotaCode(code)) {
+    return new APIProviderQuotaExhaustedError(fullMessage);
   }
   if (code === 'rate_limit_exceeded' || readEmbeddedStatusCode(message) === 429) {
     return new APIProviderRateLimitError(fullMessage);
@@ -311,7 +328,10 @@ function parseNestedGatewayStreamError(message: string):
   };
 }
 
-function malformedStreamErrorEvent(message: string): ChatProviderError {
+function malformedStreamErrorEvent(
+  message: string,
+  convertErrorHook?: (error: unknown) => ChatProviderError | undefined,
+): ChatProviderError {
   const nested = parseNestedGatewayStreamError(message);
   if (nested !== undefined) {
     return errorFromOpenAIResponsesEvent(
@@ -319,6 +339,7 @@ function malformedStreamErrorEvent(message: string): ChatProviderError {
       nested.code,
       nested.message,
       nested.param,
+      { convertErrorHook },
     );
   }
 
@@ -327,6 +348,7 @@ function malformedStreamErrorEvent(message: string): ChatProviderError {
     null,
     message,
     null,
+    { convertErrorHook },
   );
 }
 
@@ -371,6 +393,7 @@ export interface OpenAIResponsesOptions {
   generationKwargs?: OpenAIResponsesGenerationKwargs | undefined;
   toolMessageConversion?: ToolMessageConversion | undefined;
   clientFactory?: (auth: ProviderRequestAuth) => OpenAI;
+  convertError?: (error: unknown) => ChatProviderError | undefined;
 }
 
 export interface OpenAIResponsesGenerationKwargs {
@@ -821,6 +844,9 @@ export class OpenAIResponsesStreamedMessage implements StreamedMessage {
     response: unknown,
     isStream: boolean,
     private readonly compactionSource?: CompactionSource,
+    private readonly _convertErrorHook?:
+      | ((error: unknown) => ChatProviderError | undefined)
+      | undefined,
   ) {
     if (isStream) {
       this._iter = this._convertStreamResponse(response as AsyncIterable<RawObject>);
@@ -1025,7 +1051,7 @@ export class OpenAIResponsesStreamedMessage implements StreamedMessage {
           if (!hasOwn(chunk, 'type')) {
             const message = readStringField(chunk, 'message');
             if (message !== undefined) {
-              throw malformedStreamErrorEvent(message);
+              throw malformedStreamErrorEvent(message, this._convertErrorHook);
             }
           }
           failResponsesDecode('stream event.type', 'must be a string.');
@@ -1138,6 +1164,7 @@ export class OpenAIResponsesStreamedMessage implements StreamedMessage {
               readNullableStringField(chunk, 'code') ?? null,
               message,
               readNullableStringField(chunk, 'param') ?? null,
+              { rawEvent: chunk, convertErrorHook: this._convertErrorHook },
             );
           }
           case 'response.failed': {
@@ -1149,6 +1176,7 @@ export class OpenAIResponsesStreamedMessage implements StreamedMessage {
                 error.code,
                 error.message,
                 null,
+                { rawEvent: chunk, convertErrorHook: this._convertErrorHook },
               );
             }
             throw new ChatProviderError(
@@ -1160,7 +1188,7 @@ export class OpenAIResponsesStreamedMessage implements StreamedMessage {
         }
       }
     } catch (error: unknown) {
-      throw convertOpenAIError(error);
+      throw convertOpenAIError(error, this._convertErrorHook);
     }
   }
 }
@@ -1180,6 +1208,7 @@ export class OpenAIResponsesChatProvider implements ChatProvider {
   private readonly _client: OpenAI | undefined;
   private readonly _httpClient: unknown;
   private readonly _clientFactory: ((auth: ProviderRequestAuth) => OpenAI) | undefined;
+  private readonly _convertErrorHook: ((error: unknown) => ChatProviderError | undefined) | undefined;
 
   constructor(options: OpenAIResponsesOptions) {
     const apiKey = options.apiKey ?? process.env['OPENAI_API_KEY'];
@@ -1194,6 +1223,7 @@ export class OpenAIResponsesChatProvider implements ChatProvider {
     this._toolMessageConversion = options.toolMessageConversion ?? null;
     this._httpClient = options.httpClient;
     this._clientFactory = options.clientFactory;
+    this._convertErrorHook = options.convertError;
 
     if (options.maxOutputTokens !== undefined) {
       this._generationKwargs.max_output_tokens = options.maxOutputTokens;
@@ -1331,9 +1361,14 @@ export class OpenAIResponsesChatProvider implements ChatProvider {
           create(params: unknown, opts?: unknown): Promise<unknown>;
         }
       ).create(createParams, options?.signal ? { signal: options.signal } : undefined);
-      return new OpenAIResponsesStreamedMessage(response, this._stream, compactionSource);
+      return new OpenAIResponsesStreamedMessage(
+        response,
+        this._stream,
+        compactionSource,
+        this._convertErrorHook,
+      );
     } catch (error: unknown) {
-      throw convertOpenAIError(error);
+      throw convertOpenAIError(error, this._convertErrorHook);
     }
   }
 
@@ -1381,7 +1416,7 @@ export class OpenAIResponsesChatProvider implements ChatProvider {
         baseUrl: options?.auth?.baseUrl ?? this._baseUrl,
       });
     } catch (error: unknown) {
-      throw convertOpenAIError(error);
+      throw convertOpenAIError(error, this._convertErrorHook);
     }
   }
 

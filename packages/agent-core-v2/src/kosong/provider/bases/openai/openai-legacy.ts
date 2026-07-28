@@ -26,7 +26,7 @@
 
 import OpenAI from 'openai';
 
-import { parseTraceId } from '#/kosong/contract/errors';
+import { parseTraceId, type ChatProviderError } from '#/kosong/contract/errors';
 import type {
   ContentPart,
   Message,
@@ -105,6 +105,7 @@ export const OPENAI_CHAT_TOOL_CALL_ID_POLICY: ToolCallIdPolicy = {
  */
 export interface OpenAIChatCompletionsHooks {
   convertTool?: (tool: Tool) => Record<string, unknown> | undefined;
+  convertError?: (error: unknown) => ChatProviderError | undefined;
   convertMessage?: (
     message: Message,
     converted: Record<string, unknown>,
@@ -382,6 +383,9 @@ export class OpenAILegacyStreamedMessage implements StreamedMessage {
     private readonly _extractUsageHook?:
       | ((chunk: Record<string, unknown>) => Record<string, unknown> | null | undefined)
       | undefined,
+    private readonly _convertErrorHook?:
+      | ((error: unknown) => ChatProviderError | undefined)
+      | undefined,
   ) {
     if (isStream) {
       this._iter = this._convertStreamResponse(
@@ -516,7 +520,7 @@ export class OpenAILegacyStreamedMessage implements StreamedMessage {
         }
       }
     } catch (error: unknown) {
-      throw convertOpenAIError(error);
+      throw convertOpenAIError(error, this._convertErrorHook);
     }
   }
 }
@@ -696,9 +700,10 @@ export class OpenAILegacyChatProvider implements ChatProvider {
         this._reasoningKeyDialect,
         parseTraceId(response.headers),
         this._hooks?.extractUsage,
+        this._hooks?.convertError,
       );
     } catch (error: unknown) {
-      throw convertOpenAIError(error);
+      throw convertOpenAIError(error, this._hooks?.convertError);
     }
   }
 

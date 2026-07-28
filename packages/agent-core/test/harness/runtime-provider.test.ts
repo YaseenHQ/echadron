@@ -1,3 +1,4 @@
+import { classifyKimiQuotaError } from '@moonshot-ai/kosong';
 import { describe, expect, it, vi } from 'vitest';
 
 import type { KimiConfig, ModelAlias } from '../../src/config';
@@ -1277,6 +1278,11 @@ describe('per-model protocol routing', () => {
       model: 'kimi-for-coding',
       baseUrl: 'https://api.example',
     });
+    // Kimi over the Anthropic transport keeps its vendor error classifier —
+    // a Moonshot quota 429 must fail fast on this route too.
+    expect(
+      (resolved.provider as { convertError?: (error: unknown) => unknown }).convertError,
+    ).toBe(classifyKimiQuotaError);
   });
 
   it('keeps a model without protocol on the provider wire type and leaves the REST base intact', () => {
@@ -1315,6 +1321,10 @@ describe('per-model protocol routing', () => {
       model: 'claude-sonnet-4-5',
       baseUrl: 'https://api.anthropic.example/v1',
     });
+    // A plain anthropic provider carries no Kimi vendor classifier.
+    expect(
+      (resolved.provider as { convertError?: (error: unknown) => unknown }).convertError,
+    ).toBeUndefined();
   });
 });
 
