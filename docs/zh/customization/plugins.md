@@ -82,7 +82,7 @@ Kimi Datasource 是 Kimi Code 官方数据插件，让你通过自然语言直�
 2. 找到 **Kimi Datasource**，按 `Enter` 安装
 3. 安装完成后运行 `/reload` 或 `/new` 激活 plugin
 
-使用 Kimi Datasource 会消耗 Kimi Code 计划额度，安装结果会对此进行提示。当前最新版本为 v3.3.0。插件安装后不会自动更新，如需升级到新版本，重新执行上述安装步骤即可。
+使用 Kimi Datasource 会消耗你的 Kimi Code 套餐额度，安装结果中会提示这一点。当前最新版本为 v3.3.0。插件安装后不会自动更新，如需升级到新版本，重新执行上述安装步骤即可。
 
 ### 使用方式
 

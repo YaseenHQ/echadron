@@ -1,18 +1,17 @@
 /**
  * `hostIdentity` domain (L3) — runtime identity of the embedding host.
  *
- * Composition roots may provide a product name and reply-style guide for the
- * system prompt. The registered default leaves both unset so standalone engine
- * consumers retain the existing CLI defaults.
+ * Holds process-level overrides the host product (CLI, desktop, …) injects at
+ * the composition root: `productName` fills the `${product_name}` slot in the
+ * base system-prompt template, `replyStyleGuide` replaces the
+ * `${reply_style_guide}` block (the CLI default describes Markdown rendering
+ * in a terminal). Composition roots set them through {@link hostIdentitySeed};
+ * the registered default carries no overrides, so the template renders its CLI
+ * defaults. Bound at App scope.
  */
 
 import { createDecorator, type ServiceIdentifier } from '#/_base/di/instantiation';
-import { InstantiationType } from '#/_base/di/extensions';
-import {
-  LifecycleScope,
-  registerScopedService,
-  type ScopeSeed,
-} from '#/_base/di/scope';
+import { LifecycleScope, registerScopedService, ScopeActivation, type ScopeSeed } from '#/_base/di/scope';
 
 export interface HostIdentityOverrides {
   readonly productName?: string;
@@ -52,6 +51,6 @@ registerScopedService(
   LifecycleScope.App,
   IHostIdentity,
   HostIdentity,
-  InstantiationType.Eager,
+  ScopeActivation.OnScopeCreated,
   'hostIdentity',
 );

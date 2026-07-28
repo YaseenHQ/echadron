@@ -1,10 +1,9 @@
 /**
- * Server telemetry bootstrap for the v2 engine.
- *
- * Web sessions run inside kap-server rather than the CLI process. Without an
- * appender, the v2 telemetry service records events but routes them to its
- * null appender. This opt-in host integration attaches the durable,
- * privacy-filtering cloud appender before any session can be created.
+ * Server telemetry bootstrap — wires agent-core-v2's `CloudAppender` into the
+ * App-scoped `ITelemetryService` so web-hosted engine events leave the process.
+ * The appender is durable and privacy-filtering, and is attached before any
+ * session can be created. The config toggle and both current and legacy
+ * environment opt-outs are honored at startup.
  */
 
 import {
@@ -49,6 +48,7 @@ export async function initializeServerTelemetry(
   const config = core.accessor.get(IConfigService);
   await config.ready;
   if (config.get('telemetry') === false || isTelemetryDisabledByEnv(core)) return {};
+  const service = core.accessor.get(ITelemetryService);
 
   const auth = core.accessor.get(IOAuthToolkit);
   const appender = createCloudAppender(core.accessor, {
@@ -59,8 +59,9 @@ export async function initializeServerTelemetry(
     getAccessToken: async () =>
       (await auth.getCachedAccessToken(KIMI_CODE_PROVIDER_NAME)) ?? null,
   });
-  const registration = core.accessor.get(ITelemetryService).addAppender(appender);
+  const registration = service.addAppender(appender);
   try {
+    // The server is long-lived: flush on a timer, not only at the threshold.
     appender.startPeriodicFlush();
   } catch (error) {
     registration.dispose();

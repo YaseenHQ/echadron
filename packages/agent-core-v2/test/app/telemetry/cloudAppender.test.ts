@@ -126,7 +126,7 @@ describe('CloudAppender', () => {
     expect(event?.['context_model']).toBe('switched-model');
   });
 
-  it('uses an event sessionId when it differs from appender context', async () => {
+  it('uses the event sessionId for top-level session_id when it differs from appender context', async () => {
     const requests: CapturedRequest[] = [];
     const appender = new CloudAppender(
       baseOptions({

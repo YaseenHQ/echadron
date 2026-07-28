@@ -13,7 +13,11 @@
  * context fields render as empty strings when missing and the composed
  * `*_section` / `windows_notes` blocks are empty unless their content exists,
  * so templates can place them on their own line without leaving stray
- * headings behind. `renderPromptTemplate` renders a user-owned template (an
+ * headings behind. Host-identity blocks (`product_name`, `reply_style_guide`)
+ * work the same way: the context may carry overrides seeded by the embedding
+ * host (e.g. a desktop app), and the table falls back to the CLI defaults
+ * ({@link DEFAULT_PRODUCT_NAME}, {@link DEFAULT_REPLY_STYLE_GUIDE}) when it
+ * does not. `renderPromptTemplate` renders a user-owned template (an
  * agent-file body or `SYSTEM.md`) against the table; `${base_prompt}` is
  * bound to the default profile's prompt when a `basePrompt` is given,
  * resolved lazily and only when the template actually references it. Also

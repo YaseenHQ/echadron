@@ -12,14 +12,14 @@
  * `_compacting` (the in-flight job — AbortController / Promise / trace), the
  * `hooks.onWillCompact` slot, the `_onDidFinishCompaction` Emitter, the
  * `strategy`, and the lazily-resolved `contextInjectorService` stay instance
- * fields (mechanism, not plain data). Bound at Agent scope; Eager so the
- * overflow recovery handler registers before the first turn runs.
+ * fields (mechanism, not plain data). Bound at Agent scope and constructed with
+ * the scope so the overflow recovery handler registers before the first turn
+ * runs.
  */
 
 import { Disposable } from "#/_base/di/lifecycle";
-import { InstantiationType } from '#/_base/di/extensions';
 import { IInstantiationService } from '#/_base/di/instantiation';
-import { LifecycleScope, registerScopedService } from '#/_base/di/scope';
+import { LifecycleScope, ScopeActivation, registerScopedService } from '#/_base/di/scope';
 import { ILogService } from '#/_base/log/log';
 import { defineState } from '#/_base/state/stateRegistry';
 import { renderPrompt } from "#/_base/utils/render-prompt";
@@ -426,8 +426,7 @@ export class AgentFullCompactionService extends Disposable implements IAgentFull
     };
   }
 
-  /** Scope disposal is the fallback abort path; normal agent teardown aborts
-   *  and awaits the exposed task before disposing the scope. */
+  /** Scope disposal is the abort path: tear down any in-flight compaction. */
   override dispose(): void {
     if (this._compacting !== null && !this._compacting.abortController.signal.aborted) {
       this._compacting.abortController.abort();
@@ -991,6 +990,6 @@ registerScopedService(
   LifecycleScope.Agent,
   IAgentFullCompactionService,
   AgentFullCompactionService,
-  InstantiationType.Eager,
+  ScopeActivation.OnScopeCreated,
   'fullCompaction',
 );

@@ -110,10 +110,16 @@ export interface ServerStartOptions {
    * unset unless a second, distinct RPC credential is genuinely needed.
    */
   readonly rpcToken?: string;
-  /** Host product identity used by the engine's base system prompt. */
-  readonly hostIdentity?: HostIdentityOverrides;
   /** Extra scope seeds applied at bootstrap (e.g. a host-provided `ISessionModelResolver`). */
   readonly seeds?: ScopeSeed;
+  /**
+   * Host product identity injected into the base system prompt: `productName`
+   * fills the `${product_name}` slot, `replyStyleGuide` replaces the
+   * `${reply_style_guide}` block. Applied to every agent the server hosts — for
+   * embedding hosts (e.g. a desktop app), not per-session use. Defaults render
+   * the CLI text.
+   */
+  readonly hostIdentity?: HostIdentityOverrides;
   /**
    * Explicit skill directories for this process (v1's SDK `skillDirs`): when
    * non-empty, default user / project skill discovery is skipped and these
@@ -230,6 +236,11 @@ export async function startServer(opts: ServerStartOptions = {}): Promise<Runnin
     ...(opts.seeds ?? []),
   ]);
 
+  // Attach the cloud telemetry appender BEFORE any session is created:
+  // `session_started` / `session_load_failed` fire inside create()/resume(), so
+  // an appender wired later would drop them to the null appender. Opt-in via
+  // `opts.telemetry` (off by default so tests never post to the real endpoint);
+  // best-effort — telemetry must never block server boot.
   let telemetry: ServerTelemetry = {};
   if (opts.telemetry === true) {
     try {
@@ -321,6 +332,7 @@ export async function startServer(opts: ServerStartOptions = {}): Promise<Runnin
     await app.close();
     authFailureLimiter?.dispose();
     modelCatalogRefreshScheduler.dispose();
+    // Telemetry is best-effort and must never prevent core or instance cleanup.
     try {
       await shutdownServerTelemetry(telemetry);
     } catch (error) {

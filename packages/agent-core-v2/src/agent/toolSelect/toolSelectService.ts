@@ -11,9 +11,8 @@
  * at Agent scope.
  */
 
-import { InstantiationType } from '#/_base/di/extensions';
 import { Disposable } from '#/_base/di/lifecycle';
-import { LifecycleScope, registerScopedService } from '#/_base/di/scope';
+import { LifecycleScope, ScopeActivation, registerScopedService } from '#/_base/di/scope';
 import { defineState } from '#/_base/state/stateRegistry';
 import { IEventBus } from '#/app/event/eventBus';
 import { IFlagService } from '#/app/flag/flag';
@@ -76,16 +75,21 @@ export class AgentToolSelectService extends Disposable implements IAgentToolSele
     this._register(
       eventBus.subscribe('context.spliced', (splice) => {
         if (splice.deleteCount === 0 || this.pendingLoaded.size === 0) return;
-        const landed = collectLoadedDynamicToolNames(this.context.get());
-        for (const name of this.pendingLoaded) {
-          if (!landed.has(name)) this.pendingLoaded.delete(name);
-        }
+        this.dropPendingLoadedNotLanded();
       }),
     );
   }
 
   private get pendingLoaded(): Set<string> {
     return this.states.get(toolSelectPendingLoadedKey);
+  }
+
+  private dropPendingLoadedNotLanded(): void {
+    if (this.pendingLoaded.size === 0) return;
+    const landed = collectLoadedDynamicToolNames(this.context.get());
+    for (const name of this.pendingLoaded) {
+      if (!landed.has(name)) this.pendingLoaded.delete(name);
+    }
   }
 
   enabled(): boolean {
@@ -330,6 +334,6 @@ registerScopedService(
   LifecycleScope.Agent,
   IAgentToolSelectService,
   AgentToolSelectService,
-  InstantiationType.Eager,
+  ScopeActivation.OnScopeCreated,
   'toolSelect',
 );
