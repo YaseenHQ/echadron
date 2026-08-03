@@ -11,7 +11,6 @@ import {
   catalogProviderModels,
   CatalogFetchError,
   DEFAULT_CATALOG_URL,
-  fetchCatalog,
   resolveCatalogImport,
   type Catalog,
   type ThinkingEffort,

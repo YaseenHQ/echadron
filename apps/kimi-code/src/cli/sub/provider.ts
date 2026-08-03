@@ -25,7 +25,6 @@ import {
   CatalogFetchError,
   createKimiHarness,
   DEFAULT_CATALOG_URL,
-  fetchCatalog,
   resolveCatalogImport,
   type Catalog,
   type CatalogProviderEntry,
