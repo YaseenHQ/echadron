@@ -519,7 +519,7 @@ export class SessionSubagentHost {
    * subagent keeps the model it was bound to at spawn (Echadron PR #4: profile
    * pin + recorded child model both stick across resume/retry).
    */
-  private reInheritParentModel(parent: Agent, child: Agent, _profileName?: string): void {
+  private reInheritParentModel(_parent: Agent, _child: Agent, _profileName?: string): void {
     if (this.session.experimentalFlags.enabled('secondary-model')) return;
     // Experiment off: the child keeps its recorded model. Do not re-sync.
   }

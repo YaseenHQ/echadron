@@ -30,7 +30,6 @@ import { restoreTerminalModes } from '#/utils/terminal-restore';
 
 import type { CLIOptions } from './options';
 import { resolveAgentProfileSelection } from './agent-selection';
-import { isKimiV2Enabled } from './experimental-v2';
 import { createCliTelemetryBootstrap, initializeCliTelemetry } from './telemetry';
 import { createKimiCodeHostIdentity } from './version';
 
