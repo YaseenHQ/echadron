@@ -35,6 +35,7 @@ import {
 import type { Command } from 'commander';
 
 import { createKimiCodeHostIdentity, createKimiCodeUserAgent } from '#/cli/version';
+import { fetchCatalogOrBuiltIn } from '#/utils/catalog-fetch';
 import { readFreshModelsDevCatalog } from '#/cli/models/catalog-cache';
 import { getDataDir } from '#/utils/paths';
 
@@ -447,7 +448,11 @@ async function loadCatalogOrExit(deps: ProviderDeps, url: string): Promise<Catal
       const cached = await readFreshModelsDevCatalog();
       if (cached !== undefined) return cached;
     }
-    return await fetchCatalog(url, { userAgent: createKimiCodeUserAgent() });
+    const result = await fetchCatalogOrBuiltIn(url, { userAgent: createKimiCodeUserAgent() });
+    if (result.fromBuiltIn) {
+      deps.stderr.write('Catalog fetch failed; using the bundled offline snapshot.\n');
+    }
+    return result.catalog;
   } catch (error) {
     const suffix = error instanceof CatalogFetchError ? ` (HTTP ${String(error.status)})` : '';
     deps.stderr.write(`Failed to fetch catalog from ${url}${suffix}: ${errorMessage(error)}\n`);
