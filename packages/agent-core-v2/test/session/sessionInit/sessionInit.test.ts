@@ -89,6 +89,8 @@ describe('SessionInitService', () => {
       accessor: {
         get: (id: unknown) => {
           if (id === IAgentPermissionModeService) return permissionMode;
+          if (id === IAgentProfileService)
+            return { republishStatus, getEffectiveThinkingLevel: () => 'off' };
           return undefined;
         },
       },
@@ -153,6 +155,8 @@ describe('SessionInitService', () => {
         subagentName: 'coder',
         parentToolCallId: 'generate-agents-md',
         callerAgentId: 'main',
+        model: 'mock-model',
+        thinkingEffort: 'off',
       }),
     );
     expect(events).toContainEqual(

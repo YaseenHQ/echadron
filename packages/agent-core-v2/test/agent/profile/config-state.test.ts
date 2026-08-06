@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { IAgentLLMRequesterService } from '#/agent/llmRequester/llmRequester';
 import { IAgentProfileService } from '#/agent/profile/profile';
+import { SECONDARY_DERIVED_MODEL_ID } from '#/app/kosongConfig/secondaryModelOverlay';
 import type { ModelRecord } from '#/kosong/model/model';
 import {
   configServices,
@@ -86,6 +87,64 @@ describe('ConfigState model capabilities', () => {
       tool_use: true,
       max_context_tokens: 1_000_000,
     });
+  });
+
+  it('republishes the model status slice on demand', () => {
+    kimiConfig = {
+      providers: {
+        kimi: {
+          type: 'kimi',
+          apiKey: 'test-key',
+          baseUrl: 'https://api.example.test/v1',
+        },
+      },
+      models: {
+        'kimi-code/kimi-for-coding': {
+          provider: 'kimi',
+          model: 'kimi-for-coding',
+          maxContextSize: 1_000_000,
+          supportEfforts: ['low', 'high'],
+        },
+      },
+    };
+    profile.update({ modelAlias: 'kimi-code/kimi-for-coding' });
+    const before = ctx.allEvents.filter((entry) => entry.event === 'agent.status.updated').length;
+
+    profile.republishStatus();
+
+    const statuses = ctx.allEvents.filter((entry) => entry.event === 'agent.status.updated');
+    expect(statuses).toHaveLength(before + 1);
+    expect(statuses.at(-1)?.args).toMatchObject({
+      model: 'kimi-code/kimi-for-coding',
+      maxContextTokens: 1_000_000,
+    });
+  });
+
+  it('reports the recipe base alias when bound to the derived secondary entry', () => {
+    kimiConfig = {
+      providers: {},
+      secondaryModel: { model: 'provider/secondary', defaultEffort: 'low' },
+    } as TestKimiConfig;
+
+    profile.update({ modelAlias: SECONDARY_DERIVED_MODEL_ID });
+
+    const statuses = ctx.allEvents.filter((entry) => entry.event === 'agent.status.updated');
+    const last = statuses.at(-1)?.args as { model?: string };
+    expect(last.model).toBe('provider/secondary');
+  });
+
+  it('omits maxContextTokens when the bound model no longer resolves', () => {
+    // `update` accepts an alias without validating resolvability; a model entry
+    // removed from config afterwards lands in the same state. The capabilities
+    // then fall back to UNKNOWN_CAPABILITY, whose 0 means "unknown" — the
+    // status event must drop the field rather than publish 0.
+    profile.update({ modelAlias: 'ghost/model' });
+
+    const statuses = ctx.allEvents.filter((entry) => entry.event === 'agent.status.updated');
+    expect(statuses.length).toBeGreaterThan(0);
+    const last = statuses.at(-1)?.args as { model?: string; maxContextTokens?: number };
+    expect(last.model).toBe('ghost/model');
+    expect(last.maxContextTokens).toBeUndefined();
   });
 
   it('tracks thinking_toggle with the effort payload when effort changes', () => {
