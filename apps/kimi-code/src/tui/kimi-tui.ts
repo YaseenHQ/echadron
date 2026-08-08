@@ -180,6 +180,8 @@ export type {
 
 export interface KimiTUIStartupInput {
   readonly cliOptions: CLIOptions;
+  /** Profile name resolved from cliOptions --agent/--agent-file (see resolveAgentProfileSelection). */
+  readonly agentProfile?: string;
   readonly additionalDirs?: readonly string[];
   readonly tuiConfig: TuiConfig;
   readonly version: string;
@@ -406,6 +408,8 @@ export class KimiTUI {
         auto: startupInput.cliOptions.auto,
         plan: startupInput.cliOptions.plan,
         model: startupInput.cliOptions.model,
+        agentProfile: startupInput.agentProfile,
+        agentFiles: startupInput.cliOptions.agentFiles,
         startupNotice: startupInput.startupNotice,
       },
     };
@@ -765,6 +769,10 @@ export class KimiTUI {
       model: startup.model,
       permission: startup.auto ? 'auto' : startup.yolo ? 'yolo' : undefined,
       planMode: startup.plan ? true : undefined,
+      // --agent/--agent-file bind the startup session only; sessions created
+      // later in this process fall back to the default profile.
+      agentProfile: startup.agentProfile,
+      agentFiles: startup.agentFiles?.length ? [...startup.agentFiles] : undefined,
     };
     if (this.state.appState.additionalDirs.length > 0) {
       createSessionOptions.additionalDirs = [...this.state.appState.additionalDirs];
