@@ -1,5 +1,5 @@
 ---
-"@moonshot-ai/kimi-code": minor
+"@yaseenhq/echadron": minor
 ---
 
 Support Markdown-defined custom agents on agent-core.
