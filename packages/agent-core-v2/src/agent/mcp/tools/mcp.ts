@@ -10,8 +10,9 @@
  *   client-side schema validation) → the error is rethrown; reconnecting
  *   would not change the answer.
  * - The failure is ambiguous (a raw fetch/socket error) → the client is
- *   probed with a ping: alive means a transient blip and the call is
- *   retried once in place; dead means the transport is gone.
+ *   probed with a read-only `tools/list` request: alive means a transient
+ *   blip and the call is retried once in place; dead means the transport is
+ *   gone.
  * - The transport is provably dead (the SDK fired `onclose`, or the probe
  *   failed) → the server is reconnected once through `options.reconnect`
  *   and the call retried on the fresh client, so a dropped connection

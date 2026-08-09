@@ -45,19 +45,18 @@ export interface MCPToolDefinition {
 }
 
 export interface MCPClient {
-  listTools(): Promise<MCPToolDefinition[]>;
+  /**
+   * Lists the server's tools. The optional signal is used for the
+   * post-failure liveness probe; MCP 2026-07-28 removed the protocol-level
+   * `ping` method, so a read-only `tools/list` round trip is the portable
+   * transport check.
+   */
+  listTools(signal?: AbortSignal): Promise<MCPToolDefinition[]>;
   callTool(
     name: string,
     args: Record<string, unknown>,
     signal?: AbortSignal,
   ): Promise<MCPToolResult>;
-  /**
-   * Sends a protocol-level `ping` with a short built-in timeout, so a hung
-   * server rejects instead of blocking. Used to probe liveness after an
-   * ambiguous call failure; a server that answers in any way — even with
-   * `MethodNotFound` — proves the transport is usable.
-   */
-  ping(signal?: AbortSignal): Promise<void>;
 }
 
 export function assertMcpInputSchema(

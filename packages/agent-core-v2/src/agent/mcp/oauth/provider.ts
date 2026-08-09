@@ -102,6 +102,9 @@ export class McpOAuthClientProvider implements OAuthClientProvider {
 
   get clientMetadata(): OAuthClientMetadata {
     return {
+      // This client uses a loopback redirect, so identify it as a native
+      // application during Dynamic Client Registration (SEP-837).
+      application_type: 'native',
       redirect_uris: [this.effectiveRedirectUri()],
       token_endpoint_auth_method: 'none',
       grant_types: ['authorization_code', 'refresh_token'],

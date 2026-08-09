@@ -143,6 +143,7 @@ describe('MCP OAuth credential identity', () => {
     } satisfies OAuthClientInformationFull);
 
     expect(provider.redirectUrl).toBe('http://127.0.0.1:45678/callback');
+    expect(provider.clientMetadata.application_type).toBe('native');
     expect(provider.clientMetadata.redirect_uris).toEqual(['http://127.0.0.1:45678/callback']);
   });
 
