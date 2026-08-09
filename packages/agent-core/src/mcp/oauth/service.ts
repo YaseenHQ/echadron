@@ -22,7 +22,7 @@
  *     `reconnect` to swap the synthetic tool out for the real MCP tools.
  */
 
-import { auth, type OAuthClientProvider } from '@modelcontextprotocol/sdk/client/auth.js';
+import { auth, type OAuthClientProvider } from '@modelcontextprotocol/client';
 
 import { startCallbackServer, type CallbackServer } from './callback-server';
 import { McpOAuthClientProvider } from './provider';
@@ -160,7 +160,7 @@ export class McpOAuthService {
         throw new Error('OAuth flow already completed or cancelled');
       }
       try {
-        const { code, state } = await callbackServer.waitForCode({
+        const { code, state, iss } = await callbackServer.waitForCode({
           signal: opts.signal,
           timeoutMs: opts.timeoutMs,
         });
@@ -171,6 +171,9 @@ export class McpOAuthService {
         const finalResult = await auth(provider as OAuthClientProvider, {
           serverUrl,
           authorizationCode: code,
+          // MCP 2026 requires the callback issuer to be validated against the
+          // authorization server that was discovered before redeeming a code.
+          iss,
         });
         if (finalResult !== 'AUTHORIZED') {
           throw new Error(`OAuth code exchange returned "${finalResult}" instead of AUTHORIZED`);

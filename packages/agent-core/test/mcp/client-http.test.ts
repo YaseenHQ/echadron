@@ -178,6 +178,106 @@ async function startInProcessHttpMcpServer(opts?: {
 }
 
 describe('HttpMcpClient', () => {
+  it('negotiates MCP 2026 stateless HTTP and sends per-request routing metadata', async () => {
+    type ModernRequest = {
+      method: string;
+      id: string | number;
+      params: {
+        _meta: Record<string, unknown>;
+        arguments?: Record<string, unknown>;
+      };
+    };
+    const requests: Array<{
+      readonly headers: Record<string, string>;
+      readonly body: ModernRequest;
+    }> = [];
+    const fetchModern: typeof fetch = async (_input, init) => {
+      if (typeof init?.body !== 'string') throw new Error('expected a JSON MCP request body');
+      const body = JSON.parse(init.body) as ModernRequest;
+      const headers = Object.fromEntries(new Headers(init?.headers).entries());
+      requests.push({ headers, body });
+
+      let result: Record<string, any>;
+      if (body.method === 'server/discover') {
+        result = {
+          resultType: 'complete',
+          supportedVersions: ['2026-07-28'],
+          capabilities: { tools: {} },
+          _meta: {
+            'io.modelcontextprotocol/serverInfo': {
+              name: 'modern-test-server',
+              version: '1.0.0',
+            },
+          },
+        };
+      } else if (body.method === 'tools/list') {
+        result = {
+          resultType: 'complete',
+          tools: [
+            {
+              name: 'echo',
+              description: 'Echoes text',
+              inputSchema: {
+                type: 'object',
+                properties: {
+                  text: { type: 'string' },
+                  region: { type: 'string', 'x-mcp-header': 'Region' },
+                },
+                required: ['text', 'region'],
+              },
+            },
+          ],
+          ttlMs: 60_000,
+          cacheScope: 'private',
+        };
+      } else if (body.method === 'tools/call') {
+        const textValue = body.params.arguments?.['text'];
+        result = {
+          resultType: 'complete',
+          content: [{ type: 'text', text: typeof textValue === 'string' ? textValue : '' }],
+          isError: false,
+        };
+      } else {
+        throw new Error(`unexpected MCP method: ${body.method}`);
+      }
+
+      return new Response(JSON.stringify({ jsonrpc: '2.0', id: body.id, result }), {
+        headers: { 'content-type': 'application/json' },
+      });
+    };
+
+    const client = new HttpMcpClient(
+      { transport: 'http', url: 'https://modern.example.test/mcp' },
+      { fetch: fetchModern },
+    );
+    try {
+      await client.connect();
+      const tools = await client.listTools();
+      const result = await client.callTool('echo', { text: 'modern http', region: 'us-east-1' });
+
+      expect(tools.map((tool) => tool.name)).toEqual(['echo']);
+      expect(result.content).toEqual([{ type: 'text', text: 'modern http' }]);
+      expect(requests.map(({ body }) => body.method)).toEqual([
+        'server/discover',
+        'tools/list',
+        'tools/call',
+      ]);
+      for (const { headers, body } of requests) {
+        expect(headers['mcp-protocol-version']).toBe('2026-07-28');
+        expect(headers['mcp-method']).toBe(body.method);
+        expect(headers['mcp-session-id']).toBeUndefined();
+        expect(body.params._meta['io.modelcontextprotocol/protocolVersion']).toBe('2026-07-28');
+        expect(body.params._meta['io.modelcontextprotocol/clientInfo']).toMatchObject({
+          name: 'kimi-code',
+        });
+      }
+      expect(requests[2]?.headers['mcp-name']).toBe('echo');
+      expect(requests[2]?.headers['mcp-param-region']).toBe('us-east-1');
+    } finally {
+      await client.close();
+    }
+  });
+
   it('connects, lists tools, and round-trips a call over real HTTP', async () => {
     const server = await startInProcessHttpMcpServer();
     cleanups.push(server.close);

@@ -1,7 +1,9 @@
 import type { McpServerSseConfig } from './config-schema';
-import { Client } from '@modelcontextprotocol/sdk/client/index.js';
-import type { OAuthClientProvider } from '@modelcontextprotocol/sdk/client/auth.js';
-import { SSEClientTransport, SseError } from '@modelcontextprotocol/sdk/client/sse.js';
+import {
+  Client,
+  SSEClientTransport,
+  type OAuthClientProvider,
+} from '@modelcontextprotocol/client';
 
 import {
   buildRequestOptions,
@@ -23,6 +25,7 @@ export interface SseMcpClientOptions {
   readonly toolCallTimeoutMs?: number;
   readonly envLookup?: (name: string) => string | undefined;
   readonly fetch?: typeof fetch;
+  readonly onToolsChanged?: (tools: MCPToolDefinition[]) => void;
   readonly oauthProvider?: OAuthClientProvider;
 }
 
@@ -49,10 +52,29 @@ export class SseMcpClient implements MCPClient {
       fetch: options.fetch,
       authProvider: options.oauthProvider,
     });
-    this.client = new Client({
-      name: options.clientName ?? KIMI_MCP_CLIENT_NAME,
-      version: options.clientVersion ?? KIMI_MCP_CLIENT_VERSION,
-    });
+    this.client = new Client(
+      {
+        name: options.clientName ?? KIMI_MCP_CLIENT_NAME,
+        version: options.clientVersion ?? KIMI_MCP_CLIENT_VERSION,
+      },
+      {
+        versionNegotiation: { mode: 'auto' },
+        ...(options.onToolsChanged === undefined
+          ? {}
+          : {
+              listChanged: {
+                tools: {
+                  onChanged: (error: Error | null, tools?: readonly unknown[] | null) => {
+                    if (error !== null || tools === undefined || tools === null) return;
+                    options.onToolsChanged?.(
+                      tools.map((tool) => toMcpToolDefinition(tool as Parameters<typeof toMcpToolDefinition>[0])),
+                    );
+                  },
+                },
+              },
+            }),
+      },
+    );
     this.startupTimeoutMs = options.startupTimeoutMs;
     this.toolCallTimeoutMs = options.toolCallTimeoutMs;
   }
@@ -109,7 +131,7 @@ export class SseMcpClient implements MCPClient {
     signal?: AbortSignal,
   ): Promise<MCPToolResult> {
     const requestOptions = buildRequestOptions(this.toolCallTimeoutMs, signal);
-    const result = await this.client.callTool({ name, arguments: args }, undefined, requestOptions);
+    const result = await this.client.callTool({ name, arguments: args }, requestOptions);
     return toMcpToolResult(result);
   }
 
@@ -155,5 +177,5 @@ export class SseMcpClient implements MCPClient {
 
 export function isTerminalSseTransportError(error: Error): boolean {
   if (error.name === 'UnauthorizedError') return true;
-  return error instanceof SseError && error.code !== undefined;
+  return typeof (error as Error & { readonly code?: unknown }).code === 'number';
 }

@@ -1,7 +1,9 @@
 import type { McpServerHttpConfig } from '#/config/schema';
-import { Client } from '@modelcontextprotocol/sdk/client/index.js';
-import type { OAuthClientProvider } from '@modelcontextprotocol/sdk/client/auth.js';
-import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
+import {
+  Client,
+  StreamableHTTPClientTransport,
+  type OAuthClientProvider,
+} from '@modelcontextprotocol/client';
 
 import {
   buildRequestOptions,
@@ -29,6 +31,8 @@ export interface HttpMcpClientOptions {
    * Lets tests inject a fake `fetch` for the underlying transport.
    */
   readonly fetch?: typeof fetch;
+  /** Called when the server publishes a new tools/list result. */
+  readonly onToolsChanged?: (tools: MCPToolDefinition[]) => void;
   /**
    * OAuth client provider attached to the transport. Set only when the server
    * has no static token configuration; the SDK uses this to handle 401s with
@@ -74,10 +78,33 @@ export class HttpMcpClient implements MCPClient {
       fetch: options.fetch,
       authProvider: options.oauthProvider,
     });
-    this.client = new Client({
-      name: options.clientName ?? KIMI_MCP_CLIENT_NAME,
-      version: options.clientVersion ?? KIMI_MCP_CLIENT_VERSION,
-    });
+    this.client = new Client(
+      {
+        name: options.clientName ?? KIMI_MCP_CLIENT_NAME,
+        version: options.clientVersion ?? KIMI_MCP_CLIENT_VERSION,
+      },
+      {
+        // Probe modern stateless MCP first, then fall back to the legacy
+        // initialize/session exchange for servers that have not migrated yet.
+        // Keeping negotiation in the SDK lets the same client handle both
+        // eras without pinning the user's configuration to a revision.
+        versionNegotiation: { mode: 'auto' },
+        ...(options.onToolsChanged === undefined
+          ? {}
+          : {
+              listChanged: {
+                tools: {
+                  onChanged: (error: Error | null, tools?: readonly unknown[] | null) => {
+                    if (error !== null || tools === undefined || tools === null) return;
+                    options.onToolsChanged?.(
+                      tools.map((tool) => toMcpToolDefinition(tool as Parameters<typeof toMcpToolDefinition>[0])),
+                    );
+                  },
+                },
+              },
+            }),
+      },
+    );
     this.startupTimeoutMs = options.startupTimeoutMs;
     this.toolCallTimeoutMs = options.toolCallTimeoutMs;
   }
@@ -141,7 +168,7 @@ export class HttpMcpClient implements MCPClient {
     signal?: AbortSignal,
   ): Promise<MCPToolResult> {
     const requestOptions = buildRequestOptions(this.toolCallTimeoutMs, signal);
-    const result = await this.client.callTool({ name, arguments: args }, undefined, requestOptions);
+    const result = await this.client.callTool({ name, arguments: args }, requestOptions);
     return toMcpToolResult(result);
   }
 

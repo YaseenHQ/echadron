@@ -1,8 +1,8 @@
 import { ErrorCodes, KimiError } from '#/errors';
 import type { McpServerStdioConfig } from '#/config/schema';
 import { proxyEnvForChild, reconcileChildNoProxy } from '#/utils/proxy';
-import { Client } from '@modelcontextprotocol/sdk/client/index.js';
-import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
+import { Client } from '@modelcontextprotocol/client';
+import { StdioClientTransport } from '@modelcontextprotocol/client/stdio';
 import { win32 } from 'node:path';
 import { isAbsolute, resolve } from 'pathe';
 
@@ -23,12 +23,13 @@ export interface StdioMcpClientOptions {
   readonly startupTimeoutMs?: number;
   readonly toolCallTimeoutMs?: number;
   readonly defaultCwd?: string;
+  readonly onToolsChanged?: (tools: MCPToolDefinition[]) => void;
 }
 
 const STDERR_BUFFER_CAPACITY = 4 * 1024;
 
 /**
- * Wraps the `@modelcontextprotocol/sdk` stdio client and exposes the small
+ * Wraps the `@modelcontextprotocol/client` stdio client and exposes the small
  * surface required by kosong's {@link MCPClient}. Lifecycle is explicit:
  * the caller must `connect()` before use and `close()` to terminate the
  * child process.
@@ -76,10 +77,31 @@ export class StdioMcpClient implements MCPClient {
     this.transport.stderr?.on('data', (chunk: Buffer | string) => {
       this.stderrBuffer.push(typeof chunk === 'string' ? chunk : chunk.toString('utf8'));
     });
-    this.client = new Client({
-      name: options.clientName ?? KIMI_MCP_CLIENT_NAME,
-      version: options.clientVersion ?? KIMI_MCP_CLIENT_VERSION,
-    });
+    this.client = new Client(
+      {
+        name: options.clientName ?? KIMI_MCP_CLIENT_NAME,
+        version: options.clientVersion ?? KIMI_MCP_CLIENT_VERSION,
+      },
+      {
+        // Probe modern stdio servers, then fall back to initialize for older
+        // processes, including ones that exit on unknown probe messages.
+        versionNegotiation: { mode: 'auto' },
+        ...(options.onToolsChanged === undefined
+          ? {}
+          : {
+              listChanged: {
+                tools: {
+                  onChanged: (error: Error | null, tools?: readonly unknown[] | null) => {
+                    if (error !== null || tools === undefined || tools === null) return;
+                    options.onToolsChanged?.(
+                      tools.map((tool) => toMcpToolDefinition(tool as Parameters<typeof toMcpToolDefinition>[0])),
+                    );
+                  },
+                },
+              },
+            }),
+      },
+    );
     this.startupTimeoutMs = options.startupTimeoutMs;
     this.toolCallTimeoutMs = options.toolCallTimeoutMs;
   }
@@ -158,7 +180,7 @@ export class StdioMcpClient implements MCPClient {
     signal?: AbortSignal,
   ): Promise<MCPToolResult> {
     const requestOptions = buildRequestOptions(this.toolCallTimeoutMs, signal);
-    const result = await this.client.callTool({ name, arguments: args }, undefined, requestOptions);
+    const result = await this.client.callTool({ name, arguments: args }, requestOptions);
     return toMcpToolResult(result);
   }
 

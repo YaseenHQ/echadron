@@ -1,5 +1,9 @@
 import { getCoreVersion } from '#/_base/version';
-import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
+import {
+  ProtocolError,
+  SdkError,
+  SdkErrorCode,
+} from '@modelcontextprotocol/client';
 
 import type { MCPClient, MCPToolDefinition, MCPToolResult } from './types';
 
@@ -14,16 +18,24 @@ export interface UnexpectedCloseReason {
 export type UnexpectedCloseListener = (reason: UnexpectedCloseReason) => void;
 
 export function isMcpConnectionClosedError(error: unknown): boolean {
-  return (
-    error instanceof Error &&
-    (error as Error & { readonly code?: unknown }).code === ErrorCode.ConnectionClosed
-  );
+  if (!(error instanceof Error)) return false;
+  const code = (error as Error & { readonly code?: unknown }).code;
+  // The numeric branch keeps injected/test clients built against the v1 SDK
+  // compatible while all runtime errors now come from the v2 SDK.
+  return code === SdkErrorCode.ConnectionClosed || code === -32000;
 }
 
 export function isMcpTransportFailure(error: unknown): boolean {
   if (!(error instanceof Error)) return false;
   if (isMcpConnectionClosedError(error)) return true;
-  return !(error instanceof McpError);
+  const code = (error as Error & { readonly code?: unknown }).code;
+  // JSON-RPC/MCP errors prove that bytes made a round trip. ProtocolError is
+  // brand-matched by the v2 SDK, while the numeric fallback covers v1 test
+  // doubles and servers that construct a plain Error with a wire code.
+  if (error instanceof ProtocolError || (typeof code === 'number' && code <= -32000)) {
+    return false;
+  }
+  return true;
 }
 
 /**
@@ -38,7 +50,8 @@ export const MCP_LIVENESS_PROBE_TIMEOUT_MS = 5_000;
  * well-formed JSON-RPC response: the SDK rejects with a `ZodError` when the
  * result of `tools/call` does not match `CallToolResultSchema`
  * (shared/protocol.js rejects with `parseResult.error`). The server did
- * answer, so reconnecting is pointless — but the error is not an `McpError`,
+ * answer, so reconnecting is pointless — but the error is not a
+ * `ProtocolError`,
  * so `isMcpTransportFailure` alone cannot tell it apart from a dead
  * transport. Matched by name because the repo carries more than one zod
  * copy, which makes `instanceof` unreliable.
@@ -63,8 +76,19 @@ export async function probeMcpLiveness(client: MCPClient, signal: AbortSignal): 
   } catch (error) {
     if (isMcpConnectionClosedError(error)) return false;
     if (isMcpMalformedResultError(error)) return true;
-    if (error instanceof McpError) {
-      return (error as Error & { readonly code?: unknown }).code !== ErrorCode.RequestTimeout;
+    if (error instanceof ProtocolError) {
+      return true;
+    }
+    if (error instanceof SdkError) {
+      return ![
+        SdkErrorCode.RequestTimeout,
+        SdkErrorCode.SendFailed,
+        SdkErrorCode.NotConnected,
+      ].includes(error.code);
+    }
+    // Keep old injected clients useful while they migrate from the v1 SDK.
+    if (typeof (error as Error & { readonly code?: unknown }).code === 'number') {
+      return (error as Error & { readonly code?: unknown }).code !== -32001;
     }
     return false;
   }

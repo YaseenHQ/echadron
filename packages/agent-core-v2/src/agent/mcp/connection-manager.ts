@@ -272,7 +272,12 @@ export class McpConnectionManager {
 
     let client: RuntimeMcpClient | undefined;
     try {
-      const startupClient = await this.createClient(entry.config, entry.name, timeoutMs);
+      let startupClient: RuntimeMcpClient | undefined;
+      const onToolsChanged = (rawTools: MCPToolDefinition[]) => {
+        if (startupClient === undefined) return;
+        this.applyToolsChanged(entry, attemptId, startupClient, rawTools);
+      };
+      startupClient = await this.createClient(entry.config, entry.name, timeoutMs, onToolsChanged);
       client = startupClient;
       entry.client = startupClient;
       const discovered = await withTimeout(
@@ -342,6 +347,7 @@ export class McpConnectionManager {
     config: McpServerConfig,
     name: string,
     startupTimeoutMs: number,
+    onToolsChanged: (tools: MCPToolDefinition[]) => void,
   ): Promise<RuntimeMcpClient> {
     const toolCallTimeoutMs =
       config.toolTimeoutMs ?? this.options.resolveDefaultTimeouts?.().toolTimeoutMs;
@@ -350,6 +356,7 @@ export class McpConnectionManager {
         startupTimeoutMs,
         toolCallTimeoutMs,
         defaultCwd: this.options.stdioCwd,
+        onToolsChanged,
       });
     }
     if (config.transport === 'sse') {
@@ -358,6 +365,7 @@ export class McpConnectionManager {
         toolCallTimeoutMs,
         envLookup: this.options.envLookup,
         oauthProvider: await this.resolveOAuthProvider(config, name),
+        onToolsChanged,
       });
     }
     return new HttpMcpClient(config, {
@@ -365,7 +373,33 @@ export class McpConnectionManager {
       toolCallTimeoutMs,
       envLookup: this.options.envLookup,
       oauthProvider: await this.resolveOAuthProvider(config, name),
+      onToolsChanged,
     });
+  }
+
+  private applyToolsChanged(
+    entry: InternalEntry,
+    attemptId: number,
+    client: RuntimeMcpClient,
+    rawTools: readonly MCPToolDefinition[],
+  ): void {
+    if (!this.isCurrent(entry, attemptId) || entry.client !== client) return;
+    try {
+      const tools = rawTools.map((mcpTool) => ({
+        name: mcpTool.name,
+        description: mcpTool.description,
+        parameters: assertMcpInputSchema(mcpTool.name, mcpTool.inputSchema),
+      }));
+      entry.rawTools = rawTools;
+      entry.tools = tools;
+      entry.enabledNames = computeEnabledNames(entry.config, tools);
+      this.emit(entry);
+    } catch (error) {
+      this.log.warn('mcp tools/list update ignored', {
+        server: entry.name,
+        reason: error instanceof Error ? error.message : String(error),
+      });
+    }
   }
 
   private async resolveOAuthProvider(

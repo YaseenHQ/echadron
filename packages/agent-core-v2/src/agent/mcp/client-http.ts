@@ -1,7 +1,9 @@
 import type { McpServerHttpConfig } from './config-schema';
-import { Client } from '@modelcontextprotocol/sdk/client/index.js';
-import type { OAuthClientProvider } from '@modelcontextprotocol/sdk/client/auth.js';
-import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
+import {
+  Client,
+  StreamableHTTPClientTransport,
+  type OAuthClientProvider,
+} from '@modelcontextprotocol/client';
 
 import {
   buildRequestOptions,
@@ -23,6 +25,7 @@ export interface HttpMcpClientOptions {
   readonly toolCallTimeoutMs?: number;
   readonly envLookup?: (name: string) => string | undefined;
   readonly fetch?: typeof fetch;
+  readonly onToolsChanged?: (tools: MCPToolDefinition[]) => void;
   readonly oauthProvider?: OAuthClientProvider;
 }
 
@@ -49,10 +52,29 @@ export class HttpMcpClient implements MCPClient {
       fetch: options.fetch,
       authProvider: options.oauthProvider,
     });
-    this.client = new Client({
-      name: options.clientName ?? KIMI_MCP_CLIENT_NAME,
-      version: options.clientVersion ?? KIMI_MCP_CLIENT_VERSION,
-    });
+    this.client = new Client(
+      {
+        name: options.clientName ?? KIMI_MCP_CLIENT_NAME,
+        version: options.clientVersion ?? KIMI_MCP_CLIENT_VERSION,
+      },
+      {
+        versionNegotiation: { mode: 'auto' },
+        ...(options.onToolsChanged === undefined
+          ? {}
+          : {
+              listChanged: {
+                tools: {
+                  onChanged: (error: Error | null, tools?: readonly unknown[] | null) => {
+                    if (error !== null || tools === undefined || tools === null) return;
+                    options.onToolsChanged?.(
+                      tools.map((tool) => toMcpToolDefinition(tool as Parameters<typeof toMcpToolDefinition>[0])),
+                    );
+                  },
+                },
+              },
+            }),
+      },
+    );
     this.startupTimeoutMs = options.startupTimeoutMs;
     this.toolCallTimeoutMs = options.toolCallTimeoutMs;
   }
@@ -109,7 +131,7 @@ export class HttpMcpClient implements MCPClient {
     signal?: AbortSignal,
   ): Promise<MCPToolResult> {
     const requestOptions = buildRequestOptions(this.toolCallTimeoutMs, signal);
-    const result = await this.client.callTool({ name, arguments: args }, undefined, requestOptions);
+    const result = await this.client.callTool({ name, arguments: args }, requestOptions);
     return toMcpToolResult(result);
   }
 
