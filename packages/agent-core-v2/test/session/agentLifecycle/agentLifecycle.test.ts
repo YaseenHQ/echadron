@@ -1,5 +1,5 @@
 /**
- * Scenario: session-owned agent creation, persistence, and MCP readiness.
+ * Scenario: session-owned agent creation, persistence, and MCP wiring.
  *
  * Exercises `AgentLifecycleService` through its DI contract with controlled
  * persistence and MCP boundaries, including completion ordering.
@@ -617,7 +617,7 @@ describe('AgentLifecycleService', () => {
     ]);
   });
 
-  it('waits for MCP config resolution and initial connect before returning an agent', async () => {
+  it('returns an agent without waiting for MCP readiness', async () => {
     let resolvePluginServersRequested!: () => void;
     const pluginServersRequested = new Promise<void>((resolve) => {
       resolvePluginServersRequested = resolve;
@@ -652,13 +652,10 @@ describe('AgentLifecycleService', () => {
       });
 
     const svc = ix.get(IAgentLifecycleService);
-    let settled = false;
-    const create = svc.create({ agentId: 'main' }).then(() => {
-      settled = true;
-    });
+    const handle = await svc.create({ agentId: 'main' });
+    expect(handle.id).toBe('main');
 
     await pluginServersRequested;
-    expect(settled).toBe(false);
     expect(connectAll).not.toHaveBeenCalled();
 
     resolvePluginServers?.({
@@ -666,11 +663,8 @@ describe('AgentLifecycleService', () => {
     });
     await connectStarted;
     expect(connectAll).toHaveBeenCalledTimes(1);
-    expect(settled).toBe(false);
 
     resolveConnect?.();
-    await create;
-    expect(settled).toBe(true);
   });
 
   it('merges caller-supplied MCP servers into the initial connect (file < caller < plugin)', async () => {

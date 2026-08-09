@@ -55,9 +55,11 @@ class FakeMcpManager {
   private readonly resolvedEntries = new Map<string, ResolvedServer>();
   private readonly listeners = new Set<(entry: McpServerEntry) => void>();
   readonly oauthService: McpOAuthService | undefined;
+  private readonly ready: Promise<void>;
 
-  constructor(options: { readonly oauthService?: McpOAuthService } = {}) {
+  constructor(options: { readonly oauthService?: McpOAuthService; readonly ready?: Promise<void> } = {}) {
     this.oauthService = options.oauthService;
+    this.ready = options.ready ?? Promise.resolve();
   }
 
   list(): readonly McpServerEntry[] {
@@ -93,7 +95,9 @@ class FakeMcpManager {
     return work;
   }
 
-  async waitForInitialLoad(): Promise<void> {}
+  waitForInitialLoad(): Promise<void> {
+    return this.ready;
+  }
 
   initialLoadDurationMs(): number {
     return 0;
@@ -246,6 +250,28 @@ describe('AgentMcpService', () => {
     manager.disconnect('s1');
     expect(svc.list().map((e) => e.name)).toEqual(['s2']);
     expect(statuses).toEqual(['s1:connected', 's2:connected', 's1:disabled']);
+  });
+
+  it('holds the LLM step until the session MCP manager is ready', async () => {
+    let releaseReady!: () => void;
+    const ready = new Promise<void>((resolve) => {
+      releaseReady = resolve;
+    });
+    createService(new FakeMcpManager({ ready }));
+
+    const loop = ix.get(IAgentLoopService);
+    let settled = false;
+    const step = loop.hooks.onWillBeginStep
+      .run({ turnId: 1, step: 1, signal: new AbortController().signal })
+      .then(() => {
+        settled = true;
+      });
+
+    await Promise.resolve();
+    expect(settled).toBe(false);
+    releaseReady();
+    await step;
+    expect(settled).toBe(true);
   });
 
   it('resolves through the IAgentMcpService binding with no manager', () => {
