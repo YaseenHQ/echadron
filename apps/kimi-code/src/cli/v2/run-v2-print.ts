@@ -49,6 +49,7 @@ import {
   resolveAgentTaskConfig,
   resolveLoggingConfig,
   resolvePrintBackgroundMode,
+  setClampedTimeout,
   skillCatalogRuntimeOptionsSeed,
   type DomainEvent,
   type IAgentScopeHandle,
@@ -625,7 +626,7 @@ export function createPrintTurnEndings(): PrintTurnEndings & {
             resolve(value);
           };
           const timer = Number.isFinite(ms)
-            ? setTimeout(() => {
+            ? setClampedTimeout(() => {
                 settle(null);
               }, ms)
             : undefined;
@@ -639,7 +640,7 @@ export function createPrintTurnEndings(): PrintTurnEndings & {
         const ms = deadlineAt - Date.now();
         if (ms <= 0) return null;
         const ending = await waitOnce(ms);
-        if (ending === null) return null;
+        if (ending === null) continue;
         if (ending.turnId !== skipTurnId) return ending;
         // The skipped turn's own ending: keep waiting within the same budget.
       }

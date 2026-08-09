@@ -1,3 +1,4 @@
+import { PRINT_WAIT_CEILING_S_DEFAULT } from '@moonshot-ai/agent-core-v2';
 import { describe, expect, it, vi } from 'vitest';
 
 import {
@@ -451,5 +452,25 @@ describe('createPrintTurnEndings', () => {
     endings.push(ending(1));
     endings.push(ending(4));
     await expect(pending).resolves.toMatchObject({ turnId: 4 });
+  });
+
+  it('does not resolve null early when the budget exceeds the timer ceiling', async () => {
+    const endings = createPrintTurnEndings();
+    const pending = endings.next(10 * 365 * 24 * 3600 * 1000, 1);
+    const early = await Promise.race([
+      pending,
+      new Promise<'waiting'>((resolve) => setTimeout(() => {
+        resolve('waiting');
+      }, 50)),
+    ]);
+    expect(early).toBe('waiting');
+    endings.push(ending(7));
+    await expect(pending).resolves.toMatchObject({ turnId: 7 });
+  });
+});
+
+describe('print wait defaults', () => {
+  it('uses the host timer ceiling as the default wait budget', () => {
+    expect(PRINT_WAIT_CEILING_S_DEFAULT).toBe(2147483);
   });
 });
