@@ -342,7 +342,7 @@ export const BUILTIN_SLASH_COMMANDS = [
   },
   {
     name: 'feedback',
-    aliases: [],
+    aliases: ['bug'],
     description: 'Send feedback to make Echadron better',
     priority: 60,
     availability: 'always',
