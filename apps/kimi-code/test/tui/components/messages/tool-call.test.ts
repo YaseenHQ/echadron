@@ -1092,6 +1092,31 @@ describe('ToolCallComponent', () => {
     expect(component.getSubagentSnapshot().model).toBe('Kimi K2.5');
   });
 
+  it('shows a concrete subagent thinking effort next to its model', () => {
+    vi.useFakeTimers();
+    const component = new ToolCallComponent(
+      {
+        id: 'call_agent_effort',
+        name: 'Agent',
+        args: { description: 'review project' },
+      },
+      undefined,
+    );
+    component.onSubagentSpawned({
+      agentId: 'sub_effort_1',
+      agentName: 'reviewer',
+      runInBackground: false,
+    });
+
+    component.updateSubagentMetrics({ modelDisplay: 'Qwen 3.8', effortDisplay: 'high' });
+
+    const out = strip(component.render(120).join('\n'));
+    expect(out).toContain('Reviewer Agent Queued (review project) · Qwen 3.8 · high · 0 tools');
+    expect(component.getSubagentSnapshot()).toMatchObject({ model: 'Qwen 3.8', effort: 'high' });
+    component.dispose();
+    vi.useRealTimers();
+  });
+
   it('shows Backgrounded after a foreground subagent is detached, even after setResult', () => {
     vi.useFakeTimers();
     vi.setSystemTime(0);

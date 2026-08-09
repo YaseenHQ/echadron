@@ -191,6 +191,7 @@ export class AgentSwarmProgressComponent implements Component {
   private readonly requestRender: (() => void) | undefined;
   private readonly availableGridHeight: (() => number | undefined) | undefined;
   private modelDisplay = '';
+  private effortDisplay = '';
   private inputComplete = false;
   private failed = false;
   private aborted = false;
@@ -233,6 +234,12 @@ export class AgentSwarmProgressComponent implements Component {
   setModelDisplay(modelDisplay: string): void {
     if (this.modelDisplay.length > 0 || modelDisplay.length === 0) return;
     this.modelDisplay = modelDisplay;
+  }
+
+  /** Show a concrete thinking effort next to the bound model. */
+  setEffortDisplay(effortDisplay: string): void {
+    if (this.effortDisplay.length > 0 || effortDisplay.length === 0) return;
+    this.effortDisplay = effortDisplay;
   }
 
   markToolCallEnded(): void {
@@ -492,9 +499,13 @@ export class AgentSwarmProgressComponent implements Component {
       this.description.length > 0
         ? chalk.hex(this.colors.primary)(' ─ ') + chalk.hex(this.colors.text)(this.description)
         : '';
+    const modelText =
+      this.effortDisplay.length > 0
+        ? `${this.modelDisplay} · ${this.effortDisplay}`
+        : this.modelDisplay;
     const model =
-      this.modelDisplay.length > 0
-        ? chalk.hex(this.colors.primary)(' ─ ') + chalk.hex(this.colors.textDim)(this.modelDisplay)
+      modelText.length > 0
+        ? chalk.hex(this.colors.primary)(' ─ ') + chalk.hex(this.colors.textDim)(modelText)
         : '';
     const prefixText = '─ ';
     const labelWidth = Math.max(1, width - visibleWidth(prefixText) - 1);
