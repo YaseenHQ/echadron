@@ -154,7 +154,7 @@ export class AgentLifecycleService extends Disposable implements IAgentLifecycle
   private async doCreate(agentId: string, opts: CreateAgentOptions): Promise<IAgentScopeHandle> {
     // Start shared MCP loading without delaying agent construction. The
     // agent-scoped MCP service gates the first loop step on readiness.
-    this.sessionMcp.ensureMcpReady();
+        void this.sessionMcp.ensureMcpReady();
     const agentHomedir = this.bootstrap.agentHomedir(
       this.ctx.workspaceId,
       this.ctx.sessionId,
