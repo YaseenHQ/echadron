@@ -1,6 +1,7 @@
 import type {
   AgentReplayRecord,
   BackgroundTaskInfo,
+  BackgroundTaskStatus,
   ContentPart,
   ContextMessage,
   PromptOrigin,
@@ -205,10 +206,27 @@ export function contentPartsToText(content: readonly ContentPart[]): string {
   return content.map(contentPartToText).join('');
 }
 
+/**
+ * v2 stores background task completion notifications with the compact `task`
+ * origin kind. Keep the legacy `background_task` origin readable as well so
+ * replay remains compatible across engine versions.
+ */
+export interface TaskNotificationOrigin {
+  readonly kind: 'task';
+  readonly taskId: string;
+  readonly status: BackgroundTaskStatus;
+  readonly notificationId: string;
+}
+
+export type BackgroundTaskNotificationOrigin =
+  | Extract<PromptOrigin, { kind: 'background_task' }>
+  | TaskNotificationOrigin;
+
 export function backgroundOrigin(
   message: ContextMessage,
-): Extract<PromptOrigin, { kind: 'background_task' }> | undefined {
-  return message.origin?.kind === 'background_task' ? message.origin : undefined;
+): BackgroundTaskNotificationOrigin | undefined {
+  const origin = message.origin as BackgroundTaskNotificationOrigin | undefined;
+  return origin?.kind === 'background_task' || origin?.kind === 'task' ? origin : undefined;
 }
 
 export function skillActivationFromOrigin(
