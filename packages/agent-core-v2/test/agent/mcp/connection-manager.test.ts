@@ -829,6 +829,31 @@ describe('McpConnectionManager', () => {
       await closeServer(server);
     }
   }, 15000);
+
+  it('allows OAuth opt-in when a remote server also has non-secret headers', async () => {
+    const server: HttpServer = createHttpServer((_req, res) => {
+      res.writeHead(401).end('nope');
+    });
+    await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
+    const port = (server.address() as HttpAddress).port;
+    const oauthService = new McpOAuthService({ store: createMemoryMcpOAuthStore() });
+    const cm = new McpConnectionManager({ oauthService });
+    try {
+      await cm.connectAll({
+        gated: {
+          transport: 'http',
+          url: `http://127.0.0.1:${port}/mcp`,
+          headers: { 'X-Tenant': 'example' },
+          auth: 'oauth',
+          startupTimeoutMs: 5_000,
+        },
+      });
+      expect(cm.get('gated')?.status).toBe('needs-auth');
+    } finally {
+      await cm.shutdown();
+      await closeServer(server);
+    }
+  }, 15000);
 });
 
 describe('Session MCP initialization', () => {
