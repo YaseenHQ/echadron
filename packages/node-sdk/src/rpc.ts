@@ -27,6 +27,8 @@ import type { ApprovalHandler, QuestionHandler } from '#/events';
 import type {
   AddAdditionalDirInput,
   AddAdditionalDirResult,
+  SetAdditionalDirsInput,
+  SetAdditionalDirsResult,
   BackgroundTaskInfo,
   ConfigDiagnostics,
   CreateSessionOptions,
@@ -387,6 +389,11 @@ export abstract class SDKRpcClientBase {
   async addAdditionalDir(input: AddAdditionalDirInput): Promise<AddAdditionalDirResult> {
     const rpc = await this.getRpc();
     return rpc.addAdditionalDir({ sessionId: input.id, path: input.path, persist: input.persist });
+  }
+
+  async setAdditionalDirs(input: SetAdditionalDirsInput): Promise<SetAdditionalDirsResult> {
+    const rpc = await this.getRpc();
+    return rpc.setAdditionalDirs({ sessionId: input.id, additionalDirs: input.additionalDirs });
   }
 
   async startBtw(input: SessionIdRpcInput): Promise<string> {

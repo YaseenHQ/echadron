@@ -26,6 +26,8 @@ import type {
   RegisterToolPayload,
   SessionAPI,
   SetActiveToolsPayload,
+  SetAdditionalDirsPayload,
+  SetAdditionalDirsResult,
   SetModelPayload,
   SetPermissionPayload,
   SetThinkingPayload,
@@ -118,6 +120,11 @@ export class SessionAPIImpl implements PromisableMethods<SessionAPI> {
 
   addAdditionalDir(payload: AddAdditionalDirPayload): Promise<AddAdditionalDirResult> {
     return this.session.addAdditionalDir(payload.path, payload.persist);
+  }
+
+  async setAdditionalDirs(payload: SetAdditionalDirsPayload): Promise<SetAdditionalDirsResult> {
+    await this.session.setAdditionalDirs(payload.additionalDirs);
+    return { additionalDirs: this.session.getAdditionalDirs() };
   }
 
   async prompt({ agentId, ...payload }: AgentScopedPayload<PromptPayload>) {

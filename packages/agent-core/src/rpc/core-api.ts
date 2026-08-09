@@ -436,6 +436,15 @@ export interface AddAdditionalDirResult {
   readonly persisted: boolean;
 }
 
+/** Replace the session's resolved additional-directory set. */
+export interface SetAdditionalDirsPayload {
+  readonly additionalDirs: readonly string[];
+}
+
+export interface SetAdditionalDirsResult {
+  readonly additionalDirs: readonly string[];
+}
+
 export interface RenameSessionPayload {
   readonly title: string;
 }
@@ -543,6 +552,7 @@ export interface SessionAPI extends AgentAPIWithId {
   waitForBackgroundTasksOnPrint: (payload: EmptyPayload) => void;
   handlePrintMainTurnCompleted: (payload: EmptyPayload) => 'finish' | 'continue';
   addAdditionalDir: (payload: AddAdditionalDirPayload) => AddAdditionalDirResult;
+  setAdditionalDirs: (payload: SetAdditionalDirsPayload) => SetAdditionalDirsResult;
 }
 
 type SessionAPIWithId = WithSessionId<SessionAPI>;

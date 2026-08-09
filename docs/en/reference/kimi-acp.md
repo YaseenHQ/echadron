@@ -20,13 +20,13 @@ Echadron also ships an explicit `echadron acp-v2` entry point for the draft ACP 
 echadron acp-v2
 ```
 
-This is intentionally separate from `echadron acp`. It uses the ACP TypeScript SDK's experimental v2 transport (including JSON-RPC batches), required message IDs, unified tool-call upserts, structured plan/state updates, and the v2 `auth/login` / `auth/logout` surface. The existing Echadron session and provider configuration remain the source of truth, so switching entry points does not create a second login or model store.
+This is intentionally separate from `echadron acp`. It uses the ACP TypeScript SDK's experimental v2 transport (including JSON-RPC batches), required message IDs, unified tool-call upserts, agent-owned display-only terminals, structured plan/state updates, and the v2 `auth/login` / `auth/logout` surface. The existing Echadron session and provider configuration remain the source of truth, so switching entry points does not create a second login or model store.
 
 ACP v2 is still an unstable, opt-in protocol. Clients should only launch this command when they explicitly negotiate protocol version `2`; production integrations should keep using `echadron acp` until their ACP client supports the v2 draft. See the [ACP v2 proposal](https://agentclientprotocol.com/rfds/v2/overview) for the breaking changes and migration status.
 
-## Capability Matrix
+## ACP v1 capability matrix
 
-The table below lists the capabilities declared by the current ACP adapter layer. The `agentCapabilities` field is returned in full in the `initialize` response, so the IDE can adjust its UI accordingly.
+The table below lists the capabilities declared by the stable ACP v1 adapter layer. It does not describe `echadron acp-v2`; v2 uses the unified `capabilities` field described below.
 
 | Capability | Value | Description |
 | --- | --- | --- |
@@ -38,6 +38,31 @@ The table below lists the capabilities declared by the current ACP adapter layer
 | `loadSession` | `true` | Supports `session/load` to resume an existing session, replaying history on load |
 | `sessionCapabilities.list` | `{}` | Supports `session/list` to enumerate the current user's sessions |
 | `sessionCapabilities.additionalDirectories` | `{}` | Accepts additional workspace roots on new/load/resume and reports them from `session/list` |
+
+## ACP v2 capability and lifecycle surface
+
+The experimental v2 server returns this session capability object from `initialize`:
+
+```json
+{
+  "session": {
+    "delete": {},
+    "additionalDirectories": {}
+  }
+}
+```
+
+The presence of `session` makes `session/new`, `session/list`, `session/resume`,
+`session/close`, `session/prompt`, `session/cancel`, and `session/update` the
+baseline lifecycle surface; v2 does not advertise separate list/resume/close
+markers. `additionalDirectories` is an explicit full list on `session/new` and
+`session/resume`: omitted and empty values activate no additional roots, while
+provided paths must be absolute. `session/resume` can request full replay with
+`replayFrom: {"type":"start"}`; omitting it resumes without replay.
+
+The server also advertises Echadron's terminal OAuth method through the preview
+terminal-auth shape and implements the required `auth/login` and `auth/logout`
+methods. The stable v1 `echadron acp` command remains unchanged.
 
 ## ACP Method Coverage
 

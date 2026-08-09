@@ -18,7 +18,10 @@ describe('ACP v2 server', () => {
 
     expect(response.protocolVersion).toBe(2);
     expect(response.info.name).toBe('Echadron');
-    expect(response.capabilities?.session).toEqual({ delete: {}, fork: {} });
+    expect(response.capabilities?.session).toEqual({
+      delete: {},
+      additionalDirectories: {},
+    });
     expect(response.authMethods?.[0]).toMatchObject({
       type: 'terminal',
       name: 'Login with Echadron (OAuth)',
