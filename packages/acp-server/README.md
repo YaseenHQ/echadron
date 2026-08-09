@@ -4,7 +4,7 @@ Experimental ACP protocol-v2 transport for Echadron.
 
 The package deliberately sits beside `@moonshot-ai/acp-adapter`: the stable
 adapter continues to own ACP v1, while this package uses the official SDK's
-`@agentclientprotocol/sdk/experimental/v2` entry point and reuses the existing
+`@agentclientprotocol/sdk-v2/experimental/v2` entry point and reuses the existing
 Echadron `KimiHarness` session/event mapping. This lets clients opt into v2
 without changing the current provider, auth, or session stores.
 

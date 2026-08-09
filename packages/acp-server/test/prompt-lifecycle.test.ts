@@ -1,4 +1,4 @@
-import { client, methods } from '@agentclientprotocol/sdk/experimental/v2';
+import { client, methods } from '@agentclientprotocol/sdk-v2/experimental/v2';
 import { describe, expect, it, vi } from 'vitest';
 
 import { createAcpV2Agent } from '../src/index';

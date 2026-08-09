@@ -26,7 +26,7 @@ import {
   type SessionInfo,
   type SessionUpdate,
   type Stream,
-} from '@agentclientprotocol/sdk/experimental/v2';
+} from '@agentclientprotocol/sdk-v2/experimental/v2';
 import {
   AcpSession,
   ACP_BUILTIN_SLASH_COMMANDS,
