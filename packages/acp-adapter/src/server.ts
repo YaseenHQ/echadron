@@ -346,20 +346,9 @@ export class AcpServer implements Agent {
     if (!(await harnessIsAuthed(this.harness))) {
       throw RequestError.authRequired();
     }
-    // ACP's `cwd` maps to the SDK's `workDir`. `model`, `planMode`, and
-    // similar fields are wired in Phase 8 (per PLAN D3) — Phase 3.2 keeps
-    // the surface minimal. Phase 10.1 adds `mcpServers` forwarding so
     // ACP-supplied servers (Zed config, JetBrains config) are passed
     // alongside the on-disk config; unsupported ACP-transport servers
-    // are warn-dropped inside the conversion. `mcpServers` is NOT a
-    // declared field on `CreateSessionOptions` — the SDK is a
-    // transparent passthrough for unknown fields (see
-    // `packages/node-sdk/src/kimi-harness.ts:createSession` and
-    // `packages/node-sdk/src/rpc.ts:createSession`), so the kernel
-    // (`CreateSessionPayload.mcpServers` in agent-core) receives the
-    // record verbatim. The `@ts-expect-error` documents this contract;
-    // if the SDK ever switches from spread-passthrough to explicit field
-    // copy, this line breaks and we revisit the boundary.
+    // are warn-dropped inside the conversion.
     const mcpServers = acpMcpServersToConfigs(params.mcpServers);
     if (!this.conn) {
       // Defensive: every code path that constructs `AcpServer` (the
@@ -384,9 +373,6 @@ export class AcpServer implements Agent {
       kaos: acpKaos,
       persistenceKaos,
       sessionStartedProperties: { mode: 'new' },
-      // @ts-expect-error — `mcpServers` is a kernel-side extension
-      // (agent-core `CreateSessionPayload`) the SDK transparently
-      // forwards via spread. See block comment above.
       mcpServers,
       additionalDirs: params.additionalDirectories,
     });
