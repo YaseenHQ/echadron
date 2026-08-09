@@ -134,9 +134,16 @@ export class SubAgentEventHandler {
           event.model === undefined
             ? undefined
             : modelDisplayName(event.model, this.host.state.appState.availableModels[event.model]),
+        effortDisplay: this.subagentEffortDisplay(event.thinkingEffort),
       });
     }
     return true;
+  }
+
+  /** Generic on/off thinking states do not communicate a useful tier. */
+  private subagentEffortDisplay(effort: string | undefined): string | undefined {
+    if (effort === undefined || effort === 'off' || effort === 'on') return undefined;
+    return effort;
   }
 
   handleLifecycleEvent(event: SubagentLifecycleEvent): void {
@@ -511,15 +518,19 @@ export class SubAgentEventHandler {
       progress.appendModelDelta({ agentId: subagentId, delta: event.delta });
     } else if (event.type === 'tool.call.started') {
       progress.recordToolCall({ agentId: subagentId, toolCallId: event.toolCallId });
-    } else if (event.type === 'agent.status.updated' && event.model !== undefined) {
+    } else if (event.type === 'agent.status.updated') {
       // The bound model alias rides every child status update (emitted right
       // after spawn). Swarm members share one binding, so the panel shows it
       // once in the header instead of per cell. `modelDisplayName` falls back
       // to the alias itself when the entry is unknown (e.g. the synthesized
       // `__secondary__` derived entry is missing).
-      progress.setModelDisplay(
-        modelDisplayName(event.model, this.host.state.appState.availableModels[event.model]),
-      );
+      if (event.model !== undefined) {
+        progress.setModelDisplay(
+          modelDisplayName(event.model, this.host.state.appState.availableModels[event.model]),
+        );
+      }
+      const effortDisplay = this.subagentEffortDisplay(event.thinkingEffort);
+      if (effortDisplay !== undefined) progress.setEffortDisplay(effortDisplay);
     }
   }
 
