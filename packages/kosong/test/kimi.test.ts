@@ -2181,6 +2181,35 @@ describe('extractUsage', () => {
     });
   });
 
+  it('extracts cache writes and clamps overlapping cache counters', () => {
+    expect(
+      extractUsage({
+        prompt_tokens: 100,
+        completion_tokens: 20,
+        prompt_tokens_details: { cached_tokens: 50, cache_write_tokens: 25 },
+      }),
+    ).toEqual({
+      inputOther: 25,
+      output: 20,
+      inputCacheRead: 50,
+      inputCacheCreation: 25,
+    });
+
+    expect(
+      extractUsage({
+        prompt_tokens: 10,
+        completion_tokens: 1,
+        cached_tokens: 20,
+        cache_write_tokens: 5,
+      }),
+    ).toEqual({
+      inputOther: 0,
+      output: 1,
+      inputCacheRead: 20,
+      inputCacheCreation: 5,
+    });
+  });
+
   it('returns null for null/undefined', () => {
     const undef: unknown = undefined;
     expect(extractUsage(null)).toBeNull();

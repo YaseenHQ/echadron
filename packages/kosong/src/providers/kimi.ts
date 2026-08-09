@@ -23,6 +23,7 @@ import {
   convertChatCompletionStreamToolCall,
   type BufferedChatCompletionToolCall,
 } from './chat-completions-stream';
+import { clampPromptCacheKey } from './prompt-cache';
 import {
   convertContentPart,
   convertOpenAIError,
@@ -522,6 +523,11 @@ export class KimiChatProvider implements ChatProvider {
         // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
         delete kwargs[key];
       }
+    }
+
+    const promptCacheKey = kwargs['prompt_cache_key'];
+    if (typeof promptCacheKey === 'string') {
+      kwargs['prompt_cache_key'] = clampPromptCacheKey(promptCacheKey);
     }
 
     // Normalize the legacy `max_tokens` alias to Kimi's preferred

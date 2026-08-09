@@ -27,6 +27,7 @@ import {
   type ToolMessageConversion,
   toolToOpenAI,
 } from './openai-common';
+import { clampPromptCacheKey } from './prompt-cache';
 import {
   convertChatCompletionStreamToolCall,
   type BufferedChatCompletionToolCall,
@@ -609,6 +610,11 @@ export class OpenAILegacyChatProvider implements ChatProvider {
         // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
         delete kwargs[key];
       }
+    }
+
+    const promptCacheKey = kwargs['prompt_cache_key'];
+    if (typeof promptCacheKey === 'string') {
+      kwargs['prompt_cache_key'] = clampPromptCacheKey(promptCacheKey);
     }
 
     // Build the create params

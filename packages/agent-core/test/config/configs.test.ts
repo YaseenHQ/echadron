@@ -986,11 +986,13 @@ support_efforts = ["low", "high", "max"]
 [models."kimi-code/kimi-k2".overrides]
 support_efforts = ["low", "high"]
 default_effort = "high"
+cache_retention = "long"
 `);
 
     expect(config.models?.['kimi-code/kimi-k2']?.overrides).toEqual({
       supportEfforts: ['low', 'high'],
       defaultEffort: 'high',
+      cacheRetention: 'long',
     });
   });
 
@@ -1000,6 +1002,7 @@ default_effort = "high"
 provider = "managed:kimi-code"
 model = "kimi-k2"
 max_context_size = 262144
+cache_retention = "none"
 
 [models."kimi-code/kimi-k2".overrides]
 support_efforts = ["low", "high"]
@@ -1010,6 +1013,7 @@ support_efforts = ["low", "high"]
     const overrides = models['kimi-code/kimi-k2']?.['overrides'] as Record<string, unknown>;
 
     expect(overrides['support_efforts']).toEqual(['low', 'high']);
+    expect((models['kimi-code/kimi-k2'] as Record<string, unknown>)['cache_retention']).toBe('none');
   });
 });
 

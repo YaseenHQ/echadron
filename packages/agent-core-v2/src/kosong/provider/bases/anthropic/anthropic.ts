@@ -84,6 +84,7 @@ import {
 import { mergeConsecutiveUserMessages } from '../merge-user-messages';
 import { mergeRequestHeaders, resolveAuthBackedClient } from '../request-auth';
 import { normalizeToolCallIdsForProvider, sanitizeToolCallId } from '../tool-call-id';
+import { clampPromptCacheKey, nonNegativeTokenCount } from '../prompt-cache';
 
 function normalizeAnthropicStopReason(raw: string | null | undefined): {
   finishReason: FinishReason | null;
@@ -584,6 +585,10 @@ class AnthropicStreamedMessage implements StreamedMessage {
             output_tokens: number;
             cache_read_input_tokens?: number;
             cache_creation_input_tokens?: number;
+            cache_creation?: {
+              ephemeral_5m_input_tokens?: number;
+              ephemeral_1h_input_tokens?: number;
+            };
           };
           content: Array<{
             type: string;
@@ -631,12 +636,22 @@ class AnthropicStreamedMessage implements StreamedMessage {
     output_tokens?: number;
     cache_read_input_tokens?: number;
     cache_creation_input_tokens?: number;
+    cache_creation?: {
+      ephemeral_5m_input_tokens?: number;
+      ephemeral_1h_input_tokens?: number;
+    };
   }): void {
+    const cacheCreation =
+      usage.cache_creation_input_tokens ??
+      (nonNegativeTokenCount(usage.cache_creation?.ephemeral_5m_input_tokens) +
+        nonNegativeTokenCount(usage.cache_creation?.ephemeral_1h_input_tokens));
     this._usage = {
-      inputOther: usage.input_tokens ?? 0,
-      output: usage.output_tokens ?? 0,
-      inputCacheRead: usage.cache_read_input_tokens ?? 0,
-      inputCacheCreation: usage.cache_creation_input_tokens ?? 0,
+      // Anthropic's `input_tokens` is already the non-cached portion; cache
+      // reads and writes are reported in separate counters.
+      inputOther: nonNegativeTokenCount(usage.input_tokens),
+      output: nonNegativeTokenCount(usage.output_tokens),
+      inputCacheRead: nonNegativeTokenCount(usage.cache_read_input_tokens),
+      inputCacheCreation: nonNegativeTokenCount(cacheCreation),
     };
   }
 
@@ -648,6 +663,10 @@ class AnthropicStreamedMessage implements StreamedMessage {
       output_tokens: number;
       cache_read_input_tokens?: number;
       cache_creation_input_tokens?: number;
+      cache_creation?: {
+        ephemeral_5m_input_tokens?: number;
+        ephemeral_1h_input_tokens?: number;
+      };
     };
     content: Array<{
       type: string;
@@ -712,6 +731,10 @@ class AnthropicStreamedMessage implements StreamedMessage {
               output_tokens?: number;
               cache_read_input_tokens?: number;
               cache_creation_input_tokens?: number;
+              cache_creation?: {
+                ephemeral_5m_input_tokens?: number;
+                ephemeral_1h_input_tokens?: number;
+              };
             },
           );
         } else if (eventType === 'content_block_start') {
@@ -775,18 +798,40 @@ class AnthropicStreamedMessage implements StreamedMessage {
         } else if (eventType === 'message_delta') {
           const deltaUsage = (evt as { usage?: Record<string, unknown> }).usage;
           if (deltaUsage !== undefined) {
-            if (typeof deltaUsage['output_tokens'] === 'number') {
-              this._usage.output = deltaUsage['output_tokens'];
-            }
-            if (typeof deltaUsage['cache_read_input_tokens'] === 'number') {
-              this._usage.inputCacheRead = deltaUsage['cache_read_input_tokens'];
-            }
-            if (typeof deltaUsage['cache_creation_input_tokens'] === 'number') {
-              this._usage.inputCacheCreation = deltaUsage['cache_creation_input_tokens'];
-            }
-            if (typeof deltaUsage['input_tokens'] === 'number') {
-              this._usage.inputOther = deltaUsage['input_tokens'];
-            }
+            const cacheCreation =
+              deltaUsage['cache_creation_input_tokens'] ??
+              (nonNegativeTokenCount(
+                (deltaUsage['cache_creation'] as Record<string, unknown> | undefined)?.[
+                  'ephemeral_5m_input_tokens'
+                ],
+              ) +
+                nonNegativeTokenCount(
+                  (deltaUsage['cache_creation'] as Record<string, unknown> | undefined)?.[
+                    'ephemeral_1h_input_tokens'
+                  ],
+                ));
+            const inputCacheRead =
+              typeof deltaUsage['cache_read_input_tokens'] === 'number'
+                ? nonNegativeTokenCount(deltaUsage['cache_read_input_tokens'])
+                : this._usage.inputCacheRead;
+            const inputCacheCreation =
+              'cache_creation_input_tokens' in deltaUsage ||
+              'cache_creation' in deltaUsage
+                ? nonNegativeTokenCount(cacheCreation)
+                : this._usage.inputCacheCreation;
+            const inputOther =
+              typeof deltaUsage['input_tokens'] === 'number'
+                ? nonNegativeTokenCount(deltaUsage['input_tokens'])
+                : this._usage.inputOther;
+            this._usage = {
+              inputOther,
+              output:
+                typeof deltaUsage['output_tokens'] === 'number'
+                  ? nonNegativeTokenCount(deltaUsage['output_tokens'])
+                  : this._usage.output,
+              inputCacheRead,
+              inputCacheCreation,
+            };
           }
           const messageDeltaPayload = (evt as { delta?: Record<string, unknown> }).delta;
           if (messageDeltaPayload !== undefined && 'stop_reason' in messageDeltaPayload) {
@@ -902,7 +947,7 @@ export class AnthropicChatProvider implements ChatProvider {
     let metadata = this._metadata;
     if (options?.cacheKey !== undefined) {
       // The cache key is encoded as `metadata.user_id` on this transport.
-      metadata = { ...metadata, user_id: options.cacheKey };
+      metadata = { ...metadata, user_id: clampPromptCacheKey(options.cacheKey) ?? '' };
     }
 
     if (options?.sampling?.temperature !== undefined) {

@@ -42,6 +42,8 @@ import type { FinishReason } from '#/kosong/contract/provider';
 import type { Tool } from '#/kosong/contract/tool';
 import type { TokenUsage } from '#/kosong/contract/usage';
 
+import { extractPromptCacheTokens, nonNegativeTokenCount } from '../prompt-cache';
+
 export interface OpenAIContentPart {
   type: string;
   text?: string | undefined;
@@ -182,27 +184,15 @@ export function extractUsage(usage: unknown): TokenUsage | null {
     return null;
   }
   const u = usage as Record<string, unknown>;
-  const promptTokens = typeof u['prompt_tokens'] === 'number' ? u['prompt_tokens'] : 0;
-  const completionTokens = typeof u['completion_tokens'] === 'number' ? u['completion_tokens'] : 0;
-
-  let cached = 0;
-  if (typeof u['cached_tokens'] === 'number') {
-    cached = u['cached_tokens'];
-  } else if (
-    typeof u['prompt_tokens_details'] === 'object' &&
-    u['prompt_tokens_details'] !== null
-  ) {
-    const details = u['prompt_tokens_details'] as Record<string, unknown>;
-    if (typeof details['cached_tokens'] === 'number') {
-      cached = details['cached_tokens'];
-    }
-  }
+  const promptTokens = nonNegativeTokenCount(u['prompt_tokens']);
+  const completionTokens = nonNegativeTokenCount(u['completion_tokens']);
+  const { inputCacheRead, inputCacheCreation } = extractPromptCacheTokens(u);
 
   return {
-    inputOther: promptTokens - cached,
+    inputOther: Math.max(0, promptTokens - inputCacheRead - inputCacheCreation),
     output: completionTokens,
-    inputCacheRead: cached,
-    inputCacheCreation: 0,
+    inputCacheRead,
+    inputCacheCreation,
   };
 }
 

@@ -786,6 +786,24 @@ describe('OpenAILegacyChatProvider', () => {
       expect(body['prompt_cache_key']).toBe('session-test');
     });
 
+    it('clamps overlong prompt cache keys at the transport boundary', async () => {
+      const key = '😀'.repeat(70);
+      const provider = new OpenAILegacyChatProvider({
+        model: 'gpt-4.1',
+        apiKey: 'test-key',
+        stream: false,
+        generationKwargs: { prompt_cache_key: key },
+      });
+      const body = await captureRequestBody(
+        provider,
+        '',
+        [],
+        [{ role: 'user', content: [{ type: 'text', text: 'Hi' }], toolCalls: [] }],
+      );
+
+      expect(body['prompt_cache_key']).toBe('😀'.repeat(64));
+    });
+
     it('explicit maxTokens wins over constructor generationKwargs on conflict', async () => {
       const provider = new OpenAILegacyChatProvider({
         model: 'gpt-4.1',

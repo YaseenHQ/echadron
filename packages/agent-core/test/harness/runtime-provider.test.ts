@@ -934,6 +934,46 @@ describe('ProviderManager prompt cache key', () => {
     });
   });
 
+  it('clamps session cache keys before provider configuration is built', () => {
+    const manager = new ProviderManager({
+      config: BASE_CONFIG,
+      promptCacheKey: '🙂'.repeat(70),
+    });
+    const resolved = manager.resolveProviderConfig('kimi-code/kimi-for-coding');
+
+    expect(
+      (resolved.provider.generationKwargs as Record<string, unknown>)['prompt_cache_key'],
+    ).toBe('🙂'.repeat(64));
+  });
+
+  it('passes Anthropic cache retention through model resolution', () => {
+    const resolved = resolveRuntimeProvider({
+      model: 'claude-alias',
+      config: {
+        defaultModel: 'claude-alias',
+        providers: {
+          anthropic: {
+            type: 'anthropic',
+            apiKey: 'sk-anthropic',
+          },
+        },
+        models: {
+          'claude-alias': {
+            provider: 'anthropic',
+            model: 'claude-opus-4-6',
+            maxContextSize: 1_000_000,
+            cacheRetention: 'long',
+          },
+        },
+      },
+    });
+
+    expect(resolved.provider).toMatchObject({
+      type: 'anthropic',
+      cacheRetention: 'long',
+    });
+  });
+
   it('applies a prompt cache key to OpenAI providers (chat completions + responses)', () => {
     for (const type of ['openai', 'openai_responses'] as const) {
       const manager = new ProviderManager({

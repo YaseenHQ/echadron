@@ -33,6 +33,11 @@ export type { ProviderConfig, ProviderType } from './providers';
 export { KimiChatProvider } from './providers/kimi';
 export type { ExtraBody, GenerationKwargs, KimiOptions, ThinkingConfig } from './providers/kimi';
 export { classifyKimiQuotaError } from './providers/kimi-errors';
+export {
+  clampPromptCacheKey,
+  nonNegativeTokenCount,
+  PROMPT_CACHE_KEY_MAX_LENGTH,
+} from './providers/prompt-cache';
 
 // Model capability matrix
 export { isUnknownCapability, UNKNOWN_CAPABILITY } from './capability';

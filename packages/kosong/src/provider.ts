@@ -36,6 +36,9 @@ export type ResponseFormat = JsonObjectResponseFormat | JsonSchemaResponseFormat
  */
 export type ThinkingEffort = 'off' | 'on' | (string & {});
 
+/** Provider prompt-cache retention policy. */
+export type CacheRetention = 'none' | 'short' | 'long';
+
 /**
  * Optional context passed to {@link ChatProvider.withMaxCompletionTokens} so a
  * provider can tighten the caller-supplied cap to its own transport
@@ -151,6 +154,12 @@ export interface GenerateOptions {
    * structured-output field when supported.
    */
   responseFormat?: ResponseFormat;
+  /**
+   * Cache-aware providers should keep the latest prompt block out of the
+   * cache-write breakpoint. Compaction uses this for its synthetic summary
+   * request so the summary does not replace the reusable conversation prefix.
+   */
+  skipCacheWrite?: boolean;
   /**
    * Host-side instrumentation hook fired immediately before invoking the
    * provider adapter's generate call.
