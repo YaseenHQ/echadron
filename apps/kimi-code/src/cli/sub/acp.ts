@@ -39,9 +39,16 @@ import { createKimiCodeHostIdentity, getVersion } from '#/cli/version';
 import { buildSkillSlashCommands } from '#/tui/commands/skills';
 import { getDataDir } from '#/utils/paths';
 
+import { isLegacyEnabled } from '../experimental-v2';
+import { registerNativeAcpCommand } from './acp-v2';
 import { runLoginFlow } from './login-flow';
 
 export function registerAcpCommand(parent: Command): void {
+  if (!isLegacyEnabled()) {
+    registerNativeAcpCommand(parent);
+    return;
+  }
+
   parent
     .command('acp')
     .description('Run Echadron as an Agent Client Protocol (ACP) server over stdio.')

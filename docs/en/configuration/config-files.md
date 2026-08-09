@@ -312,16 +312,6 @@ Like the `tools` / `disallowedTools` fields of an agent file, this section shape
 
 `max_edge_px` can be overridden by the `KIMI_IMAGE_MAX_EDGE_PX` environment variable and `read_byte_budget` by `KIMI_IMAGE_READ_BYTE_BUDGET`; both take higher priority than `config.toml`.
 
-<!--
-## `experimental`
-
-`experimental` stores persistent overrides for experimental-feature flags. Currently, `micro_compaction` is the only user-facing entry and defaults to `false`; set it to `true` to enable automatic trimming of older large tool results.
-
-| Field | Type | Default | Description |
-| --- | --- | --- | --- |
-| `micro_compaction` | `boolean` | `false` | Trim older large tool results from context while preserving recent conversation |
--->
-
 ## `services`
 
 `services` configures two built-in services: web search (`moonshot_search`) and web fetch (`moonshot_fetch`). Only these two fixed keys are recognized; other keys are ignored. Both entries share the same fields:

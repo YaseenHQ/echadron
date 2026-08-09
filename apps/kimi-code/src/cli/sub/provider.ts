@@ -24,6 +24,7 @@ import {
   catalogProviderModels,
   CatalogFetchError,
   createKimiHarness,
+  createKimiHarnessV2,
   DEFAULT_CATALOG_URL,
   resolveCatalogImport,
   type Catalog,
@@ -37,6 +38,8 @@ import { createKimiCodeHostIdentity, createKimiCodeUserAgent } from '#/cli/versi
 import { fetchCatalogOrBuiltIn } from '#/utils/catalog-fetch';
 import { readFreshModelsDevCatalog } from '#/cli/models/catalog-cache';
 import { getDataDir } from '#/utils/paths';
+
+import { isKimiV2Enabled } from '../experimental-v2';
 
 interface WritableLike {
   write(chunk: string): boolean;
@@ -468,12 +471,17 @@ export function registerProviderCommand(parent: Command, deps?: Partial<Provider
   // anything that escapes (e.g. a config write rejected because config.toml
   // is invalid) must end as a one-line error + exit 1, not an unhandled
   // rejection dumping a stack trace.
-  const runAction = async (resolved: ProviderDeps, run: () => Promise<void>): Promise<void> => {
+  const runAction = async (
+    resolved: ResolvedProviderDeps,
+    run: () => Promise<void>,
+  ): Promise<void> => {
     try {
       await run();
     } catch (error) {
       resolved.stderr.write(`${errorMessage(error)}\n`);
       resolved.exit(1);
+    } finally {
+      await resolved.close();
     }
   };
 
@@ -557,20 +565,28 @@ export function registerProviderCommand(parent: Command, deps?: Partial<Provider
     );
 }
 
-function resolveDeps(overrides: Partial<ProviderDeps> = {}): ProviderDeps {
+type ResolvedProviderDeps = ProviderDeps & { readonly close: () => Promise<void> };
+
+function resolveDeps(overrides: Partial<ProviderDeps> = {}): ResolvedProviderDeps {
   let harness: KimiHarness | undefined;
   const identity = createKimiCodeHostIdentity();
   return {
     getHarness:
       overrides.getHarness ??
       (() => {
-        harness ??= createKimiHarness({ homeDir: getDataDir(), identity });
+        harness ??= (isKimiV2Enabled() ? createKimiHarnessV2 : createKimiHarness)({
+          homeDir: getDataDir(),
+          identity,
+        });
         return harness;
       }),
     stdout: overrides.stdout ?? process.stdout,
     stderr: overrides.stderr ?? process.stderr,
     env: overrides.env ?? process.env,
     exit: overrides.exit ?? ((code: number) => process.exit(code)),
+    close: async () => {
+      await harness?.close?.();
+    },
   };
 }
 

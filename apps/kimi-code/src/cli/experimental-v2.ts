@@ -1,18 +1,23 @@
 /**
- * Experimental agent-core-v2 engine gate for `echadron -p` (print mode).
+ * Agent-engine routing for Echadron's CLI surfaces.
  *
- * When the master switch `ECHADRON_EXPERIMENTAL_FLAG` is truthy, print mode
- * routes to the native agent-core-v2 runner instead of the default v1
- * harness (see `run-prompt.ts`). Read directly from the env (matching
- * `cli/update/rollout.ts`) because the CLI must not depend on the core flag
- * registry. Unset / any non-truthy value keeps the v1 harness.
- *
- * Note: `echadron web` always boots kap-server (the agent-core-v2 engine
- * server) — it no longer consults this switch.
+ * Agent-core-v2 is the supported/default engine. Set the legacy switch only
+ * when an integration still needs the v1 SDK surface. The experimental
+ * switch remains reserved for experimental feature flags; it must not decide
+ * which engine the CLI uses.
  */
 
+/** Canonical opt-out switch for the legacy v1 engine. */
+export const ECHADRON_LEGACY_ENV = 'ECHADRON_LEGACY_FLAG';
+/** @deprecated Use ECHADRON_LEGACY_ENV. */
+export const KIMI_LEGACY_ENV = 'KIMI_CODE_LEGACY_FLAG';
+
+/**
+ * @deprecated The experimental flag no longer selects the engine. It remains
+ * exported for source compatibility with older integrations.
+ */
 export const ECHADRON_V2_ENV = 'ECHADRON_EXPERIMENTAL_FLAG';
-/** @deprecated Use ECHADRON_V2_ENV. Kept for SDK/config compatibility. */
+/** @deprecated The experimental flag no longer selects the engine. */
 export const KIMI_V2_ENV = 'KIMI_CODE_EXPERIMENTAL_FLAG';
 
 const TRUTHY_VALUES = new Set(['1', 'true', 'yes', 'on']);
@@ -24,8 +29,15 @@ function isTruthyEnv(
   return TRUTHY_VALUES.has((env[key] ?? '').trim().toLowerCase());
 }
 
+export function isLegacyEnabled(
+  env: Readonly<Record<string, string | undefined>> = process.env,
+): boolean {
+  return isTruthyEnv(ECHADRON_LEGACY_ENV, env) || isTruthyEnv(KIMI_LEGACY_ENV, env);
+}
+
+/** True unless the caller explicitly opts into the legacy v1 engine. */
 export function isKimiV2Enabled(
   env: Readonly<Record<string, string | undefined>> = process.env,
 ): boolean {
-  return isTruthyEnv(ECHADRON_V2_ENV, env) || isTruthyEnv(KIMI_V2_ENV, env);
+  return !isLegacyEnabled(env);
 }

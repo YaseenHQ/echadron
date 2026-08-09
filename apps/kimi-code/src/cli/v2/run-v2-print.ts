@@ -13,7 +13,7 @@
  *   - applies the print-mode background policy (config-driven, v1-aligned:
  *     `exit` / `drain` / `steer`) before exiting.
  *
- * Selected by `runPrompt` when `KIMI_CODE_EXPERIMENTAL_FLAG` is set.
+ * Selected by `runPrompt` unless the explicit legacy engine switch is set.
  */
 
 import { readFile } from 'node:fs/promises';

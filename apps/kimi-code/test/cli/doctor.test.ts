@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 
 import { Command } from 'commander';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   handleDoctor,
@@ -14,11 +14,15 @@ import {
 let dir: string;
 
 beforeEach(async () => {
+  // These fixtures assert the legacy config-RPC formatter. The default doctor
+  // path validates through the agent-core-v2 registry.
+  vi.stubEnv('ECHADRON_LEGACY_FLAG', '1');
   dir = join(tmpdir(), `kimi-doctor-${Date.now()}-${Math.random().toString(36).slice(2)}`);
   await mkdir(dir, { recursive: true });
 });
 
 afterEach(async () => {
+  vi.unstubAllEnvs();
   await rm(dir, { recursive: true, force: true });
 });
 
@@ -154,6 +158,22 @@ describe('kimi doctor', () => {
     expect(out).toContain(`OK config.toml  ${configPath}`);
     expect(out).not.toContain('tui.toml');
     expect(out).toContain('All checked config files are valid.');
+  });
+
+  it('validates config.toml through the native v2 registry by default', async () => {
+    vi.stubEnv('ECHADRON_LEGACY_FLAG', '');
+    const configPath = join(dir, 'v2-config.toml');
+    await writeValidConfig(configPath);
+    const { deps, stdout, stderr } = makeDeps();
+
+    const code = await handleDoctor(
+      { ...deps, defaultConfigPath: () => configPath },
+      { target: 'config' },
+    );
+
+    expect(code).toBe(0);
+    expect(stderr.join('')).toBe('');
+    expect(stdout.join('')).toContain(`OK config.toml  ${configPath}`);
   });
 
   it('does not resolve the default config path when an explicit config path is provided', async () => {
