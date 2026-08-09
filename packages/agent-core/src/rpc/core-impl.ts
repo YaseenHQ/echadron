@@ -103,6 +103,7 @@ import type {
   GoalSnapshot,
   GoalToolResult,
   GlobalMcpServerConfig,
+  GlobalMcpServerAuthStatus,
   GlobalMcpServerNamePayload,
   GlobalMcpServerTestResult,
   ExportSessionPayload,
@@ -777,6 +778,47 @@ export class KimiCore implements PromisableMethods<CoreAPI> {
 
   async listGlobalMcpServers(_input?: EmptyPayload): Promise<readonly GlobalMcpServerConfig[]> {
     return this.globalMcpConfig.list();
+  }
+
+  async listGlobalMcpServerAuthStatuses(): Promise<readonly GlobalMcpServerAuthStatus[]> {
+    const servers = await this.globalMcpConfig.list();
+    return Promise.all(
+      servers.map(async (server) => {
+        const config = mcpConfigWithoutName(server);
+        if (config.transport === 'stdio') {
+          return { name: server.name, authStatus: 'not-applicable' as const };
+        }
+        if (config.bearerTokenEnvVar !== undefined) {
+          return { name: server.name, authStatus: 'bearer-token' as const };
+        }
+        if (config.headers !== undefined && config.auth !== 'oauth') {
+          return { name: server.name, authStatus: 'not-applicable' as const };
+        }
+        if (this.globalMcpOAuth.hasTokens(server.name, config.url)) {
+          return { name: server.name, authStatus: 'oauth-authorized' as const };
+        }
+        if (config.auth === 'oauth') {
+          return { name: server.name, authStatus: 'oauth-required' as const };
+        }
+
+        const manager = new McpConnectionManager({
+          oauthService: this.globalMcpOAuth,
+          defaultStartupTimeoutMs: resolveMcpStartupTimeoutMs(this.config.mcp?.startupTimeoutMs),
+          defaultToolTimeoutMs: resolveMcpToolTimeoutMs(this.config.mcp?.toolTimeoutMs),
+        });
+        try {
+          await manager.connectAll({ [server.name]: config });
+          return {
+            name: server.name,
+            authStatus: manager.get(server.name)?.status === 'needs-auth'
+              ? 'oauth-required'
+              : 'not-applicable',
+          } as const;
+        } finally {
+          await manager.shutdown();
+        }
+      }),
+    );
   }
 
   async addGlobalMcpServer(

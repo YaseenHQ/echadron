@@ -11,6 +11,7 @@ import {
   type Event,
   type ExperimentalFeatureState,
   type GetCronTasksResult,
+  type GlobalMcpServerAuthStatus,
   type QuestionRequest,
   type QuestionResult,
   type RPCMethods,
@@ -274,6 +275,11 @@ export abstract class SDKRpcClientBase {
   async listGlobalMcpServers(): Promise<readonly McpServerConfig[]> {
     const rpc = await this.getRpc();
     return rpc.listGlobalMcpServers({});
+  }
+
+  async listGlobalMcpServerAuthStatuses(): Promise<readonly GlobalMcpServerAuthStatus[]> {
+    const rpc = await this.getRpc();
+    return rpc.listGlobalMcpServerAuthStatuses({});
   }
 
   async addGlobalMcpServer(server: McpServerConfig): Promise<readonly McpServerConfig[]> {

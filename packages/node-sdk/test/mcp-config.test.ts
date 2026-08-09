@@ -211,6 +211,36 @@ describe('standalone MCP check (connection result)', () => {
 });
 
 describe('MCP OAuth facade (host-controlled browser flow)', () => {
+  it('reports global MCP auth status without starting an OAuth flow', async () => {
+    const homeDir = await makeTempDir();
+    await writeMcpConfig(homeDir, {
+      mcpServers: {
+        local: { transport: 'stdio', command: 'local-command' },
+        bearer: {
+          transport: 'http',
+          url: 'https://mcp.example.test/mcp',
+          bearerTokenEnvVar: 'MCP_TOKEN',
+        },
+        oauth: {
+          transport: 'http',
+          url: 'https://mcp.example.test/oauth',
+          auth: 'oauth',
+        },
+      },
+    });
+    const harness = createKimiHarness({ homeDir });
+
+    try {
+      await expect(harness.listMcpServerAuthStatuses()).resolves.toEqual([
+        { name: 'local', authStatus: 'not-applicable' },
+        { name: 'bearer', authStatus: 'bearer-token' },
+        { name: 'oauth', authStatus: 'oauth-required' },
+      ]);
+    } finally {
+      await harness.close();
+    }
+  });
+
   it('resets authorization for a configured remote server', async () => {
     const homeDir = await makeTempDir();
     const harness = createKimiHarness({ homeDir });
