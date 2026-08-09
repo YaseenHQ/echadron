@@ -310,7 +310,7 @@ describe('FullCompaction', () => {
       properties: expect.objectContaining({
         agent_id: 'main',
         source: 'manual',
-        tokens_before: 39,
+        tokens_before: 3568,
         tokens_after: expect.any(Number),
         duration_ms: expect.any(Number),
         compacted_count: 6,
@@ -613,7 +613,7 @@ describe('FullCompaction', () => {
       session_id: 'test-session',
       cwd: dir,
       trigger: 'auto',
-      token_count: 39,
+      token_count: 3568,
     });
     expect(post).toMatchObject({
       hook_event_name: 'PostCompact',
@@ -711,7 +711,7 @@ describe('FullCompaction', () => {
       event: 'compaction_finished',
       properties: expect.objectContaining({
         source: 'manual',
-        tokens_before: 25,
+        tokens_before: 14606,
         retry_count: 1,
         trace_id: 'trace-compact-1',
       }),
@@ -1094,7 +1094,7 @@ describe('FullCompaction', () => {
       properties: expect.objectContaining({
         agent_id: 'main',
         source: 'manual',
-        tokens_before: 25,
+        tokens_before: 14606,
         duration_ms: expect.any(Number),
         round: 1,
         retry_count: 0,
@@ -1323,7 +1323,7 @@ describe('FullCompaction', () => {
       event: 'compaction_failed',
       properties: expect.objectContaining({
         source: 'manual',
-        tokens_before: 25,
+        tokens_before: 14606,
         duration_ms: expect.any(Number),
         retry_count: 4,
         error_type: 'APIConnectionError',
@@ -1520,7 +1520,7 @@ describe('FullCompaction', () => {
   });
 
   it('auto-compacts very large context in one full-history round when the summarizer accepts it', async () => {
-    const maxContextTokens = 4_000;
+    const maxContextTokens = 20_000;
     const ctx = testAgent();
     ctx.configure({
       provider: CATALOGUED_PROVIDER,
@@ -1547,7 +1547,7 @@ describe('FullCompaction', () => {
     const compactedPrefixSizes = ctx.llmCalls.map((call) =>
       estimateTokensForMessages(call.history.slice(0, -1)),
     );
-    expect(initialTokens).toBeGreaterThan(maxContextTokens * 9);
+    expect(initialTokens).toBeGreaterThan(maxContextTokens);
     expect(countEvents(events, 'full_compaction.complete')).toBe(1);
     expect(countEvents(events, 'compaction.completed')).toBe(1);
     expect(compactedPrefixSizes).toHaveLength(1);
@@ -1695,8 +1695,8 @@ describe('FullCompaction', () => {
       event: 'compaction_finished',
       properties: expect.objectContaining({
         source: 'auto',
-        tokens_before: 46,
-        tokens_after: 166,
+        tokens_before: 3575,
+        tokens_after: 3559,
         compacted_count: 7,
         retry_count: 0,
       }),

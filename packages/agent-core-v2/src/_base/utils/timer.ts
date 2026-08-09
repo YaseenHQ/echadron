@@ -7,9 +7,22 @@
  * `Disposable` owner and cleaned up for free. One instance is reused across
  * start/stop cycles instead of juggling raw `ReturnType<typeof setInterval>`
  * values. Mirrors VS Code's `IntervalTimer`.
+ *
+ * `setClampedTimeout` keeps long-lived waits below the host timer limit. Callers
+ * that need to wait longer than one host timer window must re-arm it against
+ * their wall-clock deadline rather than relying on a single overflowing timer.
  */
 
 import type { IDisposable } from '#/_base/di/lifecycle';
+
+export const MAX_TIMER_DELAY_MS = 0x7fffffff;
+
+export function setClampedTimeout(
+  callback: () => void,
+  timeoutMs: number,
+): ReturnType<typeof setTimeout> {
+  return setTimeout(callback, Math.min(timeoutMs, MAX_TIMER_DELAY_MS));
+}
 
 export interface IntervalTimerOptions {
   readonly unref?: boolean;

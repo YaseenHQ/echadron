@@ -16,6 +16,7 @@
  * stay visible. Explicit user config always wins over these defaults.
  */
 
+import { MAX_TIMER_DELAY_MS } from '#/_base/utils/timer';
 import { ConfigTarget, type ConfigInspectValue, type IConfigService } from '#/app/config/config';
 import { LOOP_CONTROL_SECTION } from '#/agent/loop/configSection';
 import { SUBAGENT_SECTION } from '#/session/subagent/configSection';
@@ -26,7 +27,7 @@ import { LEGACY_BACKGROUND_SECTION, TASK_SECTION } from './configSection';
  * Wall-clock ceiling (seconds) for the drain/steer wait once the main turn
  * ends: 10 years ≈ unbounded.
  */
-export const PRINT_WAIT_CEILING_S_DEFAULT = 315_360_000;
+export const PRINT_WAIT_CEILING_S_DEFAULT = Math.floor(MAX_TIMER_DELAY_MS / 1000);
 
 /** Cap on extra turns steered by background-task completions: ≈ unbounded. */
 export const PRINT_MAX_TURNS_DEFAULT = 100_000;

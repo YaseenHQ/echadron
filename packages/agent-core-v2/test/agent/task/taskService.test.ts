@@ -175,6 +175,21 @@ describe('AgentTaskService', () => {
     await svc.stop(id);
   });
 
+  it('wait with a timeout beyond the timer ceiling does not resolve immediately', async () => {
+    const svc = ix.get(IAgentTaskService);
+    const taskId = svc.registerTask(fakeProcessTask());
+    const waited = svc.wait(taskId, 10 * 365 * 24 * 3600 * 1000);
+    const early = await Promise.race([
+      waited.then(() => 'returned' as const),
+      new Promise<'waiting'>((resolve) => setTimeout(() => {
+        resolve('waiting');
+      }, 50)),
+    ]);
+    expect(early).toBe('waiting');
+    await svc.stop(taskId);
+    await expect(waited).resolves.toMatchObject({ taskId });
+  });
+
   function capturingWire(): { dispatched: { type: string; payload: unknown }[] } {
     const dispatched: { type: string; payload: unknown }[] = [];
     ix.stub(IWireService, {

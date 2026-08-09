@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { estimateTokensForMessages } from '#/kosong/contract/tokens';
 import { buildImageCompressionCaption } from '#/agent/media/image-compress';
+import { buildContextCompactionShape } from '#/agent/contextMemory/compactionHandoff';
 import type { ContextMessage } from '#/agent/contextMemory/types';
 import { IWireService } from '#/wire/wire';
 import {
@@ -34,6 +35,26 @@ describe('Agent context', () => {
     } finally {
       await ctx.dispose();
     }
+  });
+
+  it('keeps compaction token estimates on the full-request basis', () => {
+    const history = [userMessage('u1', { kind: 'user' })];
+    const withoutOverhead = buildContextCompactionShape(history, {
+      summary: 'summary',
+      compactedCount: 1,
+      tokensBefore: 0,
+      summaryOutputTokens: 500,
+    });
+    const withOverhead = buildContextCompactionShape(history, {
+      summary: 'summary',
+      compactedCount: 1,
+      tokensBefore: 0,
+      summaryOutputTokens: 500,
+      requestOverheadTokens: 3_000,
+    });
+
+    expect(withOverhead.tokensAfter).toBe(withoutOverhead.tokensAfter + 3_000);
+    expect(withOverhead.messages).toEqual(withoutOverhead.messages);
   });
 
   it('stores prompt origins without leaking them to LLM projection', () => {
