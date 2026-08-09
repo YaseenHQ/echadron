@@ -21,6 +21,9 @@ import {
   IAgentFullCompactionService,
   type FullCompactionTask,
 } from '#/agent/fullCompaction/fullCompaction';
+import { TurnModel, type TurnModelState } from '#/agent/loop/turnOps';
+import { createHooks } from '#/hooks';
+import { IWireService, type WireHooks } from '#/wire/wire';
 
 class FakeBus {
   private readonly byType = new Map<string, Array<(e: DomainEvent) => void>>();
@@ -64,16 +67,29 @@ let disposables: DisposableStore;
 function harness(
   seedTasks: readonly AgentTaskInfo[] = [],
   compacting: FullCompactionTask | null = null,
+  lastEnded?: TurnModelState['lastEnded'],
 ) {
   const bus = new FakeBus();
   const loop = {
     status: () => ({ state: 'idle', pendingTurnIds: [], hasPendingRequests: false }),
   } as unknown as IAgentLoopService;
   const tasks = { list: () => seedTasks } as unknown as IAgentTaskService;
+  const wire = {
+    _serviceBrand: undefined,
+    hooks: createHooks<WireHooks, keyof WireHooks>(['onDidRestore']),
+    getModel: (model: unknown) =>
+      model === TurnModel ? { nextTurnId: 0, cancelledTurnIds: [], lastEnded } : undefined,
+    dispatch: () => {},
+    seal: async () => {},
+    restore: async () => {},
+    flush: async () => {},
+    subscribe: () => ({ dispose: () => {} }),
+  } as unknown as IWireService;
   const ix = disposables.add(new TestInstantiationService());
   ix.stub(IEventBus, bus as unknown as IEventBus);
   ix.stub(IAgentLoopService, loop);
   ix.stub(IAgentTaskService, tasks);
+  ix.stub(IWireService, wire);
   ix.set(IAgentStateService, new AgentStateService());
   ix.stub(IAgentFullCompactionService, {
     _serviceBrand: undefined,
@@ -144,6 +160,11 @@ describe('AgentActivityView', () => {
     expect(view.state().background).toEqual([
       expect.objectContaining({ kind: 'compaction', id: 'full-compaction' }),
     ]);
+  });
+
+  it('seeds the last turn outcome from the wire model on creation', () => {
+    const { view } = harness([], null, { turnId: 7, reason: 'failed', durationMs: 1234 });
+    expect(view.state().lastTurn).toMatchObject({ turnId: 7, reason: 'failed', durationMs: 1234 });
   });
 
   it('folds turn boundaries into turn / lastTurn', () => {
