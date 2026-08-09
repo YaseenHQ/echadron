@@ -1,5 +1,6 @@
 import type {
   ExportSessionManifest,
+  McpServerConfig as SessionMcpServerConfig,
   ResumeSessionResult,
   ShellEnvironment,
   TelemetryClient,
@@ -110,6 +111,8 @@ export interface CreateSessionOptions {
   readonly kaos?: Kaos | undefined;
   readonly persistenceKaos?: Kaos | undefined;
   readonly additionalDirs?: readonly string[];
+  /** MCP servers supplied by the host for this session. */
+  readonly mcpServers?: Readonly<Record<string, SessionMcpServerConfig>>;
   /**
    * Main-agent profile name (`--agent`): a builtin profile or one defined by
    * an agentfile discovered from the user/project agent directories.

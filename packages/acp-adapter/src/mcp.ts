@@ -35,10 +35,9 @@ import { log } from '@moonshot-ai/kimi-code-sdk';
  * transports (`acp`) are warn-dropped — the caller never has to
  * filter them out.
  *
- * Caveat (ACP schema 0.23): the `McpServer` union types stdio as a
- * bare branch WITHOUT a discriminator. Members marked `http`, `sse`,
- * `acp` carry an explicit `type` field; stdio is identified by the
- * ABSENCE of `type`. We branch accordingly.
+ * ACP v1 (0.23) represents stdio without a discriminator, while the ACP v2
+ * draft adds `type: 'stdio'`. Both forms are accepted here so hosts can
+ * forward either protocol generation through the same kernel boundary.
  */
 export function acpMcpServersToConfigs(
   servers: readonly McpServer[] | undefined,
@@ -55,11 +54,10 @@ export function acpMcpServersToConfigs(
 function acpMcpServerToConfig(
   server: McpServer,
 ): { name: string; config: McpServerConfig } | null {
-  // The stdio branch of the `McpServer` union has no `type` field
-  // (see ACP schema 0.23 — stdio is the bare `McpServerStdio` shape
-  // in the discriminated union). Anything without an explicit `type`
-  // is treated as stdio.
-  if (!('type' in server) || typeof server.type !== 'string') {
+  // ACP v1 has a bare stdio branch, while ACP v2 explicitly discriminates it
+  // as `type: 'stdio'`.
+  const transportType = (server as { type?: unknown }).type;
+  if (transportType === undefined || transportType === 'stdio') {
     const stdio = server as McpServerStdio;
     const config: McpServerConfig = {
       transport: 'stdio',
@@ -69,22 +67,24 @@ function acpMcpServerToConfig(
     };
     return { name: stdio.name, config };
   }
-  switch (server.type) {
+  switch (transportType) {
     case 'http': {
+      const http = server as Extract<McpServer, { type: 'http' }>;
       const config: McpServerConfig = {
         transport: 'http',
-        url: server.url,
-        headers: headersArrayToRecord(server.headers),
+        url: http.url,
+        headers: headersArrayToRecord(http.headers),
       };
-      return { name: server.name, config };
+      return { name: http.name, config };
     }
     case 'sse': {
+      const sse = server as Extract<McpServer, { type: 'sse' }>;
       const config: McpServerConfig = {
         transport: 'sse',
-        url: server.url,
-        headers: headersArrayToRecord(server.headers),
+        url: sse.url,
+        headers: headersArrayToRecord(sse.headers),
       };
-      return { name: server.name, config };
+      return { name: sse.name, config };
     }
     case 'acp':
     default: {
