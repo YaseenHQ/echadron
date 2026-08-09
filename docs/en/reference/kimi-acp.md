@@ -12,6 +12,18 @@ Once started, the command prints no banner and immediately waits for the ACP cli
 You typically do not need to run `echadron acp` manually — this command is the subprocess entry point for IDEs. For IDE-side configuration, see [Using in IDEs](../guides/ides.md).
 :::
 
+## Experimental ACP protocol v2
+
+Echadron also ships an explicit `echadron acp-v2` entry point for the draft ACP v2 protocol:
+
+```sh
+echadron acp-v2
+```
+
+This is intentionally separate from `echadron acp`. It uses the ACP TypeScript SDK's experimental v2 transport (including JSON-RPC batches), required message IDs, unified tool-call upserts, structured plan/state updates, and the v2 `auth/login` / `auth/logout` surface. The existing Echadron session and provider configuration remain the source of truth, so switching entry points does not create a second login or model store.
+
+ACP v2 is still an unstable, opt-in protocol. Clients should only launch this command when they explicitly negotiate protocol version `2`; production integrations should keep using `echadron acp` until their ACP client supports the v2 draft. See the [ACP v2 proposal](https://agentclientprotocol.com/rfds/v2/overview) for the breaking changes and migration status.
+
 ## Capability Matrix
 
 The table below lists the capabilities declared by the current ACP adapter layer. The `agentCapabilities` field is returned in full in the `initialize` response, so the IDE can adjust its UI accordingly.
