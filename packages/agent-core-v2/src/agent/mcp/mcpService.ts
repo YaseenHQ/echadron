@@ -6,7 +6,10 @@
  * keeps them registered across reconnects, swaps in the OAuth tool for
  * `needs-auth` servers, journals tool discoveries on the wire (queued until
  * restore finishes), and publishes `mcp.server.status` / `tool.list.updated`
- * events. The plain-data state (`mcpToolsByServer`, `discoveryWritesReady`)
+ * events. The initial connect is non-blocking during agent construction;
+ * `onWillBeginStep` waits for it before the first model request, while the
+ * tool-executor hook remains a backstop for direct tool execution. The
+ * plain-data state (`mcpToolsByServer`, `discoveryWritesReady`)
  * is registered into `agentState` (`IAgentStateService`) and read/written
  * through it; `mcpTools` stays a plain instance field (its values hold
  * disposable resource handles, not plain data), as does `pendingDiscoveries`
@@ -29,6 +32,7 @@ import { ITelemetryService } from '#/app/telemetry/telemetry';
 import { sessionMediaOriginalsDir } from '#/agent/media/image-originals';
 import { IAgentToolExecutorService } from '#/agent/toolExecutor/toolExecutor';
 import { IAgentToolRegistryService } from '#/agent/toolRegistry/toolRegistry';
+import { IAgentLoopService } from '#/agent/loop/loop';
 import { createMcpAuthTool } from '#/agent/mcp/tools/auth';
 import { createMcpTool } from '#/agent/mcp/tools/mcp';
 import { ISessionContext } from '#/session/sessionContext/sessionContext';
@@ -102,6 +106,7 @@ export class AgentMcpService extends Disposable implements IAgentMcpService {
     @IAgentToolRegistryService private readonly registry: IAgentToolRegistryService,
     @IEventBus private readonly eventBus: IEventBus,
     @IAgentToolExecutorService toolExecutor: IAgentToolExecutorService,
+    @IAgentLoopService loop: IAgentLoopService,
     @IWireService private readonly wire: IWireService,
     @ITelemetryService private readonly telemetry: ITelemetryService,
     @IAgentStateService private readonly states: IAgentStateService,
@@ -110,6 +115,10 @@ export class AgentMcpService extends Disposable implements IAgentMcpService {
     this.states.register(mcpMcpToolsByServerKey);
     this.states.register(mcpDiscoveryWritesReadyKey);
     this.attachMcpTools();
+    loop.hooks.onWillBeginStep.register('mcp', async (ctx, next) => {
+      await this.waitForInitialLoad(ctx.signal);
+      await next();
+    });
     this._register(
       toolExecutor.onWillExecuteTool((event) => {
         event.waitUntil(this.waitForInitialLoad(event.signal));

@@ -18,7 +18,8 @@
  * prompt prefixes) lives with the callers — driving turns on an agent is the
  * `subagent` domain (`ISessionSubagentService`); the session's shared MCP
  * subsystem is the `sessionMcp` domain (`ISessionMcpService`), which this
- * service awaits during creation.
+ * service starts during creation while the agent's first loop step waits for
+ * readiness.
  */
 
 import { IInstantiationService } from '#/_base/di/instantiation';
@@ -151,7 +152,9 @@ export class AgentLifecycleService extends Disposable implements IAgentLifecycle
   }
 
   private async doCreate(agentId: string, opts: CreateAgentOptions): Promise<IAgentScopeHandle> {
-    const mcpReady = this.sessionMcp.ensureMcpReady();
+    // Start shared MCP loading without delaying agent construction. The
+    // agent-scoped MCP service gates the first loop step on readiness.
+        void this.sessionMcp.ensureMcpReady();
     const agentHomedir = this.bootstrap.agentHomedir(
       this.ctx.workspaceId,
       this.ctx.sessionId,
@@ -189,7 +192,6 @@ export class AgentLifecycleService extends Disposable implements IAgentLifecycle
         labels: opts.labels,
       });
       this.onDidCreateEmitter.fire(handle);
-      await mcpReady;
       await wire.restore();
       await this.bindBootstrap(handle, opts);
       // Activate the AgentTool contributions allowed by the bound Profile

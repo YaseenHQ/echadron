@@ -13,14 +13,12 @@ export interface ISessionMcpService {
   readonly _serviceBrand: undefined;
 
   /**
-   * Resolve the session/plugin MCP config and wait for the initial connection
-   * attempt to finish. The initial connect waits for `config.ready` so global
-   * timeout preferences apply deterministically. Per-server failures are
-   * reflected in MCP status entries rather than rejecting this promise; an
-   * outright failure is logged. `callerServers` (caller-supplied servers from
-   * session create) merge into the initial connect between file config and
-   * plugin servers; the first call wins — the initial load is cached and
-   * later calls ignore the arg.
+   * Resolve the session/plugin MCP config and start the initial connection
+   * attempt. The returned promise settles when that attempt finishes, but
+   * agent construction does not block on it; the first loop step waits through
+   * the agent MCP service. `callerServers` merge into the initial connect
+   * between file config and plugin servers; the first call wins — the initial
+   * load is cached and later calls ignore the arg.
    */
   ensureMcpReady(callerServers?: Readonly<Record<string, McpServerConfig>>): Promise<void>;
 

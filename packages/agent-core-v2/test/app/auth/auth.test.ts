@@ -371,7 +371,12 @@ describe('OAuthService', () => {
   });
 
   it('preserves a successful OAuth login and provider ref when catalog provisioning is unavailable', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => Promise.reject(new Error('catalog offline'))));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => {
+        throw new Error('catalog offline');
+      }),
+    );
     toolkit.login.mockImplementation((provider, options) => {
       options.onDeviceCode(deviceAuth);
       return Promise.resolve({ providerName: provider, ok: true });
