@@ -274,6 +274,29 @@ describe('SessionAgentProfileCatalog', () => {
     });
   }
 
+  it('keeps builtin profile state isolated between catalogs', async () => {
+    const firstLayout = await makeLayout();
+    const secondLayout = await makeLayout();
+    const first = catalog({
+      workDir: firstLayout.workDir,
+      brandHomeDir: firstLayout.brandHome,
+      osHomeDir: firstLayout.osHome,
+    });
+    const second = catalog({
+      workDir: secondLayout.workDir,
+      brandHomeDir: secondLayout.brandHome,
+      osHomeDir: secondLayout.osHome,
+    });
+    await Promise.all([first.ready, second.ready]);
+
+    first.getDefault().tools.push('InjectedTool');
+    first.getDefault().subagents!['injected'] = first.get('coder')!;
+
+    expect(second.getDefault().tools).not.toContain('InjectedTool');
+    expect(second.getDefault().subagents).not.toHaveProperty('injected');
+    expect(DEFAULT_AGENT_PROFILES['agent']!.tools).not.toContain('InjectedTool');
+  });
+
   async function writeAgent(dir: string, fileName: string, text: string): Promise<void> {
     await mkdir(dir, { recursive: true });
     await writeFile(join(dir, fileName), text, 'utf-8');

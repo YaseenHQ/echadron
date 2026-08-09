@@ -187,6 +187,21 @@ export async function mcpResultToExecutableOutput(
   }
 
   const wrapped = wrapMediaOnly(converted, qualifiedToolName);
+  const structuredExtras: Record<string, unknown> = {};
+  if (result['structuredContent'] !== undefined) {
+    structuredExtras['structuredContent'] = result['structuredContent'];
+  }
+  if (result['_meta'] !== undefined) {
+    const meta = stripReservedMetaKeys(result['_meta']);
+    if (meta !== undefined) structuredExtras['_meta'] = meta;
+  }
+  const serializedStructuredExtras = serializeStructuredExtras(structuredExtras);
+  if (serializedStructuredExtras !== undefined) {
+    wrapped.push({
+      type: 'text',
+      text: `\n<mcp-structured-result>\n${serializedStructuredExtras}\n</mcp-structured-result>`,
+    });
+  }
   // Text budget FIRST, on the tool's own text only: captions produced by the
   // compression step below ride the `note` side channel and never compete
   // with a chatty tool's text for the budget — an evicted or mid-string-
@@ -226,6 +241,32 @@ export async function mcpResultToExecutableOutput(
     note: compressed.captions.length > 0 ? compressed.captions.join('\n') : undefined,
     truncated: truncated ? true : undefined,
   };
+}
+
+function serializeStructuredExtras(extras: Record<string, unknown>): string | undefined {
+  if (Object.keys(extras).length === 0) return undefined;
+  try {
+    return JSON.stringify(extras).replaceAll('</mcp-structured-result>', '');
+  } catch {
+    return undefined;
+  }
+}
+
+function stripReservedMetaKeys(meta: Record<string, unknown>): Record<string, unknown> | undefined {
+  const visible = Object.fromEntries(
+    Object.entries(meta).filter(([key]) => !isReservedMetaKey(key)),
+  );
+  return Object.keys(visible).length === 0 ? undefined : visible;
+}
+
+function isReservedMetaKey(key: string): boolean {
+  const slash = key.indexOf('/');
+  if (slash <= 0) return false;
+  const labels = key.slice(0, slash).split('.');
+  return labels.some(
+    (label, index) =>
+      (label === 'modelcontextprotocol' || label === 'mcp') && index < labels.length - 1,
+  );
 }
 
 /**

@@ -281,6 +281,26 @@ describe('mcpResultToExecutableOutput', () => {
     expect(out).toEqual({ output: 'kept', isError: false });
   });
 
+  test('forwards structured content and visible metadata to the model', async () => {
+    const out = await mcpResultToExecutableOutput(
+      {
+        content: [{ type: 'text', text: 'ok' }],
+        isError: false,
+        structuredContent: { url: 'https://example.com' },
+        _meta: {
+          'modelcontextprotocol.io/progress': 1,
+          'example.com/custom': 2,
+        },
+      },
+      'mcp__s__t',
+    );
+    const parts = out.output as ContentPart[];
+    const joined = parts.map((part) => (part.type === 'text' ? part.text : '')).join('');
+    expect(joined).toContain('"structuredContent":{"url":"https://example.com"}');
+    expect(joined).toContain('"example.com/custom":2');
+    expect(joined).not.toContain('modelcontextprotocol.io/progress');
+  });
+
   test('wraps media-only output in mcp_tool_result tags using the qualified name', async () => {
     const out = await mcpResultToExecutableOutput(
       result([{ type: 'image', data: 'AAA', mimeType: 'image/png' }]),

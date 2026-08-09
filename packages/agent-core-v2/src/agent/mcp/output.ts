@@ -147,6 +147,21 @@ export async function mcpResultToExecutableOutput(
   }
 
   const wrapped = wrapMediaOnly(converted, qualifiedToolName);
+  const structuredExtras: Record<string, unknown> = {};
+  if (result['structuredContent'] !== undefined) {
+    structuredExtras['structuredContent'] = result['structuredContent'];
+  }
+  if (result['_meta'] !== undefined) {
+    const meta = stripReservedMetaKeys(result['_meta']);
+    if (meta !== undefined) structuredExtras['_meta'] = meta;
+  }
+  const serializedStructuredExtras = serializeStructuredExtras(structuredExtras);
+  if (serializedStructuredExtras !== undefined) {
+    wrapped.push({
+      type: 'text',
+      text: `\n<mcp-structured-result>\n${serializedStructuredExtras}\n</mcp-structured-result>`,
+    });
+  }
   const budgeted = applyTextBudget(wrapped);
   const compressed = await compressImageContentParts(budgeted.parts, {
     telemetry:
@@ -172,6 +187,32 @@ export async function mcpResultToExecutableOutput(
     note,
     truncated: truncated ? true : undefined,
   };
+}
+
+function serializeStructuredExtras(extras: Record<string, unknown>): string | undefined {
+  if (Object.keys(extras).length === 0) return undefined;
+  try {
+    return JSON.stringify(extras).replaceAll('</mcp-structured-result>', '');
+  } catch {
+    return undefined;
+  }
+}
+
+function stripReservedMetaKeys(meta: Record<string, unknown>): Record<string, unknown> | undefined {
+  const visible = Object.fromEntries(
+    Object.entries(meta).filter(([key]) => !isReservedMetaKey(key)),
+  );
+  return Object.keys(visible).length === 0 ? undefined : visible;
+}
+
+function isReservedMetaKey(key: string): boolean {
+  const slash = key.indexOf('/');
+  if (slash <= 0) return false;
+  const labels = key.slice(0, slash).split('.');
+  return labels.some(
+    (label, index) =>
+      (label === 'modelcontextprotocol' || label === 'mcp') && index < labels.length - 1,
+  );
 }
 
 function wrapMediaOnly(parts: readonly ContentPart[], qualifiedToolName: string): ContentPart[] {
