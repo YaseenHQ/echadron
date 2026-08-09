@@ -4,7 +4,7 @@ import { join } from 'pathe';
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import type { OAuthTokens } from '@modelcontextprotocol/sdk/shared/auth.js';
+import type { OAuthClientInformationFull, OAuthTokens } from '@modelcontextprotocol/sdk/shared/auth.js';
 import { McpOAuthClientProvider, McpOAuthService } from '../../src/mcp/oauth';
 import { JsonFileStore, sanitizeStoreKey } from '../../src/mcp/oauth/store';
 
@@ -155,6 +155,36 @@ describe('MCP OAuth credential identity', () => {
 
     expect(provider.redirectUrl).toBe('http://127.0.0.1:45678/callback');
     expect(provider.clientMetadata.redirect_uris).toEqual(['http://127.0.0.1:45678/callback']);
+  });
+
+  it('invalidates a client registration when the callback URI changes', () => {
+    const provider = new McpOAuthClientProvider({
+      serverName: 'notion',
+      serverUrl: 'https://mcp.notion.com/mcp',
+      store: new JsonFileStore(dir),
+    });
+    provider.saveClientInformation({
+      client_id: 'cached-client',
+      redirect_uris: ['http://127.0.0.1:45678/callback'],
+    } satisfies OAuthClientInformationFull);
+
+    expect(provider.invalidateStaleRegistration('http://127.0.0.1:45679/callback')).toBe(true);
+    expect(provider.clientInformation()).toBeUndefined();
+  });
+
+  it('keeps a client registration when the callback URI still matches', () => {
+    const provider = new McpOAuthClientProvider({
+      serverName: 'notion',
+      serverUrl: 'https://mcp.notion.com/mcp',
+      store: new JsonFileStore(dir),
+    });
+    provider.saveClientInformation({
+      client_id: 'cached-client',
+      redirect_uris: ['http://127.0.0.1:45678/callback'],
+    } satisfies OAuthClientInformationFull);
+
+    expect(provider.invalidateStaleRegistration('http://127.0.0.1:45678/callback')).toBe(false);
+    expect(provider.clientInformation()).toMatchObject({ client_id: 'cached-client' });
   });
 });
 

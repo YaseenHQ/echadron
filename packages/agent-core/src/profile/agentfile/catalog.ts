@@ -79,13 +79,37 @@ interface FileProfileEntry {
   readonly override: boolean;
 }
 
+function cloneBuiltinProfiles(): Map<string, ResolvedAgentProfile> {
+  const profiles = new Map<string, ResolvedAgentProfile>(
+    Object.entries(DEFAULT_AGENT_PROFILES).map(([name, profile]) => [
+      name,
+      {
+        ...profile,
+        tools: [...profile.tools],
+        disallowedTools:
+          profile.disallowedTools === undefined ? undefined : [...profile.disallowedTools],
+      },
+    ]),
+  );
+  for (const profile of profiles.values()) {
+    if (profile.subagents === undefined) continue;
+    profile.subagents = Object.fromEntries(
+      Object.entries(profile.subagents).map(([name, target]) => [
+        name,
+        profiles.get(name) ?? target,
+      ]),
+    );
+  }
+  return profiles;
+}
+
 export class SessionAgentProfileCatalog {
   private merged: Map<string, ResolvedAgentProfile>;
   private readonly readyPromise: Promise<void>;
   private snapshotValue: AgentProfileCatalogSnapshot | undefined;
 
   constructor(private readonly options: SessionAgentCatalogOptions) {
-    this.merged = new Map(Object.entries(DEFAULT_AGENT_PROFILES));
+    this.merged = cloneBuiltinProfiles();
     this.readyPromise = this.load();
     // Keep an un-awaited rejection from crashing the process; createMain /
     // spawn awaiters see the error through `ready`.
@@ -123,7 +147,7 @@ export class SessionAgentProfileCatalog {
   /** Replace live discovery with the file-backed catalog bound at creation. */
   restoreSnapshot(snapshot: AgentProfileCatalogSnapshot): void {
     const restored = AgentProfileCatalogSnapshotSchema.parse(snapshot);
-    this.merged = new Map(Object.entries(DEFAULT_AGENT_PROFILES));
+    this.merged = cloneBuiltinProfiles();
 
     const builtinDefault = this.getDefault();
     const systemMd =

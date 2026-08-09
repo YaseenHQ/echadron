@@ -222,6 +222,22 @@ describe('ReadTool', () => {
     });
   });
 
+  it('transcodes UTF-16 text to the model UTF-8 view', async () => {
+    const source = Buffer.from('alpha\nbeta\n', 'utf16le');
+    const bytes = Buffer.concat([Buffer.from([0xff, 0xfe]), source]);
+    const { fs, readBytes, readLines } = createSpiedMapFs({
+      '/tmp/utf16.txt': { bytes },
+    });
+    const tool = new ReadTool(fs, createTestEnv(), PERMISSIVE_WORKSPACE);
+
+    const result = await execute(tool, { path: '/tmp/utf16.txt' });
+
+    expect(result.output).toBe('1\talpha\n2\tbeta');
+    expect(result.note).toContain('Detected file encoding: UTF-16 LE');
+    expect(readBytes).toHaveBeenCalledWith('/tmp/utf16.txt');
+    expect(readLines).not.toHaveBeenCalled();
+  });
+
   it('stats the resolved target so symlinked files stay readable', async () => {
     const { fs, stat } = createSpiedFs('alpha\n');
     const tool = new ReadTool(fs, createTestEnv(), PERMISSIVE_WORKSPACE);
@@ -541,7 +557,7 @@ describe('ReadTool', () => {
 
     expect(result.isError).toBe(true);
     expect(output).toBe(
-      '"/tmp/not-utf8.txt" is not readable as UTF-8 text. If it is an image or video, use ReadMediaFile. For other binary formats, use Bash or an MCP tool if available.',
+      '"/tmp/not-utf8.txt" is not valid UTF-8 or UTF-16 text. Only UTF-8 and UTF-16 text files can be read; convert other encodings (for example GBK) to UTF-8 first.',
     );
     expect(output).not.toContain('Python tools');
     expect(output).not.toContain(replacement);

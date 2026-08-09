@@ -126,6 +126,7 @@ export class McpOAuthService {
     }
 
     provider.setRedirectUrl(new URL(callbackServer.redirectUri));
+    provider.invalidateStaleRegistration(callbackServer.redirectUri);
 
     let authorizationUrl: URL | undefined;
     try {

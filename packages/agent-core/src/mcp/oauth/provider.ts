@@ -153,6 +153,15 @@ export class McpOAuthClientProvider implements OAuthClientProvider {
     return this.store.read<OAuthDiscoveryState>(`${this.storeKey}${DISCOVERY_SUFFIX}`);
   }
 
+  invalidateStaleRegistration(redirectUri: string): boolean {
+    const info = this.clientInformation();
+    if (info === undefined || !('redirect_uris' in info)) return false;
+    const uris = info.redirect_uris;
+    if (!Array.isArray(uris) || uris.length === 0 || uris.includes(redirectUri)) return false;
+    this.invalidateCredentials('client');
+    return true;
+  }
+
   invalidateCredentials(scope: 'all' | 'client' | 'tokens' | 'verifier' | 'discovery'): void {
     if (scope === 'verifier') {
       this._codeVerifier = undefined;

@@ -162,6 +162,15 @@ export class McpOAuthClientProvider implements OAuthClientProvider {
     return this.discoveryCache;
   }
 
+  async invalidateStaleRegistration(redirectUri: string): Promise<boolean> {
+    const info = await this.clientInformation();
+    if (info === undefined || !('redirect_uris' in info)) return false;
+    const uris = info.redirect_uris;
+    if (!Array.isArray(uris) || uris.length === 0 || uris.includes(redirectUri)) return false;
+    await this.invalidateCredentials('client');
+    return true;
+  }
+
   async invalidateCredentials(
     scope: 'all' | 'client' | 'tokens' | 'verifier' | 'discovery',
   ): Promise<void> {
