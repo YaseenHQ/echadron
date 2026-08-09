@@ -12,6 +12,31 @@ Echadron CLI supports three MCP server connection methods:
 - **HTTP**: The CLI connects to an already-running HTTP endpoint. Suitable for remote services or processes that need to run persistently.
 - **SSE**: The CLI connects to a legacy HTTP+SSE endpoint (Server-Sent Events, a streaming HTTP mechanism). Prefer HTTP for new MCP servers, but use `transport: "sse"` when a service still exposes only the older SSE transport.
 
+## MCP protocol versions
+
+Echadron uses the official MCP TypeScript v2 client with automatic protocol
+negotiation. For a modern server it probes `server/discover`, then uses the
+stateless `2026-07-28` protocol: every request carries the client metadata in
+`_meta`, and HTTP requests include `MCP-Protocol-Version`, `Mcp-Method`, and
+the operation name when applicable. There is no `Mcp-Session-Id`. Servers that
+still implement the previous initialize/session protocol are detected and
+continue to work through the SDK's legacy fallback.
+
+Modern HTTP tool catalogs are cache-aware and deterministic. Echadron honors
+the server's list-result cache hints, automatically mirrors valid
+`x-mcp-header` tool parameters into `Mcp-Param-*` headers, and refreshes the
+registered tools when a server publishes a list-change notification. The
+legacy SSE transport remains available only for compatibility; new servers
+should use HTTP.
+
+The July 2026 protocol also changes interactive server requests to the
+multi-round-trip (`input_required`) extension and moves Tasks into an
+extension. Echadron currently does not advertise MCP elicitation, sampling,
+roots, or Tasks handlers, so a server requiring those interactions may return
+an MCP error rather than opening an interactive TUI prompt. This is isolated
+from ordinary tool discovery and calls and is tracked separately from the
+stateless transport migration.
+
 ## Configuration
 
 MCP server configuration is written in `mcp.json`, at two levels:
@@ -61,7 +86,7 @@ Optional fields:
 
 You do not have to set the connection timeout or the single tool-call timeout per server: `[mcp] startup_timeout_ms` / `[mcp] tool_timeout_ms` in `config.toml` or the `KIMI_MCP_STARTUP_TIMEOUT_MS` / `KIMI_MCP_TOOL_TIMEOUT_MS` environment variables change the global defaults. Precedence is: per-server field > environment variable > `config.toml` > built-in default. See [Configuration files](../configuration/config-files.md#mcp).
 
-HTTP and SSE servers support providing static credentials via `headers` or `bearerTokenEnvVar`. When OAuth is needed, run `/mcp-config login <server-name>` to complete browser-based authorization.
+HTTP and SSE servers support providing static credentials via `headers` or `bearerTokenEnvVar`. When OAuth is needed, run `/mcp-config login <server-name>` to complete browser-based authorization. The callback's optional OAuth `iss` value is validated by the v2 SDK before the authorization code is redeemed, preventing authorization-server mix-up attacks.
 
 Plugins can also declare MCP servers in their manifest. Servers declared by a plugin are enabled by default and can be disabled or re-enabled in `/plugins`, then a new session must be started. See [Plugins](./plugins.md) for details.
 

@@ -3,7 +3,7 @@
  *
  * `startCallbackServer()` binds 127.0.0.1 on a random free port and returns a
  * handle exposing the resulting `redirect_uri` and an awaitable
- * `waitForCode()` that resolves with `{ code, state }` from the first
+ * `waitForCode()` that resolves with `{ code, state, iss }` from the first
  * `/callback` request. Any subsequent requests get a generic 404 and a
  * non-callback path is ignored. The server is closed automatically once a
  * code has been delivered (or `close()` is called explicitly).
@@ -15,6 +15,8 @@ import type { AddressInfo } from 'node:net';
 export interface CallbackResult {
   readonly code: string;
   readonly state: string | undefined;
+  /** RFC 9207 authorization-server issuer returned by the callback, if any. */
+  readonly iss: string | undefined;
 }
 
 export interface CallbackServer {
@@ -94,9 +96,10 @@ export async function startCallbackServer(): Promise<CallbackServer> {
       return;
     }
     const state = url.searchParams.get('state') ?? undefined;
+    const iss = url.searchParams.get('iss') ?? undefined;
     res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' }).end(SUCCESS_HTML);
     settle(() => {
-      resolveCode?.({ code, state });
+      resolveCode?.({ code, state, iss });
     });
   }
 

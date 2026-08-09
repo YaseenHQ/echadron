@@ -164,6 +164,11 @@ export interface AddAdditionalDirInput {
   readonly persist: boolean;
 }
 
+export interface SetAdditionalDirsInput {
+  readonly id: string;
+  readonly additionalDirs: readonly string[];
+}
+
 export interface AddAdditionalDirOptions {
   /** When true, share the directory through workspace local config. When false,
    * keep it scoped to this session while still restoring it on session resume. */
@@ -280,6 +285,10 @@ export interface AddAdditionalDirResult {
   readonly projectRoot: string;
   readonly configPath: string;
   readonly persisted: boolean;
+}
+
+export interface SetAdditionalDirsResult {
+  readonly additionalDirs: readonly string[];
 }
 
 export type ResumedSessionState = Pick<ResumeSessionResult, 'sessionMetadata' | 'agents' | 'warning'>;

@@ -12,6 +12,7 @@ import type { SDKRpcClientBase } from '#/rpc';
 import type {
   AddAdditionalDirOptions,
   AddAdditionalDirResult,
+  SetAdditionalDirsResult,
   BackgroundTaskInfo,
   CompactOptions,
   CreateGoalInput,
@@ -174,6 +175,20 @@ export class Session {
       path: normalized,
       persist: options?.persist ?? true,
     });
+    this.summary = { ...this.requireSummary(), additionalDirs: result.additionalDirs };
+    return result;
+  }
+
+  async setAdditionalDirs(additionalDirs: readonly string[]): Promise<SetAdditionalDirsResult> {
+    this.ensureOpen();
+    const normalized = additionalDirs.map((directory) =>
+      normalizeRequiredString(
+        directory,
+        'Additional directory cannot be empty',
+        ErrorCodes.REQUEST_INVALID,
+      ),
+    );
+    const result = await this.rpc.setAdditionalDirs({ id: this.id, additionalDirs: normalized });
     this.summary = { ...this.requireSummary(), additionalDirs: result.additionalDirs };
     return result;
   }

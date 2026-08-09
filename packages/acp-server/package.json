@@ -1,0 +1,25 @@
+{
+  "name": "@moonshot-ai/acp-server",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Experimental ACP v2 server for Echadron, backed by the existing SDK harness",
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsdown",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@agentclientprotocol/sdk-v2": "npm:@agentclientprotocol/sdk@^1.3.0",
+    "@moonshot-ai/acp-adapter": "workspace:^",
+    "@moonshot-ai/kimi-code-sdk": "workspace:^"
+  }
+}

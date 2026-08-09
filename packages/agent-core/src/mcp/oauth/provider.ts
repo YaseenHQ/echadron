@@ -18,15 +18,13 @@
 import { randomBytes } from 'node:crypto';
 
 import type {
-  OAuthClientProvider,
-  OAuthDiscoveryState,
-} from '@modelcontextprotocol/sdk/client/auth.js';
-import type {
   OAuthClientInformationFull,
   OAuthClientInformationMixed,
   OAuthClientMetadata,
+  OAuthClientProvider,
+  OAuthDiscoveryState,
   OAuthTokens,
-} from '@modelcontextprotocol/sdk/shared/auth.js';
+} from '@modelcontextprotocol/client';
 
 import { JsonFileStore, canonicalMcpOAuthResource, mcpOAuthStoreKey } from './store';
 

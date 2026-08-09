@@ -12,6 +12,12 @@ export { AcpServer, runAcpServer, runAcpServerWithStream } from './server';
 export type { SlashCommandsSnapshot } from './server';
 export { AcpSession } from './session';
 export {
+  buildModeOption,
+  buildModelOption,
+  buildSessionConfigOptions,
+  buildThinkingOption,
+} from './config-options';
+export {
   acpBlocksToPromptParts,
   displayBlockToAcpContent,
   toolResultToAcpContent,

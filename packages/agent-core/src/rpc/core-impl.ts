@@ -136,6 +136,8 @@ import type {
   ResumeSessionPayload,
   SessionSummary,
   SetActiveToolsPayload,
+  SetAdditionalDirsPayload,
+  SetAdditionalDirsResult,
   SetKimiConfigPayload,
   SetModelPayload,
   SetModelResult,
@@ -1166,6 +1168,14 @@ export class KimiCore implements PromisableMethods<CoreAPI> {
     ...payload
   }: SessionScopedPayload<AddAdditionalDirPayload>): Promise<AddAdditionalDirResult> {
     return this.requireSession(sessionId).addAdditionalDir(payload.path, payload.persist);
+  }
+
+  async setAdditionalDirs({
+    sessionId,
+    ...payload
+  }: SessionScopedPayload<SetAdditionalDirsPayload>): Promise<SetAdditionalDirsResult> {
+    await this.requireSession(sessionId).setAdditionalDirs(payload.additionalDirs);
+    return { additionalDirs: this.requireSession(sessionId).getAdditionalDirs() };
   }
 
   startBtw({ sessionId, ...payload }: SessionAgentPayload<EmptyPayload>): Promise<string> {

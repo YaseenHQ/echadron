@@ -1,8 +1,8 @@
 import { ErrorCodes, Error2 } from '#/errors';
 import type { McpServerStdioConfig } from './config-schema';
 import { proxyEnvForChild, reconcileChildNoProxy } from '#/_base/utils/proxy';
-import { Client } from '@modelcontextprotocol/sdk/client/index.js';
-import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
+import { Client } from '@modelcontextprotocol/client';
+import { StdioClientTransport } from '@modelcontextprotocol/client/stdio';
 import { isAbsolute, resolve } from 'pathe';
 
 import {
@@ -23,6 +23,7 @@ export interface StdioMcpClientOptions {
   readonly startupTimeoutMs?: number;
   readonly toolCallTimeoutMs?: number;
   readonly defaultCwd?: string;
+  readonly onToolsChanged?: (tools: MCPToolDefinition[]) => void;
 }
 
 const STDERR_BUFFER_CAPACITY = 4 * 1024;
@@ -57,10 +58,29 @@ export class StdioMcpClient implements MCPClient {
     this.transport.stderr?.on('data', (chunk: Buffer | string) => {
       this.stderrBuffer.push(typeof chunk === 'string' ? chunk : chunk.toString('utf8'));
     });
-    this.client = new Client({
-      name: options.clientName ?? KIMI_MCP_CLIENT_NAME,
-      version: options.clientVersion ?? KIMI_MCP_CLIENT_VERSION,
-    });
+    this.client = new Client(
+      {
+        name: options.clientName ?? KIMI_MCP_CLIENT_NAME,
+        version: options.clientVersion ?? KIMI_MCP_CLIENT_VERSION,
+      },
+      {
+        versionNegotiation: { mode: 'auto' },
+        ...(options.onToolsChanged === undefined
+          ? {}
+          : {
+              listChanged: {
+                tools: {
+                  onChanged: (error: Error | null, tools?: readonly unknown[] | null) => {
+                    if (error !== null || tools === undefined || tools === null) return;
+                    options.onToolsChanged?.(
+                      tools.map((tool) => toMcpToolDefinition(tool as Parameters<typeof toMcpToolDefinition>[0])),
+                    );
+                  },
+                },
+              },
+            }),
+      },
+    );
     this.startupTimeoutMs = options.startupTimeoutMs;
     this.toolCallTimeoutMs = options.toolCallTimeoutMs;
   }
@@ -121,7 +141,7 @@ export class StdioMcpClient implements MCPClient {
     signal?: AbortSignal,
   ): Promise<MCPToolResult> {
     const requestOptions = buildRequestOptions(this.toolCallTimeoutMs, signal);
-    const result = await this.client.callTool({ name, arguments: args }, undefined, requestOptions);
+    const result = await this.client.callTool({ name, arguments: args }, requestOptions);
     return toMcpToolResult(result);
   }
 

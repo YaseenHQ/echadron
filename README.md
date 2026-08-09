@@ -74,7 +74,7 @@ channel; it never contacts or installs the upstream Kimi Code release.
 
 ## Use it in your editor (ACP)
 
-Echadron speaks the [Agent Client Protocol](https://agentclientprotocol.com/), so ACP-compatible editors and IDEs (Zed, JetBrains, …) can drive a session over stdio. Log in once with `/login`, then point your editor at `echadron acp` — no extra login is needed. ACP clients that support terminal authentication can also launch the Echadron OAuth flow when no credential is configured.
+Echadron speaks the [Agent Client Protocol](https://agentclientprotocol.com/), so ACP-compatible editors and IDEs (Zed, JetBrains, …) can drive a session over stdio. Log in once with `/login`, then point your editor at `echadron acp` — no extra login is needed. ACP clients that support terminal authentication can also launch the Echadron OAuth flow when no credential is configured. Clients that explicitly support the draft ACP v2 protocol can opt into `echadron acp-v2`; the stable `acp` entry point remains the compatibility default.
 
 For Zed, add this to `~/.config/zed/settings.json`:
 
