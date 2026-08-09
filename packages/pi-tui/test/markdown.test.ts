@@ -36,6 +36,51 @@ function stripAnsi(line: string): string {
 }
 
 describe("Markdown component", () => {
+	describe("Upstream Markdown extensions", () => {
+		it("applies width-aware source transforms", () => {
+			const calls: Array<{ source: string; width: number }> = [];
+			const markdown = new Markdown("source", 2, 0, defaultMarkdownTheme, undefined, {
+				transform: (source, width) => {
+					calls.push({ source, width });
+					return `${source} ${width}`;
+				},
+			});
+
+			assert.deepStrictEqual(markdown.render(80).map((line) => stripAnsi(line).trim()), ["source 76"]);
+			markdown.render(80);
+			assert.deepStrictEqual(markdown.render(60).map((line) => stripAnsi(line).trim()), ["source 56"]);
+			assert.deepStrictEqual(calls, [
+				{ source: "source", width: 76 },
+				{ source: "source", width: 56 },
+			]);
+		});
+
+		it("renders supported inline and display LaTeX as Unicode", () => {
+			const inline = new Markdown(String.raw`A map $\mathbb{C}^3 \to \mathbb{C}^3$ and $\frac{1}{2}$.`, 0, 0, defaultMarkdownTheme);
+			assert.deepStrictEqual(inline.render(80).map((line) => stripAnsi(line).trimEnd()), ["A map ℂ³ → ℂ³ and 1/2."]);
+
+			const display = new Markdown("Before\n\n$$\\{x \\in \\{0, \\pm 1\\}\\}$$\n\nafter", 0, 0, defaultMarkdownTheme);
+			assert.deepStrictEqual(display.render(80).map((line) => stripAnsi(line).trimEnd()), [
+				"Before",
+				"",
+				"{x ∈ {0, ± 1}}",
+				"",
+				"after",
+			]);
+		});
+
+		it("preserves incomplete math and supports disabling rendering", () => {
+			const source = String.raw`Map $\mathbb{C}^3`;
+			const streaming = new Markdown(source, 0, 0, defaultMarkdownTheme);
+			assert.deepStrictEqual(streaming.render(80).map((line) => stripAnsi(line).trimEnd()), [source]);
+
+			const disabled = new Markdown(String.raw`Map $\mathbb{C}^3 \to \mathbb{C}^3$`, 0, 0, defaultMarkdownTheme, undefined, {
+				renderLatex: false,
+			});
+			assert.deepStrictEqual(disabled.render(80).map((line) => stripAnsi(line).trimEnd()), [String.raw`Map $\mathbb{C}^3 \to \mathbb{C}^3$`]);
+		});
+	});
+
 	describe("Lists", () => {
 		it("should render simple nested list", () => {
 			const markdown = new Markdown(

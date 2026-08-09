@@ -20,6 +20,14 @@ describe("truncateToWidth", () => {
 		assert.strictEqual(truncated.endsWith("\x1b[0m…\x1b[0m"), true);
 	});
 
+	it("closes a BEL-terminated OSC 8 link when truncating its label", () => {
+		const open = "\x1b]8;;https://example.com\x07";
+		const close = "\x1b]8;;\x07";
+		const text = `${open}some-longer-label-here${close}`;
+
+		assert.strictEqual(truncateToWidth(text, 15), `${open}some-longer-${close}\x1b[0m...\x1b[0m`);
+	});
+
 	it("handles malformed ANSI escape prefixes without hanging", () => {
 		const text = `abc\x1bnot-ansi ${"🙂".repeat(1000)}`;
 		const truncated = truncateToWidth(text, 20, "…");
@@ -58,6 +66,20 @@ describe("truncateToWidth", () => {
 describe("visibleWidth", () => {
 	it("counts tabs inline and skips ANSI inline", () => {
 		assert.strictEqual(visibleWidth("\t\x1b[31m界\x1b[0m"), 5);
+	});
+
+	it("counts Indic continuation cells grouped into grapheme clusters", () => {
+		assert.strictEqual(visibleWidth("र्क"), 2);
+		assert.strictEqual(visibleWidth("नेटवर्क"), 5);
+		assert.strictEqual(visibleWidth("ર્ક"), 2);
+		assert.strictEqual(visibleWidth("ର୍କ"), 2);
+	});
+
+	it("keeps ordinary combining marks zero-width", () => {
+		assert.strictEqual(visibleWidth("e\u0301"), 1);
+		assert.strictEqual(visibleWidth("שָׁ"), 1);
+		assert.strictEqual(visibleWidth("بّ"), 1);
+		assert.strictEqual(visibleWidth("རྐ"), 1);
 	});
 
 	it("keeps Thai and Lao AM clusters at their normal cell width", () => {
