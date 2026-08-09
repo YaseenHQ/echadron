@@ -75,6 +75,8 @@ const ModelAliasBaseSchema = z.object({
   // turning thinking off sends this value instead of omitting the effort
   // field — required by models whose default is to reason.
   offEffort: z.string().optional(),
+  /** Explicit Anthropic-style prompt-cache breakpoint retention. */
+  cacheRetention: z.enum(['none', 'short', 'long']).optional(),
   /** Mode-specific request headers from a models.dev experimental mode. */
   requestHeaders: StringRecordSchema.optional(),
   /** Mode-specific JSON request fields from a models.dev experimental mode. */

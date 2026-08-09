@@ -1038,6 +1038,92 @@ describe('AnthropicChatProvider', () => {
       ]);
     });
 
+    it('can disable explicit cache breakpoints', async () => {
+      const provider = new AnthropicChatProvider({
+        model: 'k25',
+        apiKey: 'test-key',
+        defaultMaxTokens: 1024,
+        stream: false,
+        cacheRetention: 'none',
+      });
+      const body = await captureRequestBody(
+        provider,
+        'You are helpful.',
+        [ADD_TOOL],
+        [{ role: 'user', content: [{ type: 'text', text: 'Hi' }], toolCalls: [] }],
+      );
+
+      expect(body['system']).toEqual([{ type: 'text', text: 'You are helpful.' }]);
+      expect(body['tools']).toEqual([
+        {
+          name: 'add',
+          description: 'Add two integers.',
+          input_schema: ADD_TOOL.parameters,
+        },
+      ]);
+      expect(body['messages']).toEqual([
+        { role: 'user', content: [{ type: 'text', text: 'Hi' }] },
+      ]);
+    });
+
+    it('supports the long Anthropic cache retention tier', async () => {
+      const provider = new AnthropicChatProvider({
+        model: 'k25',
+        apiKey: 'test-key',
+        defaultMaxTokens: 1024,
+        stream: false,
+        cacheRetention: 'long',
+      });
+      const body = await captureRequestBody(
+        provider,
+        'You are helpful.',
+        [ADD_TOOL],
+        [{ role: 'user', content: [{ type: 'text', text: 'Hi' }], toolCalls: [] }],
+      );
+
+      expect(body['system']).toEqual([
+        { type: 'text', text: 'You are helpful.', cache_control: { type: 'ephemeral', ttl: '1h' } },
+      ]);
+      expect((body['tools'] as Array<Record<string, unknown>>)[0]?.['cache_control']).toEqual({
+        type: 'ephemeral',
+        ttl: '1h',
+      });
+      expect(
+        ((body['messages'] as Array<Record<string, unknown>>)[0]?.['content'] as Array<Record<string, unknown>>)[0]?.['cache_control'],
+      ).toEqual({ type: 'ephemeral', ttl: '1h' });
+    });
+
+    it('keeps a compaction summary out of the cache-write breakpoint', async () => {
+      const provider = new AnthropicChatProvider({
+        model: 'k25',
+        apiKey: 'test-key',
+        defaultMaxTokens: 1024,
+        stream: false,
+      });
+      const body = await captureRequestBody(
+        provider,
+        '',
+        [],
+        [
+          {
+            role: 'assistant',
+            content: [{ type: 'text', text: 'Earlier context' }],
+            toolCalls: [],
+          },
+          { role: 'user', content: [{ type: 'text', text: 'Compaction summary' }], toolCalls: [] },
+        ],
+        { skipCacheWrite: true },
+      );
+
+      expect(body['messages']).toEqual([
+        {
+          role: 'assistant',
+          content: [{ type: 'text', text: 'Earlier context', cache_control: { type: 'ephemeral' } }],
+        },
+        { role: 'user', content: [{ type: 'text', text: 'Compaction summary' }] },
+      ]);
+    });
+
     it('tool definitions with cache_control on last tool', async () => {
       const provider = createProvider();
       const history: Message[] = [

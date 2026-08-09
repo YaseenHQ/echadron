@@ -556,6 +556,7 @@ export class FullCompaction {
           this.activeSummarizerTrace = trace;
           const generateOptions: GenerateOptionsWithRequestLogFields = {
             signal,
+            skipCacheWrite: true,
             requestLogFields: { kind: 'compaction', droppedCount },
             onTraceId: (traceId) => {
               trace.capture(traceId);

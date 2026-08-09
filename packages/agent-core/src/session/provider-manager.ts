@@ -1,5 +1,10 @@
 import type { Logger } from '#/logging/types';
-import type { ProviderConfig as KosongProviderConfig, ModelCapability, ProviderRequestAuth } from '@moonshot-ai/kosong';
+import {
+  clampPromptCacheKey,
+  type ProviderConfig as KosongProviderConfig,
+  type ModelCapability,
+  type ProviderRequestAuth,
+} from '@moonshot-ai/kosong';
 import {
   APIStatusError,
   classifyKimiQuotaError,
@@ -124,6 +129,7 @@ export class ProviderManager implements ModelProvider {
     }
 
     const effectiveAlias = effectiveModelAlias(alias, providerConfig.type);
+    const promptCacheKey = clampPromptCacheKey(this.options.promptCacheKey);
 
     if (!Number.isInteger(effectiveAlias.maxContextSize) || effectiveAlias.maxContextSize <= 0) {
       throw new KimiError(
@@ -142,7 +148,8 @@ export class ProviderManager implements ModelProvider {
       effectiveAlias.requestHeaders,
       effectiveAlias.maxOutputSize,
       effectiveAlias.reasoningKey,
-      this.options.promptCacheKey,
+      promptCacheKey,
+      effectiveAlias.cacheRetention,
       effectiveAlias.supportEfforts,
       effectiveAlias.offEffort,
       effectiveAlias.adaptiveThinking,
@@ -282,6 +289,7 @@ function toKosongProviderConfig(
   maxOutputSize: number | undefined,
   reasoningKey: string | undefined,
   promptCacheKey: string | undefined,
+  cacheRetention: ModelAlias['cacheRetention'],
   supportEfforts: readonly string[] | undefined,
   offEffort: string | undefined,
   adaptiveThinking: boolean | undefined,
@@ -306,6 +314,7 @@ function toKosongProviderConfig(
         apiKey: providerApiKey(provider),
         ...(maxOutputSize !== undefined ? { defaultMaxTokens: maxOutputSize } : {}),
         ...(requestBody !== undefined ? { generationKwargs: requestBody } : {}),
+        ...(cacheRetention !== undefined ? { cacheRetention } : {}),
         supportEfforts,
         ...(adaptiveThinking !== undefined ? { adaptiveThinking } : {}),
         // Kimi routed over the Anthropic transport keeps its vendor error

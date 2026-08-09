@@ -64,7 +64,9 @@ export function formatStepDebugTiming(input: StepTimingInput): string | undefine
   if (hasInputUsage && (inputTokens > 0 || (outputTokens ?? 0) > 0)) {
     const cacheReadTokens = input.usage.inputCacheRead ?? 0;
     const cacheCreationTokens = input.usage.inputCacheCreation ?? 0;
-    const cacheHitRate = inputTokens > 0 ? Math.round((cacheReadTokens / inputTokens) * 100) : 0;
+    const cacheableInput = (input.usage.inputOther ?? 0) + cacheReadTokens;
+    const cacheHitRate =
+      cacheableInput > 0 ? Math.round((cacheReadTokens / cacheableInput) * 100) : 0;
     const cacheParts = [`cache read ${formatTokenCount(cacheReadTokens)} (${cacheHitRate}%)`];
     if (cacheCreationTokens > 0) {
       cacheParts.push(`write ${formatTokenCount(cacheCreationTokens)}`);

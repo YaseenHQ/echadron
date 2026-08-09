@@ -69,6 +69,7 @@ import {
   OpenAIResponsesStreamedMessage,
 } from '#/kosong/provider/bases/openai/openai-responses';
 import { OpenAILegacyChatProvider } from '#/kosong/provider/bases/openai/openai-legacy';
+import { extractUsage } from '#/kosong/provider/bases/openai/openai-common';
 import { ProtocolAdapterRegistry } from '#/kosong/provider/protocolAdapterRegistry';
 import {
   getProviderDefinition,
@@ -710,6 +711,66 @@ describe('per-turn intent wire encoding (behavior probes)', () => {
     const body = await captureOpenAIBody(provider, { cacheKey: 'session-probe' });
 
     expect(body['prompt_cache_key']).toBe('session-probe');
+  });
+
+  it('clamps cache keys to 64 Unicode characters on every wire', async () => {
+    const cacheKey = '🙂'.repeat(70);
+    const openAI = registry.createChatProvider({
+      protocol: 'openai',
+      modelName: 'gpt-4o',
+      apiKey: 'sk-probe',
+    });
+    const openAIBody = await captureOpenAIBody(openAI, { cacheKey });
+    expect(openAIBody['prompt_cache_key']).toBe('🙂'.repeat(64));
+
+    const anthropic = registry.createChatProvider({
+      protocol: 'anthropic',
+      modelName: 'claude-opus-4-6',
+      apiKey: 'sk-probe',
+    });
+    const { params } = await captureAnthropicBody(anthropic, { cacheKey });
+    expect(params['metadata']).toEqual({ user_id: '🙂'.repeat(64) });
+  });
+
+  it('normalizes OpenAI cache reads and writes without negative uncached input', () => {
+    expect(
+      extractUsage({
+        prompt_tokens: 100,
+        completion_tokens: 3,
+        prompt_tokens_details: { cached_tokens: 60, cache_write_tokens: 50 },
+      }),
+    ).toEqual({
+      inputOther: 0,
+      output: 3,
+      inputCacheRead: 60,
+      inputCacheCreation: 50,
+    });
+  });
+
+  it('normalizes cache reads and writes on the Responses stream', async () => {
+    async function* response(): AsyncIterable<unknown> {
+      yield {
+        type: 'response.completed',
+        response: {
+          id: 'resp-cache-probe',
+          status: 'completed',
+          usage: {
+            input_tokens: 100,
+            output_tokens: 3,
+            input_tokens_details: { cached_tokens: 60, cache_write_tokens: 50 },
+          },
+        },
+      };
+    }
+
+    const stream = new OpenAIResponsesStreamedMessage(response(), true);
+    await drain(stream);
+    expect(stream.usage).toEqual({
+      inputOther: 0,
+      output: 3,
+      inputCacheRead: 60,
+      inputCacheCreation: 50,
+    });
   });
 
   it('encodes cacheKey on Anthropic as metadata.user_id', async () => {

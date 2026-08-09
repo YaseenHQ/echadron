@@ -10,6 +10,7 @@ import {
 import type { ContentPart, Message, StreamedMessagePart, ToolCall } from '#/message';
 import { isToolDeclarationOnlyMessage } from '#/message';
 import type {
+  CacheRetention,
   ChatProvider,
   FinishReason,
   GenerateOptions,
@@ -96,6 +97,8 @@ export interface AnthropicOptions {
   betaFeatures?: string[] | undefined;
   defaultHeaders?: Record<string, string>;
   metadata?: Record<string, string> | undefined;
+  /** Explicit prompt-cache breakpoint policy. Defaults to short ephemeral. */
+  cacheRetention?: CacheRetention | undefined;
   /** Use streaming API. Defaults to true. Set to false for non-streaming (test/fallback). */
   stream?: boolean | undefined;
   /**
@@ -163,6 +166,10 @@ const ANTHROPIC_TOOL_CALL_ID_POLICY: ToolCallIdPolicy = {
   normalize: (id) => sanitizeToolCallId(id, 64),
   maxLength: 64,
 };
+
+function nonNegativeTokenCount(value: number | undefined): number {
+  return typeof value === 'number' && Number.isFinite(value) && value >= 0 ? value : 0;
+}
 
 function applyResponseFormat(
   kwargs: Record<string, unknown>,
@@ -327,8 +334,15 @@ function budgetTokensForEffort(effort: ThinkingEffort): number | undefined {
 }
 
 const CACHE_CONTROL = { type: 'ephemeral' as const };
+const LONG_CACHE_CONTROL = { type: 'ephemeral' as const, ttl: '1h' as const };
 
-type CacheableBlock = ContentBlockParam & { cache_control?: { type: 'ephemeral' } };
+type CacheControl = typeof CACHE_CONTROL | typeof LONG_CACHE_CONTROL;
+type CacheableBlock = ContentBlockParam & { cache_control?: CacheControl };
+
+function cacheControlForRetention(retention: CacheRetention): CacheControl | undefined {
+  if (retention === 'none') return undefined;
+  return retention === 'long' ? LONG_CACHE_CONTROL : CACHE_CONTROL;
+}
 
 function shouldPreserveUnsignedThinking(model: string): boolean {
   return (
@@ -351,15 +365,22 @@ const CACHEABLE_TYPES = new Set([
   'web_search_tool_result',
 ]);
 
-function injectCacheControlOnLastBlock(messages: MessageParam[]): void {
-  const lastMessage = messages.at(-1);
-  if (lastMessage === undefined) return;
-  const content = lastMessage.content;
-  if (!Array.isArray(content) || content.length === 0) return;
-  const lastBlock = content.at(-1) as CacheableBlock | undefined;
-  if (lastBlock === undefined) return;
-  if (CACHEABLE_TYPES.has(lastBlock.type)) {
-    lastBlock.cache_control = CACHE_CONTROL;
+function injectCacheControlOnLastBlock(
+  messages: MessageParam[],
+  cacheControl: CacheControl | undefined,
+  skipCacheWrite = false,
+): void {
+  if (cacheControl === undefined) return;
+  const start = messages.length - (skipCacheWrite ? 2 : 1);
+  for (let messageIndex = start; messageIndex >= 0; messageIndex -= 1) {
+    const message = messages[messageIndex];
+    if (message === undefined) continue;
+    const content = message.content;
+    if (!Array.isArray(content) || content.length === 0) continue;
+    const lastBlock = content.at(-1) as CacheableBlock | undefined;
+    if (lastBlock === undefined || !CACHEABLE_TYPES.has(lastBlock.type)) continue;
+    lastBlock.cache_control = cacheControl;
+    return;
   }
 }
 
@@ -460,7 +481,7 @@ function videoUrlPartToAnthropic(url: string): AnthropicVideoBlock {
   };
 }
 interface AnthropicToolParam extends AnthropicTool {
-  cache_control?: { type: 'ephemeral' } | null;
+  cache_control?: CacheControl | null;
 }
 
 function convertTool(tool: Tool): AnthropicToolParam {
@@ -721,12 +742,21 @@ class AnthropicStreamedMessage implements StreamedMessage {
     output_tokens?: number;
     cache_read_input_tokens?: number;
     cache_creation_input_tokens?: number;
+    cache_creation?: {
+      ephemeral_5m_input_tokens?: number;
+      ephemeral_1h_input_tokens?: number;
+    };
   }): void {
+    const cacheCreation =
+      typeof usage.cache_creation_input_tokens === 'number'
+        ? usage.cache_creation_input_tokens
+        : (usage.cache_creation?.ephemeral_5m_input_tokens ?? 0) +
+          (usage.cache_creation?.ephemeral_1h_input_tokens ?? 0);
     this._usage = {
-      inputOther: usage.input_tokens ?? 0,
-      output: usage.output_tokens ?? 0,
-      inputCacheRead: usage.cache_read_input_tokens ?? 0,
-      inputCacheCreation: usage.cache_creation_input_tokens ?? 0,
+      inputOther: nonNegativeTokenCount(usage.input_tokens),
+      output: nonNegativeTokenCount(usage.output_tokens),
+      inputCacheRead: nonNegativeTokenCount(usage.cache_read_input_tokens),
+      inputCacheCreation: nonNegativeTokenCount(cacheCreation),
     };
   }
 
@@ -926,6 +956,7 @@ export class AnthropicChatProvider implements ChatProvider {
   private _client: Anthropic | undefined;
   private _generationKwargs: AnthropicGenerationKwargs;
   private _metadata: Record<string, string> | undefined;
+  private _cacheRetention: CacheRetention;
   private _apiKey: string | undefined;
   private _baseUrl: string | undefined;
   private _defaultHeaders: Record<string, string | null> | undefined;
@@ -941,6 +972,7 @@ export class AnthropicChatProvider implements ChatProvider {
     this._model = options.model;
     this._stream = options.stream ?? true;
     this._metadata = options.metadata;
+    this._cacheRetention = options.cacheRetention ?? 'short';
     this._adaptiveThinking = options.adaptiveThinking;
     this._supportEfforts = options.supportEfforts;
     this._kimiThinking = options.kimiThinking ?? false;
@@ -993,13 +1025,14 @@ export class AnthropicChatProvider implements ChatProvider {
     history: Message[],
     options?: GenerateOptions,
   ): Promise<StreamedMessage> {
+    const cacheControl = cacheControlForRetention(this._cacheRetention);
     // Build system param
     const system: TextBlockParam[] | undefined = systemPrompt
       ? [
           {
             type: 'text',
             text: systemPrompt,
-            cache_control: CACHE_CONTROL,
+            ...(cacheControl === undefined ? {} : { cache_control: cacheControl }),
           } as TextBlockParam,
         ]
       : undefined;
@@ -1040,7 +1073,7 @@ export class AnthropicChatProvider implements ChatProvider {
 
     // Inject cache_control on last content block of last message (after merge,
     // so it lands on the final tool_result block in the merged user message).
-    injectCacheControlOnLastBlock(messages);
+    injectCacheControlOnLastBlock(messages, cacheControl, options?.skipCacheWrite === true);
 
     // Build generation kwargs (excluding betaFeatures)
     const kwargs: Record<string, unknown> = { ...this._generationKwargs };
@@ -1085,7 +1118,7 @@ export class AnthropicChatProvider implements ChatProvider {
     if (anthropicTools.length > 0) {
       const lastTool = anthropicTools.at(-1);
       if (lastTool !== undefined) {
-        lastTool.cache_control = CACHE_CONTROL;
+        if (cacheControl !== undefined) lastTool.cache_control = cacheControl;
       }
     }
 
