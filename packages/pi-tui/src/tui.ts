@@ -327,6 +327,7 @@ export class TUI extends Container {
 	/** Global callback for debug key (Shift+Ctrl+D). Called before input is forwarded to focused component. */
 	public onDebug?: () => void;
 	private renderRequested = false;
+	private immediateRenderScheduled = false;
 	private renderTimer: NodeJS.Timeout | undefined;
 	private lastRenderAt = 0;
 	private static readonly MIN_RENDER_INTERVAL_MS = 16;
@@ -709,10 +710,7 @@ export class TUI extends Container {
 
 	stop(): void {
 		this.stopped = true;
-		if (this.renderTimer) {
-			clearTimeout(this.renderTimer);
-			this.renderTimer = undefined;
-		}
+		this.cancelRenderTimer();
 		if (this.terminalColorSchemeNotificationsEnabled) {
 			this.terminal.write("\x1b[?2031l");
 		}
@@ -743,24 +741,35 @@ export class TUI extends Container {
 			this.hardwareCursorRow = 0;
 			this.maxLinesRendered = 0;
 			this.previousViewportTop = 0;
-			if (this.renderTimer) {
-				clearTimeout(this.renderTimer);
-				this.renderTimer = undefined;
-			}
-			this.renderRequested = true;
-			process.nextTick(() => {
-				if (this.stopped || !this.renderRequested) {
-					return;
-				}
-				this.renderRequested = false;
-				this.lastRenderAt = performance.now();
-				this.doRender();
-			});
+			this.requestImmediateRender();
 			return;
 		}
 		if (this.renderRequested) return;
 		this.renderRequested = true;
 		process.nextTick(() => this.scheduleRender());
+	}
+
+	private requestImmediateRender(): void {
+		this.cancelRenderTimer();
+		this.renderRequested = true;
+		if (this.immediateRenderScheduled) return;
+		this.immediateRenderScheduled = true;
+		process.nextTick(() => {
+			this.immediateRenderScheduled = false;
+			if (this.stopped || !this.renderRequested) return;
+			// A queued scheduleRender() may have created a throttled timer before
+			// this callback. User input must preempt that timer.
+			this.cancelRenderTimer();
+			this.renderRequested = false;
+			this.lastRenderAt = performance.now();
+			this.doRender();
+		});
+	}
+
+	private cancelRenderTimer(): void {
+		if (!this.renderTimer) return;
+		clearTimeout(this.renderTimer);
+		this.renderTimer = undefined;
 	}
 
 	private scheduleRender(): void {
@@ -855,7 +864,9 @@ export class TUI extends Container {
 				return;
 			}
 			this.focusedComponent.handleInput(data);
-			this.requestRender();
+			// Keyboard input is latency-sensitive; don't wait for the 16 ms
+			// throttled frame, especially on Windows terminals.
+			this.requestImmediateRender();
 		}
 	}
 

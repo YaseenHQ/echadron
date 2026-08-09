@@ -12,6 +12,7 @@ Minimal terminal UI framework with differential rendering and synchronized outpu
 - **Built-in Components**: Text, TruncatedText, Input, Editor, Markdown, Loader, SelectList, SettingsList, Spacer, Image, Box, Container
 - **Inline Images**: Renders images in terminals that support Kitty or iTerm2 graphics protocols
 - **Autocomplete Support**: File paths and slash commands
+- **Unicode Math**: Markdown LaTeX expressions render as terminal-friendly Unicode
 
 ## Quick Start
 
@@ -51,6 +52,20 @@ tui.start();
 ```
 
 ## Core API
+
+### Markdown extensions
+
+`Markdown` accepts width-aware source transforms and renders common inline/display
+LaTeX expressions as Unicode (fractions, scripts, symbols, matrices, and cases).
+Streaming or unsupported expressions remain unchanged, and rendering can be
+disabled with `renderLatex: false`:
+
+```typescript
+const markdown = new Markdown("Area $A=\\pi r^2$", 0, 0, theme, undefined, {
+  transform: (source, availableWidth) => source.slice(0, availableWidth * 4),
+  renderLatex: true,
+});
+```
 
 ### TUI
 
