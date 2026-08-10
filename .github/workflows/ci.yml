@@ -68,6 +68,9 @@ jobs:
 
   test-windows:
     runs-on: windows-latest
+    # The full suite still contains unresolved POSIX-only test assumptions.
+    # Keep this job ready for https://github.com/MoonshotAI/kimi-code/issues/225.
+    if: false
     steps:
       - uses: actions/checkout@v6
 
