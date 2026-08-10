@@ -513,10 +513,12 @@ export function projectContext(
       case 'tools.register_user_tool':
       case 'tools.unregister_user_tool':
       case 'tools.set_active_tools':
+      case 'tools.reset_active_tools':
       case 'tools.update_store':
       case 'llm.tools_snapshot':
       case 'llm.request':
       case 'mcp.tools_discovered':
+      case 'profile.bind':
         break;
       default: {
         const _exhaustive: never = rec;

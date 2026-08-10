@@ -24,6 +24,8 @@ export interface SecondaryModelWarning {
 export interface ISessionSecondaryModelWarningService {
   readonly _serviceBrand: undefined;
   getSecondaryModelWarning(): SecondaryModelWarning | undefined;
+  /** Re-evaluate a recipe changed after the session was created. */
+  recheckSecondaryModelWarning(): SecondaryModelWarning | undefined;
 }
 
 export const ISessionSecondaryModelWarningService: ServiceIdentifier<ISessionSecondaryModelWarningService> =

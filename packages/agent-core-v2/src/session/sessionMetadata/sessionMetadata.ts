@@ -35,9 +35,13 @@ export interface SessionMeta {
   readonly updatedAt: number;
   readonly archived: boolean;
   readonly cwd?: string;
+  /** Session-only workspace directories, restored on resume. */
+  readonly additionalDirs?: readonly string[];
   readonly forkedFrom?: string;
   readonly agents?: Readonly<Record<string, AgentMeta>>;
   readonly custom?: Record<string, unknown>;
+  /** Outcome of the latest main-agent turn, persisted for cold listings. */
+  readonly lastTurnReason?: 'completed' | 'cancelled' | 'failed';
 }
 
 export type SessionMetaPatch = Partial<Omit<SessionMeta, 'id' | 'createdAt'>>;
@@ -52,7 +56,10 @@ export interface ISessionMetadata {
   readonly ready: Promise<void>;
   readonly onDidChangeMetadata: Event<SessionMetadataChangedEvent>;
   read(): Promise<SessionMeta>;
-  update(patch: SessionMetaPatch): Promise<void>;
+  update(
+    patch: SessionMetaPatch,
+    opts?: { readonly touchUpdatedAt?: boolean },
+  ): Promise<void>;
   setTitle(title: string): Promise<void>;
   setArchived(archived: boolean): Promise<void>;
   registerAgent(agentId: string, meta: AgentMeta): Promise<void>;

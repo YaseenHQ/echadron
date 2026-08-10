@@ -74,6 +74,24 @@ export class SessionSecondaryModelWarningService
     return this.warning;
   }
 
+  recheckSecondaryModelWarning(): SecondaryModelWarning | undefined {
+    const previous = this.warning;
+    this.warning = this.computeWarning();
+    const changed =
+      previous?.code !== this.warning?.code || previous?.message !== this.warning?.message;
+    if (changed && this.warning !== undefined) {
+      this.agentLifecycle
+        .get(MAIN_AGENT_ID)
+        ?.accessor.get(IEventBus)
+        .publish({
+          type: 'warning',
+          code: this.warning.code,
+          message: this.warning.message,
+        });
+    }
+    return this.warning;
+  }
+
   private check(main: IAgentScopeHandle): void {
     if (this.checked) return;
     this.checked = true;

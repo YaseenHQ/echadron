@@ -42,6 +42,22 @@ export function applyEchadronEnvironmentAliases(
     }
   }
 
+  // The core feature registry historically used the longer KIMI_CODE_ prefix
+  // while the Echadron host uses ECHADRON_. Keep these exact feature switches
+  // synchronized as well; the generic prefix bridge above intentionally does
+  // not rewrite ECHADRON_* to KIMI_CODE_* because most legacy variables use
+  // KIMI_* directly.
+  for (const [echadronName, kimiName] of [
+    ['ECHADRON_EXPERIMENTAL_FLAG', 'KIMI_CODE_EXPERIMENTAL_FLAG'],
+    ['ECHADRON_EXPERIMENTAL_SECONDARY_MODEL', 'KIMI_CODE_EXPERIMENTAL_SECONDARY_MODEL'],
+  ] as const) {
+    const value = env[echadronName] ?? env[kimiName];
+    if (value !== undefined) {
+      fillIfMissing(env, echadronName, value);
+      fillIfMissing(env, kimiName, value);
+    }
+  }
+
   // HOME was historically exposed as KIMI_CODE_HOME and then IMPERIUM_HOME;
   // Echadron uses the shorter product-owned name. Keep all three synchronized
   // at process boundaries so SDK/core path resolution remains coherent.

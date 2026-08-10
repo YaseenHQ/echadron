@@ -209,29 +209,81 @@ export function extractUsage(usage: unknown): TokenUsage | null {
     return null;
   }
   const u = usage as Record<string, unknown>;
-  const promptTokens = typeof u['prompt_tokens'] === 'number' ? u['prompt_tokens'] : 0;
-  const completionTokens = typeof u['completion_tokens'] === 'number' ? u['completion_tokens'] : 0;
-
-  let cached = 0;
-  // Moonshot proprietary: top-level cached_tokens
-  if (typeof u['cached_tokens'] === 'number') {
-    cached = u['cached_tokens'];
-  } else if (
-    typeof u['prompt_tokens_details'] === 'object' &&
-    u['prompt_tokens_details'] !== null
-  ) {
-    const details = u['prompt_tokens_details'] as Record<string, unknown>;
-    if (typeof details['cached_tokens'] === 'number') {
-      cached = details['cached_tokens'];
-    }
-  }
+  const promptTokens = nonNegativeNumber(u['prompt_tokens']) ?? 0;
+  const completionTokens = nonNegativeNumber(u['completion_tokens']) ?? 0;
+  const { cacheRead, cacheWrite } = extractOpenAICacheTokens(u);
 
   return {
-    inputOther: promptTokens - cached,
+    // Some gateways report cache reads/writes in addition to the inclusive
+    // prompt count. Clamp malformed/overlapping counters rather than exposing
+    // negative uncached input to cost and context accounting.
+    inputOther: Math.max(0, promptTokens - cacheRead - cacheWrite),
     output: completionTokens,
-    inputCacheRead: cached,
-    inputCacheCreation: 0,
+    inputCacheRead: cacheRead,
+    inputCacheCreation: cacheWrite,
   };
+}
+
+/**
+ * Read the cache counters used by OpenAI-compatible gateways.
+ *
+ * Vendors are not consistent about placement: OpenAI uses
+ * `prompt_tokens_details.cached_tokens`, Moonshot may emit top-level
+ * `cached_tokens`, and several gateways use `cache_write_tokens` or the
+ * Anthropic-shaped names. Prefer a top-level value when present and fall back
+ * to the nested details object so the same counter is never double-counted.
+ */
+export function extractOpenAICacheTokens(usage: unknown): {
+  cacheRead: number;
+  cacheWrite: number;
+} {
+  if (usage === null || usage === undefined || typeof usage !== 'object') {
+    return { cacheRead: 0, cacheWrite: 0 };
+  }
+
+  const raw = usage as Record<string, unknown>;
+  const details = [raw['prompt_tokens_details'], raw['input_tokens_details']].flatMap((value) =>
+    typeof value === 'object' && value !== null && !Array.isArray(value)
+      ? [value as Record<string, unknown>]
+      : [],
+  );
+
+  const nestedValue = (keys: readonly string[]): number | undefined => {
+    for (const detail of details) {
+      const value = firstNonNegativeNumber(...keys.map((key) => detail[key]));
+      if (value !== undefined) return value;
+    }
+    return undefined;
+  };
+
+  const cacheRead =
+    firstNonNegativeNumber(
+      raw['cached_tokens'],
+      raw['prompt_cache_hit_tokens'],
+      raw['cache_read_input_tokens'],
+    ) ?? nestedValue(['cached_tokens', 'prompt_cache_hit_tokens', 'cache_read_input_tokens']) ?? 0;
+  const cacheWrite =
+    firstNonNegativeNumber(
+      raw['cache_write_tokens'],
+      raw['cache_creation_input_tokens'],
+      raw['cache_creation_tokens'],
+    ) ??
+    nestedValue(['cache_write_tokens', 'cache_creation_input_tokens', 'cache_creation_tokens']) ??
+    0;
+
+  return { cacheRead, cacheWrite };
+}
+
+function firstNonNegativeNumber(...values: unknown[]): number | undefined {
+  for (const value of values) {
+    const number = nonNegativeNumber(value);
+    if (number !== undefined) return number;
+  }
+  return undefined;
+}
+
+function nonNegativeNumber(value: unknown): number | undefined {
+  return typeof value === 'number' && Number.isFinite(value) && value >= 0 ? value : undefined;
 }
 /**
  * Normalize an OpenAI Chat Completions–style `finish_reason` string to the

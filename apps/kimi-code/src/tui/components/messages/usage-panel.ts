@@ -125,6 +125,21 @@ function buildSessionUsageSection(
         formatTokenCount(output),
       )}  total ${value(formatTokenCount(input + output))}`,
     );
+    const cacheRead = usageNumber(row.inputCacheRead);
+    const cacheWrite = usageNumber(row.inputCacheCreation);
+    if (cacheRead > 0 || cacheWrite > 0) {
+      // Cache writes are newly-created entries, not cacheable input for this
+      // request. Keep the denominator aligned with the footer's hit-rate
+      // display: uncached input plus tokens served from an existing cache.
+      const cacheableInput = usageNumber(row.inputOther) + cacheRead;
+      const hitRate =
+        cacheableInput > 0 ? Math.round((cacheRead / cacheableInput) * 100) : 0;
+      lines.push(
+        `  ${muted(model)}  cache read ${value(formatTokenCount(cacheRead))}  hit ${value(
+          `${String(hitRate)}%`,
+        )}${cacheWrite > 0 ? `  write ${value(formatTokenCount(cacheWrite))}` : ''}`,
+      );
+    }
   }
   if (entries.length > 1) {
     lines.push(

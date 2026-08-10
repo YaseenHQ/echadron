@@ -291,6 +291,8 @@ function mapMcpStatus(status: McpEntry['status']): McpServer['status'] {
       return 'error';
     case 'needs-auth':
       return 'error';
+    case 'removed':
+      return 'disconnected';
   }
 }
 

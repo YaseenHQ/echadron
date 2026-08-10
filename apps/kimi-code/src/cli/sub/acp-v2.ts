@@ -26,12 +26,19 @@ import { getDataDir } from '#/utils/paths';
 
 import { runLoginFlow } from './login-flow';
 
+export function registerNativeAcpCommand(parent: Command): void {
+  registerNativeCommand(parent, 'acp');
+}
+
+/** @deprecated Use `echadron acp`; retained for existing ACP v2 clients. */
 export function registerAcpV2Command(parent: Command): void {
+  registerNativeCommand(parent, 'acp-v2');
+}
+
+function registerNativeCommand(parent: Command, commandName: 'acp' | 'acp-v2'): void {
   parent
-    .command('acp-v2')
-    .description(
-      'Run Echadron as an experimental Agent Client Protocol (ACP) v2 server over stdio.',
-    )
+    .command(commandName)
+    .description('Run Echadron as an Agent Client Protocol (ACP v2) server over stdio.')
     .option(
       '--login',
       'Run the device-code login flow then exit (entry point for ACP terminal-auth).',
@@ -63,11 +70,11 @@ export function registerAcpV2Command(parent: Command): void {
       const legacyCommand = process.argv[1];
       try {
         const { runAcpV2Server } = await import('@moonshot-ai/acp-server');
-        const { createKimiHarness } = await import('@moonshot-ai/kimi-code-sdk');
-        const harness = createKimiHarness({
+        const { createKimiHarnessV2 } = await import('@moonshot-ai/kimi-code-sdk');
+        const harness = createKimiHarnessV2({
           homeDir: getDataDir(),
           identity: { productName: 'Echadron', version: getVersion(), platform: 'cli' },
-          uiMode: 'acp-v2',
+          uiMode: 'acp',
         });
         await runAcpV2Server(harness, {
           agentInfo: { name: 'Echadron', version: getVersion() },
@@ -78,7 +85,7 @@ export function registerAcpV2Command(parent: Command): void {
         });
         process.exit(0);
       } catch (error) {
-        process.stderr.write(`acp-v2 server: fatal error: ${String(error)}\n`);
+        process.stderr.write(`${commandName} server: fatal error: ${String(error)}\n`);
         process.exit(1);
       }
     });

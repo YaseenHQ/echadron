@@ -19,7 +19,7 @@ import { IAgentContextMemoryService } from '#/agent/contextMemory/contextMemory'
 import { IAgentScopeContext } from '#/agent/scopeContext/scopeContext';
 import { IAgentSystemReminderService } from '#/agent/systemReminder/systemReminder';
 import { IPluginService } from '#/app/plugin/plugin';
-import type { EnabledPluginSessionStart } from '#/app/plugin/types';
+import type { EnabledPluginSessionStart, PluginMutation } from '#/app/plugin/types';
 import type { SkillCatalog, SkillDefinition } from '#/app/skillCatalog/types';
 import { ISessionContext } from '#/session/sessionContext/sessionContext';
 import { ISessionSkillCatalog } from '#/session/sessionSkillCatalog/skillCatalog';
@@ -28,6 +28,15 @@ import { PLUGIN_SKILL_SOURCE_ID } from '#/session/sessionSkillCatalog/pluginSkil
 import { IAgentPluginService } from './agentPlugin';
 
 const SESSION_START_INJECTION_VARIANT = 'plugin_session_start';
+const PLUGIN_CHANGE_INJECTION_VARIANT = 'plugin_change';
+
+const PLUGIN_CHANGE_VERBS: Record<PluginMutation['kind'], string> = {
+  install: 'installed',
+  enable: 'enabled',
+  disable: 'disabled',
+  remove: 'removed',
+  'mcp-server': 'updated',
+};
 
 // The main agent's id, kept as a local literal: `MAIN_AGENT_ID` lives in the
 // L6 `agentLifecycle` domain and this L4 domain must not import it.
@@ -35,6 +44,7 @@ const MAIN_AGENT_ID = 'main';
 
 export class AgentPluginService extends Disposable implements IAgentPluginService {
   declare readonly _serviceBrand: undefined;
+  private pendingMutationCatalogChanges = 0;
 
   constructor(
     @IAgentScopeContext scopeContext: IAgentScopeContext,
@@ -63,11 +73,26 @@ export class AgentPluginService extends Disposable implements IAgentPluginServic
     );
     this._register(
       this.skillCatalog.onDidChange((sourceId) => {
-        if (sourceId === PLUGIN_SKILL_SOURCE_ID) {
-          void this.appendFreshSessionStartReminder();
+        if (sourceId !== PLUGIN_SKILL_SOURCE_ID) return;
+        if (this.pendingMutationCatalogChanges > 0) {
+          this.pendingMutationCatalogChanges--;
+          return;
         }
+        void this.appendFreshSessionStartReminder();
       }),
     );
+    const onPluginMutate = this.plugins.onDidMutate;
+    if (onPluginMutate !== undefined) {
+      this._register(onPluginMutate(({ mutation }) => {
+        this.pendingMutationCatalogChanges++;
+        const verb = PLUGIN_CHANGE_VERBS[mutation.kind];
+        this.reminders.appendSystemReminder(
+          `Plugin "${mutation.id}" was ${verb}. This session keeps the prompt and tools it started with; ` +
+            'run /new or /reload to apply the change, and tell the user if they expect it now.',
+          { kind: 'injection', variant: PLUGIN_CHANGE_INJECTION_VARIANT },
+        );
+      }));
+    }
   }
 
   private async renderSessionStartReminder(): Promise<string | undefined> {

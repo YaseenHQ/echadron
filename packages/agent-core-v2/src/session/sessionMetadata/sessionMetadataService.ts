@@ -94,13 +94,23 @@ export class SessionMetadata extends Disposable implements ISessionMetadata {
     return this.data;
   }
 
-  async update(patch: SessionMetaPatch): Promise<void> {
-    return this.enqueueUpdate(() => this.applyUpdate(patch));
+  async update(
+    patch: SessionMetaPatch,
+    opts?: { readonly touchUpdatedAt?: boolean },
+  ): Promise<void> {
+    return this.enqueueUpdate(() => this.applyUpdate(patch, opts));
   }
 
-  private async applyUpdate(patch: SessionMetaPatch): Promise<void> {
+  private async applyUpdate(
+    patch: SessionMetaPatch,
+    opts?: { readonly touchUpdatedAt?: boolean },
+  ): Promise<void> {
     await this.ready;
-    this.data = { ...this.data, ...patch, updatedAt: Date.now() };
+    this.data = {
+      ...this.data,
+      ...patch,
+      updatedAt: opts?.touchUpdatedAt === false ? this.data.updatedAt : Date.now(),
+    };
     await this.store.set(this.scope, META_KEY, this.data);
     await this.mirrorToReadModel();
     this._onDidChangeMetadata.fire({
@@ -149,6 +159,7 @@ export class SessionMetadata extends Disposable implements ISessionMetadata {
         // poison the cache entry and fail contract validation on reads.
         archived: this.data.archived === true,
         custom: this.data.custom,
+        lastTurnReason: this.data.lastTurnReason,
       });
     } catch (error) {
       this.log.warn('failed to mirror session metadata to read model', {

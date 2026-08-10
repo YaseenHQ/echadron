@@ -48,6 +48,25 @@ function restoreAgentRecord(agent: Agent, input: AgentRecord): void {
     case 'config.update':
       agent.config.update(input);
       return;
+    case 'profile.bind': {
+      // v2 persists the initial profile and tool allowlist as one record;
+      // project it onto the v1 state without synthesizing a config_updated
+      // replay entry. A missing allowlist means every tool is active, so the
+      // normal session-level profile fallback must remain responsible for it.
+      if (!Array.isArray(input.activeToolNames)) return;
+      const thinkingEffort = input.thinkingEffort ?? input.thinkingLevel;
+      agent.config.restore({
+        ...(input.modelAlias !== undefined ? { modelAlias: input.modelAlias } : {}),
+        ...(input.profileName !== undefined ? { profileName: input.profileName } : {}),
+        ...(thinkingEffort !== undefined ? { thinkingEffort } : {}),
+        ...(input.systemPrompt !== undefined ? { systemPrompt: input.systemPrompt } : {}),
+        ...(input.subagents !== undefined ? { subagentNames: input.subagents } : {}),
+      });
+      agent.tools.setActiveTools(input.activeToolNames, input.disallowedTools);
+      return;
+    }
+    case 'tools.reset_active_tools':
+      return;
     case 'permission.set_mode':
       agent.permission.setMode(input.mode);
       return;

@@ -93,10 +93,15 @@ vi.mock('@moonshot-ai/kimi-telemetry', () => ({
 }));
 
 beforeEach(() => {
+  // Keep these telemetry/export fixtures on the legacy harness path. The v2
+  // SDK route is selected by default in production and has its own bridge
+  // coverage.
+  vi.stubEnv('ECHADRON_LEGACY_FLAG', '1');
   tmp = mkdtempSync(join(tmpdir(), 'kimi-export-'));
 });
 
 afterEach(() => {
+  vi.unstubAllEnvs();
   rmSync(tmp, { recursive: true, force: true });
   vi.clearAllMocks();
   mocks.harnessGetConfig.mockResolvedValue({

@@ -543,6 +543,8 @@ export * from '#/agent/stepRetry/stepRetry';
 export * from '#/agent/stepRetry/stepRetryService';
 export * from '#/session/btw/btw';
 export * from '#/session/btw/btwService';
+export * from '#/session/sessionActivity/sessionOutcomeMirror';
+export * from '#/session/sessionActivity/sessionOutcomeMirrorService';
 export * from '#/session/sessionInit/sessionInit';
 export * from '#/session/sessionInit/sessionInitService';
 export * from '#/session/sessionInit/profile/init';

@@ -62,6 +62,11 @@ import {
   resolveAuthBackedClient,
 } from '../request-auth';
 import { normalizeToolCallIdsForProvider, sanitizeOpenAIResponsesCallId } from '../tool-call-id';
+import {
+  clampPromptCacheKey,
+  extractPromptCacheTokens,
+  nonNegativeTokenCount,
+} from '../prompt-cache';
 
 function normalizeResponsesFinishReason(
   status: string | null | undefined,
@@ -812,18 +817,14 @@ function convertCompactedResponse(
   const usageRaw = readObjectField(raw, 'usage');
   let usage: TokenUsage | undefined;
   if (usageRaw !== undefined && usageRaw !== null) {
-    const inputTokens = readNumberField(usageRaw, 'input_tokens') ?? 0;
-    const outputTokens = readNumberField(usageRaw, 'output_tokens') ?? 0;
-    const details = readObjectField(usageRaw, 'input_tokens_details');
-    const cached =
-      details === undefined || details === null
-        ? 0
-        : (readNumberField(details, 'cached_tokens') ?? 0);
+    const inputTokens = nonNegativeTokenCount(readNumberField(usageRaw, 'input_tokens'));
+    const outputTokens = nonNegativeTokenCount(readNumberField(usageRaw, 'output_tokens'));
+    const { inputCacheRead, inputCacheCreation } = extractPromptCacheTokens(usageRaw);
     usage = {
-      inputOther: Math.max(0, inputTokens - cached),
+      inputOther: Math.max(0, inputTokens - inputCacheRead - inputCacheCreation),
       output: outputTokens,
-      inputCacheRead: cached,
-      inputCacheCreation: 0,
+      inputCacheRead,
+      inputCacheCreation,
     };
   }
   return {
@@ -898,15 +899,14 @@ export class OpenAIResponsesStreamedMessage implements StreamedMessage {
   }
 
   private _extractUsage(usage: RawObject): void {
-    const inputTokens = readNumberField(usage, 'input_tokens') ?? 0;
-    const outputTokens = readNumberField(usage, 'output_tokens') ?? 0;
-    const details = readObjectField(usage, 'input_tokens_details');
-    const cached = details ? (readNumberField(details, 'cached_tokens') ?? 0) : 0;
+    const inputTokens = nonNegativeTokenCount(readNumberField(usage, 'input_tokens'));
+    const outputTokens = nonNegativeTokenCount(readNumberField(usage, 'output_tokens'));
+    const { inputCacheRead, inputCacheCreation } = extractPromptCacheTokens(usage);
     this._usage = {
-      inputOther: inputTokens - cached,
+      inputOther: Math.max(0, inputTokens - inputCacheRead - inputCacheCreation),
       output: outputTokens,
-      inputCacheRead: cached,
-      inputCacheCreation: 0,
+      inputCacheRead,
+      inputCacheCreation,
     };
   }
 
@@ -1286,7 +1286,7 @@ export class OpenAIResponsesChatProvider implements ChatProvider {
 
     // Per-turn intent overlays in the fixed contract order.
     if (options?.cacheKey !== undefined) {
-      kwargs = { ...kwargs, prompt_cache_key: options.cacheKey };
+      kwargs = { ...kwargs, prompt_cache_key: clampPromptCacheKey(options.cacheKey) };
     }
     if (options?.sampling?.temperature !== undefined) {
       kwargs = { ...kwargs, temperature: options.sampling.temperature };
@@ -1408,7 +1408,9 @@ export class OpenAIResponsesChatProvider implements ChatProvider {
       ),
     };
     if (systemPrompt) params['instructions'] = systemPrompt;
-    if (options?.cacheKey !== undefined) params['prompt_cache_key'] = options.cacheKey;
+    if (options?.cacheKey !== undefined) {
+      params['prompt_cache_key'] = clampPromptCacheKey(options.cacheKey);
+    }
 
     try {
       const client = this._createClient(options?.auth);

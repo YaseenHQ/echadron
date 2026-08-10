@@ -324,7 +324,7 @@ export function registerSessionsRoutes(app: SessionRouteHost, core: Scope): void
         const session = toWireSession(
           { ...meta, workspaceId: touched.id },
           touched.root,
-          { busy: false, mainTurnActive: false, pendingInteraction: 'none' },
+          { busy: false, mainTurnActive: false, pendingInteraction: 'none', live: true },
         );
         core.accessor.get(IEventService).publish({
           type: 'event.session.created',
@@ -1059,6 +1059,7 @@ export interface SessionWireFields {
   readonly updatedAt: number;
   readonly archived: boolean;
   readonly custom?: Record<string, unknown>;
+  readonly lastTurnReason?: 'completed' | 'cancelled' | 'failed';
 }
 
 export function toWireSession(
@@ -1075,7 +1076,10 @@ export function toWireSession(
     busy: facts.busy,
     main_turn_active: facts.mainTurnActive,
     pending_interaction: facts.pendingInteraction,
-    last_turn_reason: facts.lastTurnReason,
+    // Live activity is authoritative for warm sessions. A cold session has
+    // no activity view, so use the durable metadata/index projection instead.
+    last_turn_reason:
+      facts.lastTurnReason ?? (facts.live === false ? fields.lastTurnReason : undefined),
     archived: fields.archived,
     last_prompt: fields.lastPrompt,
     metadata: buildWireMetadata(fields.custom, cwd),
@@ -1093,6 +1097,8 @@ export interface SessionFacts {
   readonly mainTurnActive: boolean;
   readonly pendingInteraction: SessionPendingInteraction;
   readonly lastTurnReason?: 'completed' | 'cancelled' | 'failed';
+  /** Distinguishes a cold listing from a warm session with no current outcome. */
+  readonly live: boolean;
 }
 
 /**
@@ -1109,9 +1115,10 @@ export function resolveSessionFacts(core: Scope, sessionId: string): SessionFact
       busy: false,
       mainTurnActive: false,
       pendingInteraction: 'none',
+      live: false,
     };
   }
-  return handle.accessor.get(ISessionActivityView).state();
+  return { ...handle.accessor.get(ISessionActivityView).state(), live: true };
 }
 
 /**

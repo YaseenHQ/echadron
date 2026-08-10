@@ -343,6 +343,7 @@ export interface SessionStateSnapshot {
     readonly updatedAt: number;
     readonly archived: boolean;
     readonly cwd?: string;
+    readonly additionalDirs?: readonly string[];
     readonly forkedFrom?: string;
     readonly agents?: Readonly<Record<string, /* AgentMeta — packages/agent-core-v2/src/session/sessionMetadata/sessionMetadata.ts */ {
       readonly homedir?: string;
@@ -353,6 +354,7 @@ export interface SessionStateSnapshot {
       readonly swarmItem?: string;
     }>>;
     readonly custom?: Record<string, unknown>;
+    readonly lastTurnReason?: 'completed' | 'cancelled' | 'failed';
   } | undefined;
   // src/session/sessionSkillCatalog/skillCatalogService.ts
   'sessionSkillCatalog.contributions': Map<string, {

@@ -21,7 +21,11 @@ import type {
   ProviderConfig as KosongProviderConfig,
   ProviderRequestAuth,
 } from '@moonshot-ai/kosong';
-import { APIStatusError, UNKNOWN_CAPABILITY } from '@moonshot-ai/kosong';
+import {
+  APIStatusError,
+  clampPromptCacheKey,
+  UNKNOWN_CAPABILITY,
+} from '@moonshot-ai/kosong';
 
 import { mapOAuthTokenError } from '#/oauth-error';
 
@@ -46,7 +50,7 @@ export class KimiForCodingProvider implements ModelProvider {
   constructor(options: KimiForCodingProviderOptions) {
     this.model = options.model ?? 'kimi-for-coding';
     this.baseUrl = options.baseUrl ?? kimiCodeBaseUrl();
-    this.promptCacheKey = options.promptCacheKey;
+    this.promptCacheKey = clampPromptCacheKey(options.promptCacheKey);
     this.defaultHeaders = options.defaultHeaders;
     this.homeDir = resolveKimiHome(options.homeDir);
     this.identity = {

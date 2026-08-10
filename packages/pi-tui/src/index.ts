@@ -1,4 +1,5 @@
 // Core TUI interfaces and classes
+export { Marked, type Token, type Tokens } from "marked";
 
 // Autocomplete support
 export {
@@ -16,6 +17,8 @@ export { Image, type ImageOptions, type ImageTheme } from "./components/image.ts
 export { Input } from "./components/input.ts";
 export { Loader, type LoaderIndicatorOptions } from "./components/loader.ts";
 export { type DefaultTextStyle, Markdown, type MarkdownOptions, type MarkdownTheme } from "./components/markdown.ts";
+// LaTeX rendering
+export { type RenderLatexOptions, renderLatex } from "./latex.ts";
 export {
 	type SelectItem,
 	SelectList,

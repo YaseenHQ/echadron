@@ -36,6 +36,9 @@ describe('kimi acp', () => {
   ] as const;
 
   beforeEach(() => {
+    // Exercise the legacy ACP adapter contract; native ACP v2 is covered by
+    // the dedicated acp-v2 tests and is the production default.
+    vi.stubEnv('ECHADRON_LEGACY_FLAG', '1');
     vi.mocked(runAcpServer).mockClear();
     exitSpy = vi.spyOn(process, 'exit').mockImplementation(((code?: number | string | null) => {
       throw new ExitCalled(code);
@@ -44,6 +47,7 @@ describe('kimi acp', () => {
   });
 
   afterEach(() => {
+    vi.unstubAllEnvs();
     exitSpy.mockRestore();
     stderrSpy.mockRestore();
   });

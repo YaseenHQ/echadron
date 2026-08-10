@@ -24,12 +24,14 @@ import OpenAI from 'openai';
 import { usesOpenAIResponsesDeveloperRole } from './capability-registry';
 import {
   convertOpenAIError,
+  extractOpenAICacheTokens,
   isMediaPart,
   isOpenAIInsufficientQuotaCode,
   TOOL_RESULT_MEDIA_PLACEHOLDER,
   TOOL_RESULT_MEDIA_PROMPT,
   type ToolMessageConversion,
 } from './openai-common';
+import { clampPromptCacheKey, nonNegativeTokenCount } from './prompt-cache';
 import {
   mergeRequestHeaders,
   requireProviderApiKey,
@@ -882,15 +884,14 @@ export class OpenAIResponsesStreamedMessage implements StreamedMessage {
   }
 
   private _extractUsage(usage: RawObject): void {
-    const inputTokens = readNumberField(usage, 'input_tokens') ?? 0;
-    const outputTokens = readNumberField(usage, 'output_tokens') ?? 0;
-    const details = readObjectField(usage, 'input_tokens_details');
-    const cached = details ? (readNumberField(details, 'cached_tokens') ?? 0) : 0;
+    const inputTokens = nonNegativeTokenCount(readNumberField(usage, 'input_tokens'));
+    const outputTokens = nonNegativeTokenCount(readNumberField(usage, 'output_tokens'));
+    const { cacheRead, cacheWrite } = extractOpenAICacheTokens(usage);
     this._usage = {
-      inputOther: inputTokens - cached,
+      inputOther: Math.max(0, inputTokens - cacheRead - cacheWrite),
       output: outputTokens,
-      inputCacheRead: cached,
-      inputCacheCreation: 0,
+      inputCacheRead: cacheRead,
+      inputCacheCreation: cacheWrite,
     };
   }
 
@@ -1311,6 +1312,11 @@ export class OpenAIResponsesChatProvider implements ChatProvider {
       }
     }
 
+    const promptCacheKey = kwargs['prompt_cache_key'];
+    if (typeof promptCacheKey === 'string') {
+      kwargs['prompt_cache_key'] = clampPromptCacheKey(promptCacheKey);
+    }
+
     try {
       const client = this._createClient(options?.auth);
     const createParams: Record<string, unknown> = {
@@ -1376,7 +1382,9 @@ export class OpenAIResponsesChatProvider implements ChatProvider {
     };
     if (systemPrompt) params['instructions'] = systemPrompt;
     const cacheKey = this._generationKwargs['prompt_cache_key'];
-    if (typeof cacheKey === 'string') params['prompt_cache_key'] = cacheKey;
+    if (typeof cacheKey === 'string') {
+      params['prompt_cache_key'] = clampPromptCacheKey(cacheKey);
+    }
     // Preserve the encrypted reasoning chain across the compaction boundary.
     // Codex sets `include: ["reasoning.encrypted_content"]` unconditionally on
     // every Responses request (compaction included); without it the model

@@ -24,10 +24,11 @@ export const forkSessionOptionsSchema = z.object({
   newSessionId: z.string().optional(),
   title: z.string().optional(),
   metadata: z.record(z.string(), z.unknown()).optional(),
+  turnIndex: z.number().int().nonnegative().optional(),
 });
 
-/** Same fields as `ForkSessionOptions` in the engine — keep in sync. */
-export const createChildSessionOptionsSchema = forkSessionOptionsSchema;
+/** Child forks always copy the full source history; turnIndex is fork-only. */
+export const createChildSessionOptionsSchema = forkSessionOptionsSchema.omit({ turnIndex: true });
 
 /** `ISessionScopeHandle` as it survives JSON — `{ id, kind }` plus extras. */
 export const handleWireSchema = z.looseObject({

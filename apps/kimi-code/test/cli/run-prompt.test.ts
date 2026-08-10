@@ -176,10 +176,9 @@ vi.mock('@moonshot-ai/kimi-telemetry', () => ({
   withTelemetryContext: mocks.withTelemetryContext,
 }));
 
-// The experimental v2 engine is loaded via a dynamic import from run-prompt.ts
-// when KIMI_CODE_EXPERIMENTAL_FLAG is set. Mock the native v2 runner so tests
-// that flip that flag can exercise the dispatch without pulling in the real
-// agent-core-v2 graph.
+// The native v2 engine is loaded via a dynamic import from run-prompt.ts on
+// the default route. Mock the v2 runner so dispatch tests do not pull in the
+// real agent-core-v2 graph.
 vi.mock('../../src/cli/v2/run-v2-print', () => ({
   runV2Print: mocks.runV2Print,
 }));
@@ -246,9 +245,10 @@ async function waitForAssertion(assertion: () => void): Promise<void> {
 
 describe('runPrompt', () => {
   beforeEach(() => {
-    // Pin the experimental engine flag off so the default v1 path is
-    // deterministic regardless of the host environment. Tests that exercise the
-    // experimental path opt back in explicitly with `vi.stubEnv(..., '1')`.
+    // These tests exercise the v1 print driver contract. v2 is the production
+    // default; opt out explicitly so the v1 fixtures remain focused and
+    // deterministic. Dedicated v2 tests below clear this switch.
+    vi.stubEnv('ECHADRON_LEGACY_FLAG', '1');
     vi.stubEnv('KIMI_CODE_EXPERIMENTAL_FLAG', '');
     vi.stubEnv('KIMI_MODEL_OUTPUT_FORMAT', '');
   });
@@ -1251,15 +1251,16 @@ describe('runPrompt', () => {
     expect(handler()).toBeNull();
   });
 
-  it('emits the version first in text mode when the experimental flag is enabled', async () => {
-    vi.stubEnv('KIMI_CODE_EXPERIMENTAL_FLAG', '1');
+  it('emits the version first in text mode on the native v2 route', async () => {
+    vi.stubEnv('ECHADRON_LEGACY_FLAG', '');
+    vi.stubEnv('KIMI_CODE_EXPERIMENTAL_FLAG', '');
     const stdout = writer();
     const stderr = writer();
 
     await runPrompt(opts(), '1.2.3-test', { stdout, stderr });
 
-    // The experimental engine is selected and the version banner is the very
-    // first write, ahead of any assistant output or the resume hint.
+    // The native engine is selected and the version banner is the very first
+    // write, ahead of any assistant output or the resume hint.
     expect(mocks.runV2Print).toHaveBeenCalled();
     expect(mocks.kimiHarnessConstructor).not.toHaveBeenCalled();
     expect(stderr.write).toHaveBeenNthCalledWith(1, 'echadron version 1.2.3-test\n');
@@ -1267,8 +1268,9 @@ describe('runPrompt', () => {
     expect(stdout.text()).toBe('• hello world\n\n');
   });
 
-  it('emits the version first in stream-json mode when the experimental flag is enabled', async () => {
-    vi.stubEnv('KIMI_CODE_EXPERIMENTAL_FLAG', '1');
+  it('emits the version first in stream-json mode on the native v2 route', async () => {
+    vi.stubEnv('ECHADRON_LEGACY_FLAG', '');
+    vi.stubEnv('KIMI_CODE_EXPERIMENTAL_FLAG', '');
     const stdout = writer();
     const stderr = writer();
 
@@ -1286,8 +1288,9 @@ describe('runPrompt', () => {
     expect(stderr.text()).toBe('');
   });
 
-  it('does not emit the version when the experimental flag is disabled', async () => {
-    vi.stubEnv('KIMI_CODE_EXPERIMENTAL_FLAG', '0');
+  it('uses the legacy v1 runner when the legacy switch is enabled', async () => {
+    vi.stubEnv('ECHADRON_LEGACY_FLAG', '1');
+    vi.stubEnv('KIMI_CODE_EXPERIMENTAL_FLAG', '1');
     const stdout = writer();
     const stderr = writer();
 

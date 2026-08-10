@@ -4,19 +4,24 @@
 
 import assert from "node:assert";
 import { describe, it } from "node:test";
+import { homedir } from "node:os";
+import { join } from "node:path";
 import { Image } from "../src/components/image.ts";
 import {
 	deleteAllKittyImages,
 	deleteKittyImage,
 	detectCapabilities,
+	encodeITerm2,
 	encodeKitty,
 	hyperlink,
+	imageFallback,
 	isImageLine,
 	renderImage,
 	resetCapabilitiesCache,
 	setCapabilities,
 	setCellDimensions,
 } from "../src/terminal-image.ts";
+import { visibleWidth } from "../src/utils.ts";
 
 const ENV_KEYS = [
 	"TERM",
@@ -338,6 +343,16 @@ describe("detectCapabilities", () => {
 		});
 	});
 
+	it("keeps truecolor enabled for unidentified Windows consoles", () => {
+		withEnv({ TERM: "xterm-256color" }, () => {
+			const caps = detectCapabilities();
+			if (process.platform === "win32") {
+				assert.strictEqual(caps.trueColor, true);
+				assert.strictEqual(caps.hyperlinks, false);
+			}
+		});
+	});
+
 	it("enables truecolor without hyperlinks for JetBrains terminal", () => {
 		withEnv({ TERMINAL_EMULATOR: "JetBrains-JediTerm", TERM: "xterm-256color" }, () => {
 			const caps = detectCapabilities();
@@ -367,6 +382,10 @@ describe("detectCapabilities", () => {
 });
 
 describe("Kitty image cursor movement", () => {
+	it("includes decoded payload size in iTerm2 sequences", () => {
+		const sequence = encodeITerm2("AQID", { inline: true });
+		assert.ok(sequence.startsWith("\x1b]1337;File=inline=1;size=3:"));
+	});
 	it("can request no terminal-side cursor movement", () => {
 		const sequence = encodeKitty("AAAA", { columns: 2, rows: 2, moveCursor: false });
 		assert.ok(sequence.startsWith("\x1b_Ga=T,f=100,q=2,C=1,c=2,r=2;"));
@@ -461,6 +480,62 @@ describe("Kitty image cursor movement", () => {
 		} finally {
 			resetCapabilitiesCache();
 			setCellDimensions({ widthPx: 9, heightPx: 18 });
+		}
+	});
+
+	it("truncates long image fallback lines to render width", () => {
+		setCapabilities({ images: null, trueColor: false, hyperlinks: false });
+		try {
+			const longPath = join(homedir(), "images", "generated-image-with-a-very-long-absolute-path".repeat(4) + ".png");
+			const width = 40;
+			const image = new Image(
+				"AAAA",
+				"image/png",
+				{ fallbackColor: (value) => `\x1b[33m${value}\x1b[0m` },
+				{ filename: longPath },
+				{ widthPx: 1280, heightPx: 720 },
+			);
+			const lines = image.render(width);
+			assert.strictEqual(lines.length, 1);
+			assert.ok(visibleWidth(lines[0]!) <= width);
+			assert.ok(lines[0]!.includes("~"));
+		} finally {
+			resetCapabilitiesCache();
+		}
+	});
+});
+
+describe("imageFallback", () => {
+	it("shortens home-prefixed paths without hyperlinks", () => {
+		setCapabilities({ images: null, trueColor: false, hyperlinks: false });
+		try {
+			const abs = join(homedir(), ".pi", "agent", "shot.png");
+			assert.strictEqual(imageFallback("image/png", { widthPx: 1280, heightPx: 720 }, abs), "[Image: ~/.pi/agent/shot.png [image/png] 1280x720]");
+		} finally {
+			resetCapabilitiesCache();
+		}
+	});
+
+	it("hyperlinks absolute paths when supported", () => {
+		setCapabilities({ images: null, trueColor: false, hyperlinks: true });
+		try {
+			const abs = join(homedir(), ".pi", "agent", "shot.png");
+			const result = imageFallback("image/png", { widthPx: 10, heightPx: 10 }, abs);
+			assert.ok(result.includes("\x1b]8;;file://"));
+			assert.ok(result.includes("~/.pi/agent/shot.png"));
+		} finally {
+			resetCapabilitiesCache();
+		}
+	});
+
+	it("does not hyperlink a bare basename", () => {
+		setCapabilities({ images: null, trueColor: false, hyperlinks: true });
+		try {
+			const result = imageFallback("image/png", { widthPx: 1, heightPx: 1 }, "shot.png");
+			assert.strictEqual(result, "[Image: shot.png [image/png] 1x1]");
+			assert.ok(!result.includes("\x1b]8;"));
+		} finally {
+			resetCapabilitiesCache();
 		}
 	});
 });

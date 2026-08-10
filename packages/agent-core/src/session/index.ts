@@ -167,6 +167,7 @@ export interface SessionMeta {
    *  these follow the session across close/resume without affecting any other
    *  session opened in the same workspace. */
   additionalDirs?: string[];
+  lastTurnReason?: 'completed' | 'cancelled' | 'failed';
   agents: Record<string, AgentMeta>;
   custom: Record<string, any>;
 }

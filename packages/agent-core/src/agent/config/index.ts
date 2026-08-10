@@ -45,6 +45,15 @@ export class ConfigState {
   }
 
   update(changed: AgentConfigUpdateData): void {
+    this.applyUpdate(changed, true);
+  }
+
+  /** Restore state from a v2 profile.bind without creating a v1 replay event. */
+  restore(changed: AgentConfigUpdateData): void {
+    this.applyUpdate(changed, false);
+  }
+
+  private applyUpdate(changed: AgentConfigUpdateData, emitReplayRecord: boolean): void {
     if (Object.keys(changed).length === 0) return;
 
     const targetAlias = changed.modelAlias ?? this._modelAlias;
@@ -86,10 +95,12 @@ export class ConfigState {
       type: 'config.update',
       ...effectiveChanged,
     });
-    this.agent.replayBuilder.push({
-      type: 'config_updated',
-      config: effectiveChanged,
-    });
+    if (emitReplayRecord) {
+      this.agent.replayBuilder.push({
+        type: 'config_updated',
+        config: effectiveChanged,
+      });
+    }
     if (changed.cwd) {
       this._cwd = changed.cwd;
       this.agent.setKaos(this.agent.kaos.withCwd(changed.cwd));

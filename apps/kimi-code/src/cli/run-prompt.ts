@@ -101,10 +101,9 @@ export async function runPrompt(
   io: PromptRunIO = {},
 ): Promise<void> {
   if (isKimiV2Enabled()) {
-    // The experimental agent-core-v2 engine runs on its own native DI service
-    // runtime (see v2/run-v2-print.ts); it does not share the v1 PromptHarness
-    // path below. Loaded lazily so the v2 module graph stays off the default
-    // (v1) path.
+    // The native agent-core-v2 engine runs on its own DI service runtime (see
+    // v2/run-v2-print.ts); it does not share the legacy PromptHarness path.
+    // Keep it lazy so the legacy compatibility path does not load v2 eagerly.
     const { runV2Print } = await import('./v2/run-v2-print');
     await runV2Print(opts, version, io);
     return;
@@ -226,8 +225,8 @@ export async function runPrompt(
 async function createPromptHarness(
   options: Parameters<typeof createKimiHarness>[0],
 ): Promise<PromptHarness> {
-  // The v2 engine is dispatched earlier in `runPrompt` (see the
-  // `isKimiV2Enabled()` branch) and never reaches here; this is the v1 path.
+  // The v2 engine is dispatched earlier in `runPrompt`; this is the explicit
+  // legacy compatibility path.
   return createKimiHarness(options);
 }
 

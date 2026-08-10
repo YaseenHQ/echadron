@@ -28,9 +28,11 @@ export const sessionMetaSchema = z.object({
   updatedAt: z.number(),
   archived: z.boolean(),
   cwd: z.string().optional(),
+  additionalDirs: z.array(z.string()).optional(),
   forkedFrom: z.string().optional(),
   agents: z.record(z.string(), agentMetaSchema).optional(),
   custom: z.record(z.string(), z.unknown()).optional(),
+  lastTurnReason: z.enum(['completed', 'cancelled', 'failed']).optional(),
 });
 
 /** `Partial<Omit<SessionMeta, 'id' | 'createdAt'>>` — every key optional. */
@@ -42,9 +44,11 @@ export const sessionMetaPatchSchema = z.object({
   updatedAt: z.number().optional(),
   archived: z.boolean().optional(),
   cwd: z.string().optional(),
+  additionalDirs: z.array(z.string()).optional(),
   forkedFrom: z.string().optional(),
   agents: z.record(z.string(), agentMetaSchema).optional(),
   custom: z.record(z.string(), z.unknown()).optional(),
+  lastTurnReason: z.enum(['completed', 'cancelled', 'failed']).optional(),
 });
 
 /** `keyof SessionMeta` — keep in sync with `sessionMetaSchema`. */
@@ -58,9 +62,11 @@ export const sessionMetaKeySchema = z.enum([
   'updatedAt',
   'archived',
   'cwd',
+  'additionalDirs',
   'forkedFrom',
   'agents',
   'custom',
+  'lastTurnReason',
 ]);
 
 export const sessionMetadataChangedEventSchema = z.object({

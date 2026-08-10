@@ -16,6 +16,7 @@ import type {
   EnabledPluginSessionStart,
   PluginCommandDef,
   PluginInfo,
+  PluginMutationSummary,
   PluginSummary,
   PluginUpdateStatus,
   ReloadSummary,
@@ -61,6 +62,9 @@ export interface IPluginService {
   enabledMcpServers(): Promise<Record<string, McpServerConfig>>;
   enabledHooks(): Promise<readonly HookDef[]>;
   readonly onDidReload: Event<ReloadSummary>;
+  /** Fires only for install/enable/disable/remove mutations, not explicit reloads. */
+  /** Optional for older embedders; the built-in service always supplies it. */
+  readonly onDidMutate?: Event<PluginMutationSummary>;
 }
 
 export const IPluginService: ServiceIdentifier<IPluginService> =

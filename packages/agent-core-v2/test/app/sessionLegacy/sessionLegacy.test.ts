@@ -116,8 +116,8 @@ describe('Session legacy status (best-effort runtime state)', () => {
       busy: false,
       model: 'removed-model',
       thinking_level: 'high',
-      max_context_tokens: 0,
     });
+    expect(status.max_context_tokens).toBeUndefined();
   });
 
   it('uses the input cap as the status denominator and clamps usage to 1', async () => {

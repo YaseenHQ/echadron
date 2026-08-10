@@ -1,4 +1,7 @@
 import { execSync } from "node:child_process";
+import { homedir } from "node:os";
+import { isAbsolute } from "node:path";
+import { pathToFileURL } from "node:url";
 
 export type ImageProtocol = "kitty" | "iterm2" | null;
 
@@ -68,6 +71,7 @@ export function detectCapabilities(tmuxForwardsHyperlink: () => boolean = probeT
 	const term = process.env['TERM']?.toLowerCase() || "";
 	const colorTerm = process.env['COLORTERM']?.toLowerCase() || "";
 	const hasTrueColorHint = colorTerm === "truecolor" || colorTerm === "24bit";
+	const isWindowsConsole = process.platform === "win32";
 
 	// Emit OSC 8 hyperlinks only when tmux confirms it forwards.
 	// Image protocols are unreliable under tmux, so leave `images: null`.
@@ -103,6 +107,13 @@ export function detectCapabilities(tmuxForwardsHyperlink: () => boolean = probeT
 
 	if (process.env['WT_SESSION']) {
 		return { images: null, trueColor: true, hyperlinks: true };
+	}
+
+	// Modern Windows consoles support truecolor even when WT_SESSION is not
+	// exported (for example, cmd.exe launched directly from Win+R). Keep OSC 8
+	// disabled unless the terminal was positively identified above.
+	if (isWindowsConsole) {
+		return { images: null, trueColor: true, hyperlinks: false };
 	}
 
 	if (termProgram === "vscode") {
@@ -234,7 +245,10 @@ export function encodeITerm2(
 		inline?: boolean;
 	} = {},
 ): string {
-	const params: string[] = [`inline=${options.inline !== false ? 1 : 0}`];
+	const params: string[] = [
+		`inline=${options.inline !== false ? 1 : 0}`,
+		`size=${Buffer.byteLength(base64Data, "base64")}`,
+	];
 
 	if (options.width !== undefined) params.push(`width=${options.width}`);
 	if (options.height !== undefined) params.push(`height=${options.height}`);
@@ -479,9 +493,29 @@ export function hyperlink(text: string, url: string): string {
 	return `\x1b]8;;${url}\x1b\\${text}\x1b]8;;\x1b\\`;
 }
 
+/** Shorten home-prefixed absolute paths to ~/... for compact display. */
+function shortenImagePath(filename: string): string {
+	const home = homedir();
+	if (home && (filename === home || filename.startsWith(`${home}/`) || filename.startsWith(`${home}\\`))) {
+		return `~${filename.slice(home.length)}`;
+	}
+	return filename;
+}
+
+/**
+ * Text fallback when the terminal cannot render inline images.
+ * Absolute paths remain openable through OSC 8 while displaying compactly.
+ */
 export function imageFallback(mimeType: string, dimensions?: ImageDimensions, filename?: string): string {
 	const parts: string[] = [];
-	if (filename) parts.push(filename);
+	if (filename) {
+		const display = shortenImagePath(filename);
+		if (getCapabilities().hyperlinks && isAbsolute(filename)) {
+			parts.push(hyperlink(display, pathToFileURL(filename).href));
+		} else {
+			parts.push(display);
+		}
+	}
 	parts.push(`[${mimeType}]`);
 	if (dimensions) parts.push(`${dimensions.widthPx}x${dimensions.heightPx}`);
 	return `[Image: ${parts.join(" ")}]`;

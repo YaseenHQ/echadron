@@ -76,6 +76,7 @@ import {
   toolToOpenAI,
 } from './openai-common';
 import { ReasoningKeyDialect } from './reasoning-key';
+import { clampPromptCacheKey } from '../prompt-cache';
 import {
   mergeRequestHeaders,
   requireProviderApiKey,
@@ -719,8 +720,9 @@ export class OpenAILegacyChatProvider implements ChatProvider {
     let kwargs: Record<string, unknown> = { ...this._generationKwargs };
 
     if (options?.cacheKey !== undefined) {
-      const hooked = this._hooks?.cacheKey?.(options.cacheKey);
-      kwargs = { ...kwargs, ...(hooked ?? { prompt_cache_key: options.cacheKey }) };
+      const cacheKey = clampPromptCacheKey(options.cacheKey);
+      const hooked = this._hooks?.cacheKey?.(cacheKey ?? '');
+      kwargs = { ...kwargs, ...(hooked ?? { prompt_cache_key: cacheKey }) };
     }
 
     if (options?.sampling?.temperature !== undefined) {

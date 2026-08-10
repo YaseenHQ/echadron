@@ -173,6 +173,46 @@ describe('OpenAIResponsesChatProvider', () => {
     });
   });
 
+  it('accounts for Responses cache writes in usage', async () => {
+    const provider = new OpenAIResponsesChatProvider({
+      model: 'gpt-4.1',
+      apiKey: 'test-key',
+    });
+    (provider as any)._client.responses.create = vi.fn().mockResolvedValue({
+      async *[Symbol.asyncIterator]() {
+        yield {
+          type: 'response.output_text.delta',
+          delta: 'ok',
+        };
+        yield {
+          type: 'response.completed',
+          response: {
+            id: 'resp_cache_write',
+            usage: {
+              input_tokens: 100,
+              output_tokens: 5,
+              input_tokens_details: { cached_tokens: 60, cache_write_tokens: 20 },
+            },
+          },
+        };
+      },
+    });
+
+    const stream = await provider.generate(
+      '',
+      [],
+      [{ role: 'user', content: [{ type: 'text', text: 'hi' }], toolCalls: [] }],
+    );
+    await collectStreamParts(stream);
+
+    expect(stream.usage).toEqual({
+      inputOther: 20,
+      output: 5,
+      inputCacheRead: 60,
+      inputCacheCreation: 20,
+    });
+  });
+
   describe('message conversion', () => {
     it('sends system prompt as top-level instructions', async () => {
       const provider = createProvider();
@@ -2389,7 +2429,7 @@ describe('OpenAIResponsesChatProvider', () => {
 });
 
 async function collectStreamParts(
-  stream: OpenAIResponsesStreamedMessage,
+  stream: AsyncIterable<StreamedMessagePart>,
 ): Promise<StreamedMessagePart[]> {
   const parts: StreamedMessagePart[] = [];
   for await (const part of stream) {

@@ -111,7 +111,7 @@ export interface CreateSessionOptions {
   readonly kaos?: Kaos | undefined;
   readonly persistenceKaos?: Kaos | undefined;
   readonly additionalDirs?: readonly string[];
-  /** MCP servers supplied by the host for this session. */
+  /** Ephemeral MCP servers supplied by the host and scoped to this session. */
   readonly mcpServers?: Readonly<Record<string, SessionMcpServerConfig>>;
   /**
    * Main-agent profile name (`--agent`): a builtin profile or one defined by
@@ -279,6 +279,7 @@ export interface SessionSummary {
   readonly createdAt: number;
   readonly updatedAt: number;
   readonly archived?: boolean | undefined;
+  readonly lastTurnReason?: 'completed' | 'cancelled' | 'failed' | undefined;
   readonly metadata?: JsonObject | undefined;
   readonly additionalDirs?: readonly string[];
 }

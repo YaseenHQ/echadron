@@ -21,6 +21,19 @@ class TestComponent implements Component {
 	invalidate(): void {}
 }
 
+class InputComponent extends TestComponent {
+	renderCount = 0;
+
+	override render(width: number): string[] {
+		this.renderCount += 1;
+		return super.render(width);
+	}
+
+	handleInput(data: string): void {
+		this.lines = [data];
+	}
+}
+
 class LoggingVirtualTerminal extends VirtualTerminal {
 	private writes: string[] = [];
 
@@ -71,6 +84,31 @@ function getCellItalic(terminal: VirtualTerminal, row: number, col: number): num
 	assert.ok(cell, `Missing cell at row ${row} col ${col}`);
 	return cell.isItalic();
 }
+
+describe("TUI render scheduling", () => {
+	it("renders keyboard input without waiting for a throttled frame", async () => {
+		const terminal = new VirtualTerminal(40, 10);
+		const tui = new TUI(terminal);
+		const component = new InputComponent();
+		component.lines = ["initial"];
+		tui.addChild(component);
+		tui.setFocus(component);
+		tui.start();
+		await terminal.waitForRender();
+		const renderCountBeforeInput = component.renderCount;
+
+		component.lines = ["pending"];
+		tui.requestRender();
+		terminal.sendInput("first");
+		terminal.sendInput("second");
+		terminal.sendInput("typed");
+		await new Promise<void>((resolve) => process.nextTick(resolve));
+
+		assert.strictEqual(component.renderCount, renderCountBeforeInput + 1);
+		assert.deepStrictEqual(component.lines, ["typed"]);
+		tui.stop();
+	});
+});
 
 describe("TUI shutdown", () => {
 	it("clears the rendered cursor before restoring the terminal cursor", async () => {
