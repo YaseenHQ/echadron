@@ -2,7 +2,7 @@
 
 [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) is an open protocol that lets models safely call tools exposed by external processes or services — for example, reading GitHub issues, querying databases, or operating the local file system. Echadron CLI acts as an MCP client to connect these external tools and exposes them to the Agent alongside built-in tools (`Read`, `Bash`, `Grep`, etc.) with no behavioral difference.
 
-> `ECHADRON_HOME` is the canonical data root. The legacy `IMPERIUM_HOME` and `KIMI_CODE_HOME` aliases remain supported for existing MCP configurations.
+> `ECHADRON_HOME` is the canonical data root. The legacy `IMPERIUM_HOME` and `ECHADRON_HOME` aliases remain supported for existing MCP configurations.
 
 ## Connection Methods
 
@@ -42,7 +42,7 @@ stateless transport migration.
 MCP server configuration is written in `mcp.json`, at two levels:
 
 - **User level**: `~/.echadron/mcp.json` (or `$ECHADRON_HOME/mcp.json`), shared across projects
-- **Project level**: `.echadron/mcp.json` in the working directory, effective only for the current repository. The legacy `.kimi-code/mcp.json` path is also read when present.
+- **Project level**: `.echadron/mcp.json` in the working directory, effective only for the current repository. The legacy `.echadron/mcp.json` path is also read when present.
 
 Entries with the same name: the project-level entry takes precedence and overrides the user-level entry.
 

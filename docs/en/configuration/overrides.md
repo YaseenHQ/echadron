@@ -15,7 +15,7 @@ This distinction matters: many users run `export KIMI_API_KEY=xxx` in the shell 
 
 Environment variables fall into three categories by function and cannot be collapsed into a single linear priority order:
 
-1. **Locating the config file**: `ECHADRON_HOME` sets the data root directory, making the config file path `$ECHADRON_HOME/config.toml`. `IMPERIUM_HOME` and `KIMI_CODE_HOME` remain legacy aliases. This step runs before all other resolution and is not a fallback for individual parameters.
+1. **Locating the config file**: `ECHADRON_HOME` sets the data root directory, making the config file path `$ECHADRON_HOME/config.toml`. `IMPERIUM_HOME` and `ECHADRON_HOME` remain legacy aliases. This step runs before all other resolution and is not a fallback for individual parameters.
 2. **Runtime switches**: A small set of variables like `ECHADRON_DISABLE_TELEMETRY` directly shut down the corresponding subsystem — even if `config.toml` has `telemetry = true`, setting this variable to a truthy value disables telemetry. The legacy `KIMI_DISABLE_TELEMETRY` alias is also accepted. The semantics are "additionally disable", not "ordinary override".
 3. **Runtime endpoints and diagnostics**: Variables like `KIMI_CODE_OAUTH_HOST`, `KIMI_CODE_BASE_URL`, and `KIMI_LOG_LEVEL` are read when the OAuth or logging subsystems initialize. For the full list, see [Environment variables](./env-vars.md).
 

@@ -1,6 +1,6 @@
 # Environment variables
 
-Kimi Code CLI uses environment variables to control a small number of runtime behaviors — relocating the data directory, turning off telemetry, and temporarily switching models without touching the config file.
+Echadron uses environment variables to control a small number of runtime behaviors — relocating the data directory, turning off telemetry, and temporarily switching models without touching the config file.
 
 ::: warning Important: API keys are not configured here
 Credential variables such as `KIMI_API_KEY`, `ANTHROPIC_API_KEY`, and `OPENAI_API_KEY` are **not** read automatically from shell environment variables. Running `export KIMI_API_KEY=xxx` in the terminal does not give any provider its key — they must be written in `config.toml` under `[providers.<name>]` or the `[providers.<name>.env]` sub-table.
@@ -12,15 +12,15 @@ For background, see [Config overrides: provider credentials](./overrides.md#prov
 
 ## Core paths
 
-### `KIMI_CODE_HOME`
+### `ECHADRON_HOME`
 
-Overrides the data root directory; the default is `~/.kimi-code`. Once set, the config file, sessions, logs, OAuth credentials, and all other data land under the new path:
+Overrides the data root directory; the default is `~/.echadron`. Once set, the config file, sessions, logs, OAuth credentials, and all other data land under the new path:
 
 ```sh
-export KIMI_CODE_HOME="/path/to/custom/kimi-code"
+export ECHADRON_HOME="/path/to/custom/kimi-code"
 ```
 
-> Make sure the directory is writable. Multiple `kimi` instances sharing the same `KIMI_CODE_HOME` will share config and credential files.
+> Make sure the directory is writable. Multiple `echadron` instances sharing the same `ECHADRON_HOME` will share config and credential files.
 
 For the complete data directory structure, see [Data locations](./data-locations.md).
 
@@ -93,7 +93,7 @@ export KIMI_MODEL_API_KEY="YOUR_API_KEY"
 export KIMI_MODEL_BASE_URL="https://api.example.com/v1"
 export KIMI_MODEL_MAX_CONTEXT_SIZE="262144"
 export KIMI_MODEL_CAPABILITIES="image_in,thinking"
-kimi
+echadron
 ```
 
 Complete variable list:
@@ -102,7 +102,7 @@ Complete variable list:
 | --- | --- | --- | --- |
 | `KIMI_MODEL_NAME` | Yes (also the enable switch) | Model id sent to the API | — |
 | `KIMI_MODEL_API_KEY` | Yes | API key | — |
-| `KIMI_MODEL_PROVIDER_TYPE` | No | Provider type: `kimi`, `anthropic`, `openai` | `kimi` |
+| `KIMI_MODEL_PROVIDER_TYPE` | No | Provider type: `echadron`, `anthropic`, `openai` | `echadron` |
 | `KIMI_MODEL_BASE_URL` | No | API base URL | Each type has its own default |
 | `KIMI_MODEL_MAX_CONTEXT_SIZE` | No | Maximum context length (tokens) | `262144` (256 K) |
 | `KIMI_MODEL_CAPABILITIES` | No | Comma-separated capability tags, unioned with auto-detected capabilities | `image_in,thinking` |
@@ -129,12 +129,13 @@ Switches that control the behavior of subsystems such as telemetry, background t
 | `KIMI_CODE_AGENT_SWARM_MAX_CONCURRENCY` | Cap how many AgentSwarm subagents run concurrently during the initial ramp; leave unset for no cap | Positive integer; invalid values fail fast |
 | `KIMI_SUBAGENT_TIMEOUT_MS` | Maximum wall-clock time (ms) a single subagent (`Agent` / `AgentSwarm`) may run; takes higher priority than `[subagent] timeout_ms` in `config.toml` (default `7200000`, i.e. 2 hours) | Positive integer; invalid values fall back to the config or default |
 | `KIMI_CODE_EXPERIMENTAL_SECONDARY_MODEL` | Enable the experimental secondary-model feature in every launch mode, including the interactive TUI; the master `KIMI_CODE_EXPERIMENTAL_FLAG=1` also enables it | Truthy: `1`/`true`/`yes`/`on`; falsy: `0`/`false`/`no`/`off` |
-| `KIMI_SECONDARY_MODEL` | Secondary model; takes higher priority than `[secondary_model] model` in `config.toml`. When the secondary-model experiment is enabled, newly spawned subagents (`Agent` / `AgentSwarm`) bind to it by default instead of inheriting the main agent's model | A model id from your configured `[models]`, e.g. `kimi-code/kimi-k2.5`; blank values are ignored |
+| `KIMI_SECONDARY_MODEL` | Secondary model; takes higher priority than `[secondary_model] model` in `config.toml`. When the secondary-model experiment is enabled, newly spawned subagents (`Agent` / `AgentSwarm`) bind to it by default instead of inheriting the main agent's model | A model id from your configured `[models]`, e.g. `echadron-code/kimi-k2.5`; blank values are ignored |
 | `KIMI_SECONDARY_EFFORT` | Thinking effort for the secondary model; takes higher priority than `[secondary_model] default_effort` in `config.toml` and applies only when both the model and its experiment are enabled | An effort value, e.g. `low`; blank values are ignored |
 | `KIMI_MCP_STARTUP_TIMEOUT_MS` | Global default connection timeout (ms) for all MCP servers; takes higher priority than `[mcp] startup_timeout_ms` in `config.toml`, but a per-server `startupTimeoutMs` in `mcp.json` still wins (default `30000`) | Integer from `1` to `2147483647`; invalid values are ignored |
 | `KIMI_MCP_TOOL_TIMEOUT_MS` | Global default single tool-call timeout (ms) for all MCP servers; takes higher priority than `[mcp] tool_timeout_ms` in `config.toml`, but a per-server `toolTimeoutMs` in `mcp.json` still wins (default `60000`) | Integer from `1` to `2147483647`; invalid values are ignored |
 | `KIMI_LOOP_MAX_STEPS_PER_TURN` | Maximum Agent steps per turn; takes higher priority than `[loop_control] max_steps_per_turn` in `config.toml` (unset or `0` means unlimited) | Non-negative integer; invalid values are ignored |
-| `KIMI_LOOP_MAX_RETRIES_PER_STEP` | Maximum retries after a step failure; takes higher priority than `[loop_control] max_retries_per_step` in `config.toml` (default `10`) | Non-negative integer; invalid values are ignored |
+| `KIMI_LOOP_MAX_ATTEMPTS_PER_STEP` | Maximum attempts after a step failure; takes higher priority than `[loop_control] max_attempts_per_step` in `config.toml` (default `10`) | Non-negative integer; invalid values are ignored |
+| `KIMI_LOOP_MAX_RETRIES_PER_STEP` | Deprecated compatibility alias for `KIMI_LOOP_MAX_ATTEMPTS_PER_STEP` | Non-negative integer; ignored when the replacement variable is valid |
 | `KIMI_WEB_SEARCH_BASE_URL` | API URL of the web search (`WebSearch`) service; takes higher priority than `[services.moonshot_search] base_url` in `config.toml`, and enables the service without that config section. Persisted credentials and custom headers are not forwarded to an env-selected endpoint | Non-blank string; blank values are ignored |
 | `KIMI_WEB_SEARCH_API_KEY` | API key of the web search (`WebSearch`) service; replaces both the configured API key and OAuth credential when set | Non-blank string; blank values are ignored |
 | `KIMI_WEB_FETCH_BASE_URL` | API URL of the web fetch (`FetchURL`) service; takes higher priority than `[services.moonshot_fetch] base_url`. Persisted credentials and custom headers are not forwarded to an env-selected endpoint. Without an env or config endpoint, signed-in users try the managed Kimi OAuth fetch service before direct local requests | Non-blank string; blank values are ignored |
@@ -143,11 +144,11 @@ Switches that control the behavior of subsystems such as telemetry, background t
 | `ECHADRON_LEGACY_FLAG` | Opt out of the default agent-core-v2 engine and use the legacy v1 CLI/TUI/print/ACP compatibility path | `1`, `true`, `yes`, `on` |
 | `KIMI_CODE_LEGACY_FLAG` | Legacy alias for `ECHADRON_LEGACY_FLAG` | `1`, `true`, `yes`, `on` |
 | `KIMI_SHELL_PATH` | Override the Git Bash path on Windows (used when auto-detection fails) | Absolute path |
-| `KIMI_MODEL_MAX_COMPLETION_TOKENS` | Hard cap on `max_completion_tokens` per LLM step; applies to the `kimi` provider only | Positive integer; `0` or negative disables clamping |
-| `KIMI_MODEL_TEMPERATURE` | Sampling temperature for every request; applies to the `kimi` provider only (global — independent of `KIMI_MODEL_NAME`) | Number, e.g. `0.3` |
-| `KIMI_MODEL_TOP_P` | Nucleus-sampling `top_p` for every request; applies to the `kimi` provider only (global) | Number, e.g. `0.95` |
-| `KIMI_MODEL_THINKING_EFFORT` | Force a specific thinking effort on the wire (`thinking.effort`), bypassing the model's declared `support_efforts`; applies to the `kimi` provider only, and only while Thinking is on | An effort value, e.g. `max` |
-| `KIMI_MODEL_THINKING_KEEP` | Preserved-thinking passthrough; on `kimi` sent as `thinking.keep`, on `anthropic` (Claude and Kimi's Anthropic-compatible mode) sent as a `context_management` `clear_thinking_20251015` edit (enabling keep routes Anthropic requests to the beta Messages API); overrides `[thinking] keep` (which defaults to `"all"`); only injected while Thinking is on | A value the API accepts, e.g. `all`; an off-value (`false`/`0`/`no`/`off`/`none`/`null`) disables it |
+| `KIMI_MODEL_MAX_COMPLETION_TOKENS` | Hard cap on `max_completion_tokens` per LLM step; applies to the `echadron` provider only | Positive integer; `0` or negative disables clamping |
+| `KIMI_MODEL_TEMPERATURE` | Sampling temperature for every request; applies to the `echadron` provider only (global — independent of `KIMI_MODEL_NAME`) | Number, e.g. `0.3` |
+| `KIMI_MODEL_TOP_P` | Nucleus-sampling `top_p` for every request; applies to the `echadron` provider only (global) | Number, e.g. `0.95` |
+| `KIMI_MODEL_THINKING_EFFORT` | Force a specific thinking effort on the wire (`thinking.effort`), bypassing the model's declared `support_efforts`; applies to the `echadron` provider only, and only while Thinking is on | An effort value, e.g. `max` |
+| `KIMI_MODEL_THINKING_KEEP` | Preserved-thinking passthrough; on `echadron` sent as `thinking.keep`, on `anthropic` (Claude and Kimi's Anthropic-compatible mode) sent as a `context_management` `clear_thinking_20251015` edit (enabling keep routes Anthropic requests to the beta Messages API); overrides `[thinking] keep` (which defaults to `"all"`); only injected while Thinking is on | A value the API accepts, e.g. `all`; an off-value (`false`/`0`/`no`/`off`/`none`/`null`) disables it |
 | `KIMI_CODE_NO_AUTO_UPDATE` | Fully disable the update preflight — no check, background install, or prompt. Legacy alias `KIMI_CLI_NO_AUTO_UPDATE` is also honored | Truthy: `1`/`true`/`yes`/`on` |
 | `KIMI_DISABLE_CRON` | Disable the scheduled-task tool (`CronCreate` rejects new schedules; existing tasks do not fire) | `1` to disable |
 
@@ -195,5 +196,5 @@ Stdio MCP servers that run as Node child processes honor `HTTP_PROXY` / `HTTPS_P
 ## Next steps
 
 - [Config overrides](./overrides.md) — how environment variables, CLI options, and the config file interact by priority
-- [Data locations](./data-locations.md) — directory structure affected by `KIMI_CODE_HOME`
+- [Data locations](./data-locations.md) — directory structure affected by `ECHADRON_HOME`
 - [Providers and models](./providers.md) — full connection examples per provider type

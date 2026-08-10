@@ -38,11 +38,19 @@ export type EnvBinding =
   | string
   | {
       readonly env: string;
+      /** Former name, accepted as a fallback when the primary variable is absent or invalid. */
+      readonly deprecatedEnv?: string;
       readonly parse?: (raw: string) => unknown;
       readonly default?: unknown;
     };
 
 export type EnvBindings<T> = EnvBinding | { [K in keyof T]?: EnvBinding | EnvBindings<T[K]> };
+
+export interface ConfigKeyDeprecation {
+  readonly key: string;
+  readonly replacement: string;
+  readonly message?: string;
+}
 
 export type AnyEnvBindings = EnvBinding | { readonly [key: string]: EnvBinding | AnyEnvBindings };
 
@@ -68,10 +76,7 @@ export function stripEnvBoundFields<T>(bindings: EnvBindings<T>): ConfigStripEnv
     let out: Record<string, unknown> | undefined;
     for (const [field, binding] of Object.entries(bindings)) {
       if (binding === undefined || !isEnvBinding(binding)) continue;
-      const rawEnv = getEnv(typeof binding === 'string' ? binding : binding.env);
-      if (rawEnv === undefined) continue;
-      const parse = typeof binding === 'string' ? undefined : binding.parse;
-      if (parse !== undefined && parse(rawEnv) === undefined) continue;
+      if (!resolvesFromEnv(binding, getEnv)) continue;
       out ??= { ...(value as Record<string, unknown>) };
       if (base[field] !== undefined) {
         out[field] = base[field];
@@ -83,6 +88,23 @@ export function stripEnvBoundFields<T>(bindings: EnvBindings<T>): ConfigStripEnv
     if (Object.keys(out).length > 0) return out as T;
     return (Object.keys(base).length > 0 ? base : undefined) as T | undefined;
   };
+}
+
+function resolvesFromEnv(
+  binding: EnvBinding,
+  getEnv: (name: string) => string | undefined,
+): boolean {
+  const parse = typeof binding === 'string' ? undefined : binding.parse;
+  const names =
+    typeof binding === 'string'
+      ? [binding]
+      : binding.deprecatedEnv === undefined
+        ? [binding.env]
+        : [binding.env, binding.deprecatedEnv];
+  return names.some((name) => {
+    const raw = getEnv(name);
+    return raw !== undefined && (parse === undefined || parse(raw) !== undefined);
+  });
 }
 
 export type ConfigFromToml = (rawSnake: unknown) => unknown;
@@ -99,6 +121,7 @@ export interface ConfigSection<T = unknown> {
   readonly stripEnv?: ConfigStripEnv<T>;
   readonly fromToml?: ConfigFromToml;
   readonly toToml?: ConfigToToml;
+  readonly deprecations?: readonly ConfigKeyDeprecation[];
 }
 
 export interface RegisterSectionOptions<T> {
@@ -109,6 +132,7 @@ export interface RegisterSectionOptions<T> {
   readonly stripEnv?: ConfigStripEnv<T>;
   readonly fromToml?: ConfigFromToml;
   readonly toToml?: ConfigToToml;
+  readonly deprecations?: readonly ConfigKeyDeprecation[];
 }
 
 export interface ConfigEffectiveOverlay {

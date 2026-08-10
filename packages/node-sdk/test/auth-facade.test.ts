@@ -392,7 +392,7 @@ oauth = { storage = "file", key = "${oauthKey}", oauth_host = "https://auth.dev.
       apiKey: accessToken,
       headers: {
         'chatgpt-account-id': 'account-123',
-        originator: 'kimi-code',
+        originator: 'echadron-cli',
         'OpenAI-Beta': 'responses=experimental',
       },
     });

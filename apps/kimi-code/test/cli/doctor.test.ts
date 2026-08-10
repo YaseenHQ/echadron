@@ -176,6 +176,30 @@ describe('kimi doctor', () => {
     expect(stdout.join('')).toContain(`OK config.toml  ${configPath}`);
   });
 
+  it('warns about deprecated v2 loop-control names without rejecting the config', async () => {
+    vi.stubEnv('ECHADRON_LEGACY_FLAG', '');
+    const configPath = join(dir, 'deprecated-config.toml');
+    await writeFile(
+      configPath,
+      '[loop_control]\nmax_retries_per_step = 2\n',
+      'utf-8',
+    );
+    vi.stubEnv('KIMI_LOOP_MAX_RETRIES_PER_STEP', '3');
+    const { deps, stdout, stderr } = makeDeps();
+
+    const code = await handleDoctor(
+      { ...deps, defaultConfigPath: () => configPath },
+      { target: 'config' },
+    );
+
+    expect(code).toBe(0);
+    expect(stderr.join('')).toBe('');
+    const out = stdout.join('');
+    expect(out).toContain("'max_retries_per_step' is deprecated");
+    expect(out).toContain('KIMI_LOOP_MAX_RETRIES_PER_STEP is deprecated');
+    expect(out).toContain('KIMI_LOOP_MAX_ATTEMPTS_PER_STEP');
+  });
+
   it('does not resolve the default config path when an explicit config path is provided', async () => {
     const configPath = join(dir, 'candidate-config.toml');
     await writeValidConfig(configPath);

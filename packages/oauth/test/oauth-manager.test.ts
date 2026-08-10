@@ -743,6 +743,57 @@ describe('OAuthManager.login', () => {
     });
     await expect(mgr.login({ signal: ac.signal })).rejects.toThrow(/abort/i);
   });
+
+  it('forwards AbortSignal into device authorization and token polling', async () => {
+    const storage = new InMemoryStorage();
+    const ac = new AbortController();
+    const requestImpl = vi.fn(async (_config, signal?: AbortSignal) => {
+      expect(signal).toBe(ac.signal);
+      return okAuth();
+    });
+    const pollImpl = vi.fn(async (_config, _deviceCode, signal?: AbortSignal) => {
+      expect(signal).toBe(ac.signal);
+      return { kind: 'success' as const, token: makeToken() };
+    });
+    const mgr = new OAuthManager({
+      config,
+      storage,
+      now,
+      requestDeviceImpl: requestImpl,
+      pollDeviceImpl: pollImpl,
+    });
+
+    await expect(mgr.login({ signal: ac.signal })).resolves.toMatchObject({ accessToken: 'at-1' });
+    expect(requestImpl).toHaveBeenCalledTimes(1);
+    expect(pollImpl).toHaveBeenCalledTimes(1);
+  });
+
+  it('aborts while waiting for the next poll instead of waiting for the sleep', async () => {
+    const storage = new InMemoryStorage();
+    const ac = new AbortController();
+    const sleep = vi.fn(
+      () => new Promise<void>(() => {
+        // Deliberately never settles; caller cancellation must win the race.
+      }),
+    );
+    const mgr = new OAuthManager({
+      config,
+      storage,
+      now,
+      requestDeviceImpl: vi.fn().mockResolvedValue(okAuth()),
+      pollDeviceImpl: vi.fn().mockResolvedValue({
+        kind: 'pending' as const,
+        errorCode: 'authorization_pending',
+        description: '',
+      }),
+      sleep,
+    });
+
+    const login = mgr.login({ signal: ac.signal });
+    await vi.waitFor(() => expect(sleep).toHaveBeenCalledTimes(1));
+    ac.abort();
+    await expect(login).rejects.toThrow(/abort/i);
+  });
 });
 
 // ── logout & hasToken ─────────────────────────────────────────────────

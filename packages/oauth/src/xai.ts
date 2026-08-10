@@ -54,6 +54,7 @@ interface XaiHttpResponse {
 async function postForm(
   url: string,
   fields: Record<string, string>,
+  callerSignal?: AbortSignal,
 ): Promise<XaiHttpResponse> {
   let response: Response;
   try {
@@ -64,7 +65,10 @@ async function postForm(
         'Content-Type': 'application/x-www-form-urlencoded',
       },
       body: new URLSearchParams(fields),
-      signal: AbortSignal.timeout(HTTP_TIMEOUT_MS),
+      signal:
+        callerSignal === undefined
+          ? AbortSignal.timeout(HTTP_TIMEOUT_MS)
+          : AbortSignal.any([callerSignal, AbortSignal.timeout(HTTP_TIMEOUT_MS)]),
     });
   } catch (error) {
     throw new OAuthConnectionError(`xAI OAuth request to ${url} failed.`, { cause: error });
@@ -147,12 +151,13 @@ function tokenFromResponse(
 
 export async function requestXaiDeviceAuthorization(
   config: OAuthFlowConfig,
+  signal?: AbortSignal,
 ): Promise<DeviceAuthorization> {
   const response = await postForm(`${config.oauthHost.replace(/\/+$/, '')}/device/code`, {
     client_id: config.clientId,
     scope: XAI_SCOPE,
     referrer: 'pi',
-  });
+  }, signal);
   if (response.status < 200 || response.status >= 300) {
     throw new OAuthError(failureMessage('device authorization', response));
   }
@@ -179,12 +184,13 @@ export async function requestXaiDeviceAuthorization(
 export async function pollXaiDeviceToken(
   config: OAuthFlowConfig,
   deviceCode: string,
+  signal?: AbortSignal,
 ): Promise<DevicePollResult> {
   const response = await postForm(`${config.oauthHost.replace(/\/+$/, '')}/token`, {
     grant_type: 'urn:ietf:params:oauth:grant-type:device_code',
     client_id: config.clientId,
     device_code: deviceCode,
-  });
+  }, signal);
   if (response.status >= 200 && response.status < 300) {
     return { kind: 'success', token: tokenFromResponse(response.data) };
   }

@@ -1,6 +1,6 @@
 # 环境变量
 
-Kimi Code CLI 通过环境变量控制少数运行时行为——迁移数据目录、关闭遥测、不改配置文件临时切换模型。
+Echadron 通过环境变量控制少数运行时行为——迁移数据目录、关闭遥测、不改配置文件临时切换模型。
 
 ::: warning 重要：API 密钥不在这里配置
 `KIMI_API_KEY`、`ANTHROPIC_API_KEY`、`OPENAI_API_KEY` 等密钥变量**不会**从 shell 环境变量自动读取。在终端里 `export KIMI_API_KEY=xxx` 不会让任何供应商获得密钥——必须写在 `config.toml` 的 `[providers.<name>]` 段或 `[providers.<name>.env]` 子表里。
@@ -12,15 +12,15 @@ Kimi Code CLI 通过环境变量控制少数运行时行为——迁移数据目
 
 ## 核心路径
 
-### `KIMI_CODE_HOME`
+### `ECHADRON_HOME`
 
-覆盖数据根目录，默认 `~/.kimi-code`。设置后，配置文件、会话、日志、OAuth 凭据等全部数据都落到新路径下：
+覆盖数据根目录，默认 `~/.echadron`。设置后，配置文件、会话、日志、OAuth 凭据等全部数据都落到新路径下：
 
 ```sh
-export KIMI_CODE_HOME="/path/to/custom/kimi-code"
+export ECHADRON_HOME="/path/to/custom/kimi-code"
 ```
 
-> 确保目录可写。多个 `kimi` 实例共用同一个 `KIMI_CODE_HOME` 会共享配置和凭证。
+> 确保目录可写。多个 `echadron` 实例共用同一个 `ECHADRON_HOME` 会共享配置和凭证。
 
 数据目录的完整结构见[数据路径](./data-locations.md)。
 
@@ -93,7 +93,7 @@ export KIMI_MODEL_API_KEY="YOUR_API_KEY"
 export KIMI_MODEL_BASE_URL="https://api.example.com/v1"
 export KIMI_MODEL_MAX_CONTEXT_SIZE="262144"
 export KIMI_MODEL_CAPABILITIES="image_in,thinking"
-kimi
+echadron
 ```
 
 完整变量列表：
@@ -102,7 +102,7 @@ kimi
 | --- | --- | --- | --- |
 | `KIMI_MODEL_NAME` | 是（同时是启用开关） | 发送给 API 的模型 ID | — |
 | `KIMI_MODEL_API_KEY` | 是 | API 密钥 | — |
-| `KIMI_MODEL_PROVIDER_TYPE` | 否 | 供应商类型：`kimi`、`anthropic`、`openai` | `kimi` |
+| `KIMI_MODEL_PROVIDER_TYPE` | 否 | 供应商类型：`echadron`、`anthropic`、`openai` | `echadron` |
 | `KIMI_MODEL_BASE_URL` | 否 | API 基础 URL | 各类型有各自默认值 |
 | `KIMI_MODEL_MAX_CONTEXT_SIZE` | 否 | 最大上下文长度（token 数） | `262144`（256K） |
 | `KIMI_MODEL_CAPABILITIES` | 否 | 逗号分隔的能力标签，与自动探测的能力取并集 | `image_in,thinking` |
@@ -129,12 +129,13 @@ kimi
 | `KIMI_CODE_AGENT_SWARM_MAX_CONCURRENCY` | 限制 AgentSwarm 初始提升并发阶段可同时运行的子 Agent 数量；不设置表示不限制 | 正整数；非法值会立即失败 |
 | `KIMI_SUBAGENT_TIMEOUT_MS` | 单个子 Agent（`Agent` / `AgentSwarm`）可运行的最长时间（毫秒）；优先级高于 `config.toml` 的 `[subagent] timeout_ms`（默认 `7200000`，即 2 小时） | 正整数；非法值回退到配置或默认值 |
 | `KIMI_CODE_EXPERIMENTAL_SECONDARY_MODEL` | 在包括交互式 TUI 在内的所有启动方式下启用实验性的次主力模型功能；master `KIMI_CODE_EXPERIMENTAL_FLAG=1` 也会启用本功能 | 真值：`1`/`true`/`yes`/`on`；假值：`0`/`false`/`no`/`off` |
-| `KIMI_SECONDARY_MODEL` | 次主力模型；优先级高于 `config.toml` 的 `[secondary_model] model`。次主力模型实验功能启用后，新派生的子 Agent 默认绑定该模型，而不再继承主 Agent 的模型 | 已配置 `[models]` 中的模型 id，如 `kimi-code/kimi-k2.5`；空白值被忽略 |
+| `KIMI_SECONDARY_MODEL` | 次主力模型；优先级高于 `config.toml` 的 `[secondary_model] model`。次主力模型实验功能启用后，新派生的子 Agent 默认绑定该模型，而不再继承主 Agent 的模型 | 已配置 `[models]` 中的模型 id，如 `echadron-code/kimi-k2.5`；空白值被忽略 |
 | `KIMI_SECONDARY_EFFORT` | 次主力模型的 thinking effort；优先级高于 `config.toml` 的 `[secondary_model] default_effort`，仅在次主力模型及其实验功能均启用时生效 | effort 取值，如 `low`；空白值被忽略 |
 | `KIMI_MCP_STARTUP_TIMEOUT_MS` | 所有 MCP server 的全局默认连接超时（毫秒）；优先级高于 `config.toml` 的 `[mcp] startup_timeout_ms`，但低于 `mcp.json` 中单个 server 的 `startupTimeoutMs`（默认 `30000`） | `1` 到 `2147483647` 的整数；非法值被忽略 |
 | `KIMI_MCP_TOOL_TIMEOUT_MS` | 所有 MCP server 的全局默认单次工具调用超时（毫秒）；优先级高于 `config.toml` 的 `[mcp] tool_timeout_ms`，但低于 `mcp.json` 中单个 server 的 `toolTimeoutMs`（默认 `60000`） | `1` 到 `2147483647` 的整数；非法值被忽略 |
 | `KIMI_LOOP_MAX_STEPS_PER_TURN` | Agent 单轮最大步数；优先级高于 `config.toml` 的 `[loop_control] max_steps_per_turn`（不设或 `0` 表示无上限） | 非负整数；非法值被忽略 |
-| `KIMI_LOOP_MAX_RETRIES_PER_STEP` | 单步失败后的最大重试次数；优先级高于 `config.toml` 的 `[loop_control] max_retries_per_step`（默认 `10`） | 非负整数；非法值被忽略 |
+| `KIMI_LOOP_MAX_ATTEMPTS_PER_STEP` | 单步失败后的最大尝试次数；优先级高于 `config.toml` 的 `[loop_control] max_attempts_per_step`（默认 `10`） | 非负整数；非法值被忽略 |
+| `KIMI_LOOP_MAX_RETRIES_PER_STEP` | `KIMI_LOOP_MAX_ATTEMPTS_PER_STEP` 的已弃用兼容别名 | 非负整数；替代变量有效时忽略 |
 | `KIMI_WEB_SEARCH_BASE_URL` | 网页搜索（`WebSearch`）服务的 API URL；优先级高于 `config.toml` 的 `[services.moonshot_search] base_url`，未写配置段时也可启用服务。文件中持久化的凭据和自定义 header 不会发送到环境变量指定的端点 | 非空字符串；空白值被忽略 |
 | `KIMI_WEB_SEARCH_API_KEY` | 网页搜索（`WebSearch`）服务的 API 密钥；设置后同时替换配置中的 API 密钥和 OAuth 凭据 | 非空字符串；空白值被忽略 |
 | `KIMI_WEB_FETCH_BASE_URL` | 网页抓取（`FetchURL`）服务的 API URL；优先级高于 `[services.moonshot_fetch] base_url`。文件中持久化的凭据和自定义 header 不会发送到环境变量指定的端点。环境变量和配置都没有指定端点时，已登录用户会先尝试 Kimi OAuth 托管抓取服务，再回退到本地直接请求 | 非空字符串；空白值被忽略 |
@@ -143,11 +144,11 @@ kimi
 | `ECHADRON_LEGACY_FLAG` | 退出默认的 agent-core-v2 引擎，改用旧版 v1 CLI/TUI/print/ACP 兼容路径 | `1`、`true`、`yes`、`on` |
 | `KIMI_CODE_LEGACY_FLAG` | `ECHADRON_LEGACY_FLAG` 的旧别名 | `1`、`true`、`yes`、`on` |
 | `KIMI_SHELL_PATH` | Windows 上覆盖 Git Bash 路径（自动探测失败时使用） | 绝对路径 |
-| `KIMI_MODEL_MAX_COMPLETION_TOKENS` | 单步 LLM 请求的 `max_completion_tokens` 硬上限，仅对 `kimi` 供应商生效 | 正整数；`0` 或负数禁用 clamp |
-| `KIMI_MODEL_TEMPERATURE` | 每次请求的采样温度，仅对 `kimi` 供应商生效（全局生效，不依赖 `KIMI_MODEL_NAME`） | 数字，如 `0.3` |
-| `KIMI_MODEL_TOP_P` | 每次请求的核采样 `top_p`，仅对 `kimi` 供应商生效（全局生效） | 数字，如 `0.95` |
-| `KIMI_MODEL_THINKING_EFFORT` | 在线上强制使用指定的思考强度（`thinking.effort`），绕过模型声明的 `support_efforts`；仅对 `kimi` 供应商生效，且仅在 Thinking 开启时注入 | 思考强度值，如 `max` |
-| `KIMI_MODEL_THINKING_KEEP` | 保留思考透传；在 `kimi` 上以 `thinking.keep` 发送，在 `anthropic`（Claude 以及 Kimi 的 Anthropic 兼容模式）上以 `context_management` 的 `clear_thinking_20251015` 编辑发送（开启 keep 会让 Anthropic 请求走 beta Messages API）；覆盖 `[thinking] keep`（其默认值为 `"all"`）；仅在 Thinking 开启时注入 | API 接受的值，如 `all`；传入关值（`false`/`0`/`no`/`off`/`none`/`null`）可禁用 |
+| `KIMI_MODEL_MAX_COMPLETION_TOKENS` | 单步 LLM 请求的 `max_completion_tokens` 硬上限，仅对 `echadron` 供应商生效 | 正整数；`0` 或负数禁用 clamp |
+| `KIMI_MODEL_TEMPERATURE` | 每次请求的采样温度，仅对 `echadron` 供应商生效（全局生效，不依赖 `KIMI_MODEL_NAME`） | 数字，如 `0.3` |
+| `KIMI_MODEL_TOP_P` | 每次请求的核采样 `top_p`，仅对 `echadron` 供应商生效（全局生效） | 数字，如 `0.95` |
+| `KIMI_MODEL_THINKING_EFFORT` | 在线上强制使用指定的思考强度（`thinking.effort`），绕过模型声明的 `support_efforts`；仅对 `echadron` 供应商生效，且仅在 Thinking 开启时注入 | 思考强度值，如 `max` |
+| `KIMI_MODEL_THINKING_KEEP` | 保留思考透传；在 `echadron` 上以 `thinking.keep` 发送，在 `anthropic`（Claude 以及 Kimi 的 Anthropic 兼容模式）上以 `context_management` 的 `clear_thinking_20251015` 编辑发送（开启 keep 会让 Anthropic 请求走 beta Messages API）；覆盖 `[thinking] keep`（其默认值为 `"all"`）；仅在 Thinking 开启时注入 | API 接受的值，如 `all`；传入关值（`false`/`0`/`no`/`off`/`none`/`null`）可禁用 |
 | `KIMI_CODE_NO_AUTO_UPDATE` | 完全禁用更新预检——不检查、不后台安装、不提示。同时兼容旧名 `KIMI_CLI_NO_AUTO_UPDATE` | 真值：`1`/`true`/`yes`/`on` |
 | `KIMI_DISABLE_CRON` | 禁用定时任务工具（`CronCreate` 拒绝新计划，已有任务不触发） | `1` 表示禁用 |
 
@@ -195,5 +196,5 @@ Kimi Code 会遵循标准代理环境变量，让所有出网流量——模型 
 ## 下一步
 
 - [配置覆盖](./overrides.md) — 环境变量、CLI 选项、配置文件的优先级关系
-- [数据路径](./data-locations.md) — `KIMI_CODE_HOME` 影响的完整目录结构
+- [数据路径](./data-locations.md) — `ECHADRON_HOME` 影响的完整目录结构
 - [平台与模型](./providers.md) — 各供应商类型的完整接入示例

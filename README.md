@@ -26,8 +26,8 @@ chad --version
 maker --version
 ```
 
-The published package is `@yaseenhq/echadron`; its CLI entries are `echadron`,
-`chad`, and `maker`.
+The npm package name is `@yaseenhq/echadron`; its CLI entries are `echadron`,
+`chad`, and `maker`. The first npm publication has not happened yet.
 
 ## Quick Start
 
@@ -62,7 +62,7 @@ channel; it never contacts or installs the upstream Kimi Code release.
 
 ## Key Features
 
-- **Single-binary distribution.** Install with one command: no Node.js setup, PATH gymnastics, or global module conflicts.
+- **Isolated npm distribution.** Echadron installs beside Kimi Code with its own commands and data directory. A standalone native distribution is planned after the first public npm release.
 - **Blazing-fast startup.** The TUI is ready in milliseconds, so starting a session never feels heavy.
 - **Purpose-built TUI.** A carefully tuned interface, optimized end to end for long, focused agent sessions.
 - **Video input.** Drop a screen recording or demo clip into the chat and let the agent watch what is hard to describe in words — turn a reference clip into a LUT, a long video into a short, a screen recording into working code, and more.

@@ -6,7 +6,7 @@ Echadron CLI persists every conversation as a "session" — storing message hist
 
 All sessions are saved under `$ECHADRON_HOME/sessions/` (default: `~/.echadron/sessions/`), grouped by working directory:
 
-> `ECHADRON_HOME` and `echadron` are the canonical data-root variable and executable. The legacy `IMPERIUM_HOME` / `KIMI_CODE_HOME` variables and `kimi` command remain supported as compatibility aliases.
+> `ECHADRON_HOME` and `echadron` are the canonical data-root variable and executable. The legacy `IMPERIUM_HOME` / `ECHADRON_HOME` variables and `echadron` command remain supported as compatibility aliases.
 
 ```text
 ~/.echadron/
@@ -121,7 +121,7 @@ The export includes all files in the session directory, including diagnostic log
 You can also export from inside the TUI without leaving the interactive session:
 
 - **`/export-debug-zip`**: produces the same debug ZIP as `echadron export`.
-- **`/export-md`** (alias `/export`): exports the conversation as a human-readable Markdown file, suitable for sharing or archiving. Accepts an optional path argument; without one, it writes to `kimi-export-<short-id>-<timestamp>.md` in the current working directory. The filename prefix is retained for compatibility.
+- **`/export-md`** (alias `/export`): exports the conversation as a human-readable Markdown file, suitable for sharing or archiving. Accepts an optional path argument; without one, it writes to `echadron-export-<short-id>-<timestamp>.md` in the current working directory. The filename prefix is retained for compatibility.
 
 In the web UI, `/export` downloads the current session as a diagnostic ZIP. It includes the persisted session data, diagnostic logs, and a bounded metadata-only `logs/echadron-web.jsonl` record of key browser events. Prompt text, WebSocket payloads, and console arguments are not copied into this browser log. This web command differs from the TUI `/export` alias above.
 

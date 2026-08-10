@@ -194,7 +194,7 @@ describe('KimiOAuthToolkit', () => {
         .getRequestAuth?.(),
     ).resolves.toMatchObject({
       apiKey: codexAccess,
-      headers: { 'chatgpt-account-id': 'account-1', originator: 'kimi-code' },
+      headers: { 'chatgpt-account-id': 'account-1', originator: 'echadron-cli' },
     });
     await expect(
       toolkit

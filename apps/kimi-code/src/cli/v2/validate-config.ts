@@ -10,11 +10,15 @@ import { parse as parseToml } from 'smol-toml';
 import { z } from 'zod';
 
 import {
+  collectKeyDeprecations,
   ConfigRegistry,
+  type AnyEnvBindings,
+  type EnvBinding,
 } from '@moonshot-ai/agent-core-v2';
 import {
   camelToSnake,
   describeTomlSyntaxError,
+  isPlainObject,
   transformTomlData,
 } from '@moonshot-ai/agent-core-v2/app/config/toml';
 
@@ -84,15 +88,58 @@ export function validateConfigTomlV2(
   if (issues.length > 0) throw new V2ConfigValidationError(issues);
 
   const warnings: string[] = [];
-  // The fork's current v2 registry intentionally does not expose the newer
-  // deprecation metadata (`deprecations` / `deprecatedEnv`) yet. Keep doctor
-  // compatible with the registry we actually run instead of importing a
-  // newer upstream-only module and silently diverging from runtime behavior.
-  void getEnv;
+  for (const diagnostic of collectKeyDeprecations(data, registry.listSections())) {
+    warnings.push(diagnostic.message);
+  }
+  warnings.push(...collectEnvDeprecations(registry, getEnv));
   if (unknownKeys.length > 0) {
     warnings.push(
       `Unknown top-level ${unknownKeys.length === 1 ? 'key' : 'keys'} ignored by the v2 engine: ${unknownKeys.join(', ')}.`,
     );
   }
   return warnings.length > 0 ? warnings.join('\n') : undefined;
+}
+
+function collectEnvDeprecations(
+  registry: ConfigRegistry,
+  getEnv: (name: string) => string | undefined,
+): string[] {
+  const warnings = new Set<string>();
+  for (const section of registry.listSections()) {
+    if (section.env === undefined) continue;
+    walkEnvBindings(section.env, (binding) => {
+      if (typeof binding === 'string' || binding.deprecatedEnv === undefined) return;
+      const primary = getEnv(binding.env);
+      if (
+        primary !== undefined &&
+        (binding.parse === undefined || binding.parse(primary) !== undefined)
+      ) {
+        return;
+      }
+      const deprecated = getEnv(binding.deprecatedEnv);
+      if (deprecated === undefined) return;
+      if (binding.parse !== undefined && binding.parse(deprecated) === undefined) return;
+      warnings.add(
+        `Environment variable ${binding.deprecatedEnv} is deprecated; use ${binding.env} instead.`,
+      );
+    });
+  }
+  return [...warnings];
+}
+
+function isEnvBinding(value: AnyEnvBindings): value is EnvBinding {
+  return typeof value === 'string' || (isPlainObject(value) && 'env' in value);
+}
+
+function walkEnvBindings(
+  bindings: AnyEnvBindings,
+  visit: (binding: EnvBinding) => void,
+): void {
+  if (isEnvBinding(bindings)) {
+    visit(bindings);
+    return;
+  }
+  for (const value of Object.values(bindings)) {
+    if (value !== undefined) walkEnvBindings(value, visit);
+  }
 }

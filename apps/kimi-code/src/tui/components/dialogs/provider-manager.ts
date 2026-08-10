@@ -44,7 +44,7 @@ import {
   type Focusable,
 } from '@moonshot-ai/pi-tui';
 
-import { DEFAULT_OAUTH_PROVIDER_NAME, PRODUCT_NAME } from '#/constant/app';
+import { DEFAULT_OAUTH_PROVIDER_NAME, MANAGED_KIMI_DISPLAY_NAME } from '#/constant/app';
 import { CURRENT_MARK, SELECT_POINTER } from '#/tui/constant/symbols';
 import { currentTheme } from '#/tui/theme';
 import { printableChar } from '#/tui/utils/printable-key';
@@ -150,7 +150,7 @@ function buildRows(opts: ProviderManagerOptions): readonly Row[] {
       sources.push({
         kind: 'source',
         id: `oauth:${id}`,
-        label: `${PRODUCT_NAME} (OAuth)`,
+        label: `${MANAGED_KIMI_DISPLAY_NAME} (OAuth)`,
         providerIds: [id],
         hasActive: isActive,
       });
