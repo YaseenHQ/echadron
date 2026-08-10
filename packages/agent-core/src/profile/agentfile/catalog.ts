@@ -2,8 +2,7 @@
  * Session-level agent profile catalog.
  *
  * Merges the builtin (code-embedded) profiles with the file-backed sources
- * (plugin / user / extra / project / explicit) by priority, requiring an
- * explicit
+ * (user / extra / project / explicit) by priority, requiring an explicit
  * opt-in (`override: true`) before a file replaces a same-name builtin. The
  * merged view always contains the builtin profiles (seeded at construction);
  * file profiles appear once `ready` resolves. A failing `explicit` source (an
@@ -35,7 +34,6 @@ import { describeInactiveToolPattern, findInactiveToolPatterns } from './validat
 import {
   AgentProfileCatalogSnapshotSchema,
   type AgentFileDefinition,
-  type AgentFileRoot,
   type AgentFileSource,
   type AgentProfileCatalogSnapshot,
 } from './types';
@@ -50,13 +48,10 @@ export interface SessionAgentCatalogOptions {
   readonly osHomeDir: string;
   readonly extraDirs?: readonly string[];
   readonly explicitFiles?: readonly string[];
-  /** Agent directories contributed by enabled plugins (lowest file priority). */
-  readonly pluginRoots?: readonly AgentFileRoot[];
   readonly warn?: (message: string, error?: unknown) => void;
 }
 
 const SOURCE_PRIORITY: Readonly<Record<AgentFileSource, number>> = {
-  plugin: 5,
   user: 10,
   extra: 20,
   project: 30,
@@ -86,11 +81,8 @@ interface FileProfileEntry {
 
 /**
  * Session-local copies of the builtin profiles. `DEFAULT_AGENT_PROFILES` is a
- * process-wide constant; seeding `merged` with its values directly would let
- * any session-scoped rewrite of a profile (e.g. a host runtime projecting
- * profile tool lists onto the session's tool surface) mutate shared process
- * state and leak into every later session. Clone each entry and re-link the
- * delegation graph against the clones so the whole graph is session-local.
+ * process-wide constant; clone each entry and re-link the delegation graph so
+ * a session-scoped tool projection cannot leak into later sessions.
  */
 function sessionLocalBuiltinProfiles(): Map<string, ResolvedAgentProfile> {
   const cloned = new Map<string, ResolvedAgentProfile>(
@@ -160,44 +152,6 @@ export class SessionAgentProfileCatalog {
   /** Replace live discovery with the file-backed catalog bound at creation. */
   restoreSnapshot(snapshot: AgentProfileCatalogSnapshot): void {
     const restored = AgentProfileCatalogSnapshotSchema.parse(snapshot);
-    const { entries } = this.entriesFromSnapshot(restored);
-    this.applyFileEntries(entries);
-    this.snapshotValue = restored;
-  }
-
-  /** Replace only the persisted plugin layer while keeping the session-bound local profiles. */
-  async restoreSnapshotRefreshingPlugins(
-    snapshot: AgentProfileCatalogSnapshot,
-    pluginRoots: readonly AgentFileRoot[],
-  ): Promise<void> {
-    const restored = AgentProfileCatalogSnapshotSchema.parse(snapshot);
-    const { effectiveDefault, entries, systemMd } = this.entriesFromSnapshot(
-      restored,
-      (profile) => profile.source !== 'plugin',
-    );
-
-    if (pluginRoots.length > 0) {
-      const discovered = await discoverAgentFiles(pluginRoots, this.warn);
-      for (const definition of discovered.agents) {
-        this.warnInactivePatterns(definition);
-        entries.push(this.entryFromDefinition(definition, effectiveDefault));
-      }
-    }
-
-    const winners = this.applyFileEntries(entries);
-    this.snapshotValue = this.snapshotFromEntries(winners, systemMd);
-  }
-
-  private entriesFromSnapshot(
-    restored: AgentProfileCatalogSnapshot,
-    includeProfile: (
-      profile: AgentProfileCatalogSnapshot['profiles'][number],
-    ) => boolean = () => true,
-  ): {
-    readonly effectiveDefault: ResolvedAgentProfile;
-    readonly entries: FileProfileEntry[];
-    readonly systemMd: AgentFileDefinition | undefined;
-  } {
     this.merged = sessionLocalBuiltinProfiles();
 
     const builtinDefault = this.getDefault();
@@ -212,7 +166,6 @@ export class SessionAgentProfileCatalog {
       entries.push(this.systemMdEntry(systemMd, effectiveDefault));
     }
     for (const profile of restored.profiles) {
-      if (!includeProfile(profile)) continue;
       const definition: AgentFileDefinition = {
         name: profile.name,
         description: profile.description,
@@ -224,12 +177,13 @@ export class SessionAgentProfileCatalog {
         modelPreference: profile.modelPreference,
         prompt: profile.prompt,
         path: `<session-agent-profile:${profile.name}>`,
-        source: profile.source ?? 'explicit',
+        source: 'explicit',
       };
       entries.push(this.entryFromDefinition(definition, effectiveDefault));
     }
 
-    return { effectiveDefault, entries, systemMd };
+    this.applyFileEntries(entries);
+    this.snapshotValue = restored;
   }
 
   /**
@@ -286,15 +240,6 @@ export class SessionAgentProfileCatalog {
     for (const roots of [userRoots, extraRoots, projectRoots]) {
       if (roots.length === 0) continue;
       const discovered = await discoverAgentFiles(roots, warn);
-      for (const definition of discovered.agents) {
-        this.warnInactivePatterns(definition);
-        entries.push(this.entryFromDefinition(definition, effectiveDefault));
-      }
-    }
-
-    const pluginRoots = this.options.pluginRoots ?? [];
-    if (pluginRoots.length > 0) {
-      const discovered = await discoverAgentFiles(pluginRoots, warn);
       for (const definition of discovered.agents) {
         this.warnInactivePatterns(definition);
         entries.push(this.entryFromDefinition(definition, effectiveDefault));
@@ -439,7 +384,6 @@ export class SessionAgentProfileCatalog {
         subagents: Object.keys(profile.subagents ?? {}),
         modelPreference: profile.modelPreference,
         prompt: definition.prompt,
-        source: definition.source,
       }));
     if (systemMd === undefined && profiles.length === 0) return undefined;
     return AgentProfileCatalogSnapshotSchema.parse({
