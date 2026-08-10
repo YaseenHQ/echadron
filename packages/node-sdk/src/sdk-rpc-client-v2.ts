@@ -119,7 +119,7 @@
  *   interaction bridge already relies on.
  */
 import { randomUUID } from 'node:crypto';
-import { readdir } from 'node:fs/promises';
+import { readFile, readdir } from 'node:fs/promises';
 import { join } from 'node:path';
 
 import {
@@ -147,6 +147,7 @@ import {
   type SecondaryModelConfig,
 } from '@moonshot-ai/agent-core-v2/app/kosongConfig/configSection';
 import { wrapSubagentModelError } from '@moonshot-ai/agent-core-v2/session/subagent/configSection';
+import { promptMetadataTextFromContentParts } from '@moonshot-ai/agent-core-v2/agent/prompt/promptMetadataText';
 import {
   applyPromptMetadataUpdate,
   bootstrap,
@@ -177,7 +178,9 @@ import {
   IModelCatalog,
   IModelService,
   IProjectLocalConfigService,
+  IPluginService,
   IProviderService,
+  IWireService,
   ISessionBtwService,
   ISessionAgentProfileCatalog,
   ISessionContext,
@@ -220,6 +223,7 @@ import {
   type ServicesAccessor,
 } from '@moonshot-ai/agent-core-v2';
 import type { AgentHandle, Klient } from '@moonshot-ai/klient';
+import type { ContentPart } from '@moonshot-ai/kosong';
 import { createKlient } from '@moonshot-ai/klient/memory';
 import { assertKimiHostIdentity } from '@moonshot-ai/kimi-code-oauth';
 
@@ -245,6 +249,8 @@ import {
 import type {
   AddAdditionalDirInput,
   AddAdditionalDirResult,
+  SetAdditionalDirsInput,
+  SetAdditionalDirsResult,
   BackgroundTaskInfo,
   CompactOptions,
   ConfigDiagnostics,
@@ -281,6 +287,7 @@ import type {
   SessionStatus,
   SessionSummary,
   SessionUsage,
+  SessionTurn,
   SkillSummary,
   TelemetryClient,
 } from '#/types';
@@ -534,11 +541,18 @@ export class SDKRpcClientV2 extends SDKRpcClientBase {
             ...(await userRoots(bootstrapService.homeDir, bootstrapService.osHomeDir)),
             ...(await projectRoots(workDir)),
           ];
-    const { skills } = await discovery.discover(roots);
+    const [discovered, pluginDiscovered] = await Promise.all([
+      discovery.discover(roots),
+      discovery.discover(await this.engineAccessor.get(IPluginService).pluginSkillRoots()),
+    ]);
+    const { skills } = discovered;
+    const pluginSkills = pluginDiscovered.skills;
     // Builtins are the lowest-priority contribution: a discovered skill with
     // the same name shadows the builtin (v1 registry semantics).
     const byName = new Map<string, SkillSummary>();
-    for (const skill of [...BUILTIN_SKILLS, ...skills]) {
+    // Plugin roots have lower priority than user/project roots, matching the
+    // session skill catalog's source ordering.
+    for (const skill of [...BUILTIN_SKILLS, ...pluginSkills, ...skills]) {
       byName.set(skill.name, {
         name: skill.name,
         description: skill.description,
@@ -915,6 +929,31 @@ export class SDKRpcClientV2 extends SDKRpcClientBase {
   }
 
   /**
+   * Read user-visible turns directly from the main agent journal. This keeps
+   * `/tree` working on the v2 route without materializing a closed session;
+   * active sessions flush their wire first, while closed sessions are located
+   * through the v2 session index.
+   */
+  override async listSessionTurns(
+    input: SessionIdRpcInput,
+  ): Promise<readonly SessionTurn[]> {
+    const live = this.sessionLifecycle.get(input.sessionId);
+    let sessionDir: string;
+    if (live !== undefined) {
+      const main = live.accessor.get(IAgentLifecycleService).get(MAIN_AGENT_ID);
+      if (main !== undefined) await main.accessor.get(IWireService).flush();
+      sessionDir = live.accessor.get(ISessionContext).sessionDir;
+    } else {
+      const summary = await this.engineAccessor.get(ISessionIndex).get(input.sessionId);
+      if (summary === undefined) throw SDKRpcClientV2.sessionNotFound(input.sessionId);
+      sessionDir = this.engineAccessor
+        .get(IBootstrapService)
+        .sessionDir(summary.workspaceId, summary.id);
+    }
+    return readV2SessionTurns(join(sessionDir, 'agents', MAIN_AGENT_ID, 'wire.jsonl'));
+  }
+
+  /**
    * v1 semantics: register the workDir as a workspace and create the session
    * (the v2 `sessionLifecycleService.create` does both; the klient facade
    * wrapper is bypassed because it takes neither an explicit session id nor
@@ -1121,6 +1160,19 @@ export class SDKRpcClientV2 extends SDKRpcClientBase {
     return handle.accessor
       .get(ISessionWorkspaceCommandService)
       .addAdditionalDir({ path: input.path, persist: input.persist });
+  }
+
+  /** Replace the live workspace directory set, preserving the SDK contract. */
+  override async setAdditionalDirs(
+    input: SetAdditionalDirsInput,
+  ): Promise<SetAdditionalDirsResult> {
+    const handle = this.requireLiveSession(input.id);
+    const normalized = input.additionalDirs.map((directory) =>
+      normalizeAdditionalDir(directory),
+    );
+    const workspace = handle.accessor.get(ISessionWorkspaceContext);
+    workspace.setAdditionalDirs(normalized);
+    return { additionalDirs: workspace.additionalDirs };
   }
 
   /**
@@ -2123,6 +2175,71 @@ export class SDKRpcClientV2 extends SDKRpcClientBase {
   }
 }
 
+async function readV2SessionTurns(wirePath: string): Promise<readonly SessionTurn[]> {
+  let content: string;
+  try {
+    content = await readFile(wirePath, 'utf8');
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return [];
+    throw error;
+  }
+  const turns: SessionTurn[] = [];
+  const lines = content.split('\n');
+  for (const [index, rawLine] of lines.entries()) {
+    const line = rawLine.endsWith('\r') ? rawLine.slice(0, -1) : rawLine;
+    if (line.length === 0) continue;
+    let record: unknown;
+    try {
+      record = JSON.parse(line);
+    } catch (error) {
+      // A crashed final append can leave a truncated tail; earlier corruption
+      // must remain visible to callers instead of silently hiding history.
+      if (index === lines.length - 1) break;
+      throw error;
+    }
+    const message = userMessageFromWireRecord(record);
+    if (message === undefined) continue;
+    turns.push({
+      turnIndex: turns.length,
+      prompt:
+        promptMetadataTextFromContentParts(message.content as readonly ContentPart[]) ?? 'User turn',
+    });
+  }
+  return turns;
+}
+
+function userMessageFromWireRecord(
+  value: unknown,
+): { readonly content: readonly unknown[] } | undefined {
+  if (!isRecord(value) || value['type'] !== 'context.append_message') return undefined;
+  const message = value['message'];
+  if (!isRecord(message) || message['role'] !== 'user' || !Array.isArray(message['content'])) {
+    return undefined;
+  }
+  const origin = message['origin'];
+  if (origin !== undefined && !isVisibleUserOrigin(origin)) return undefined;
+  return { content: message['content'] };
+}
+
+function isVisibleUserOrigin(value: unknown): boolean {
+  if (!isRecord(value) || typeof value['kind'] !== 'string') return false;
+  switch (value['kind']) {
+    case 'user':
+      return true;
+    case 'skill_activation':
+    case 'plugin_command':
+      return value['trigger'] === 'user-slash';
+    case 'shell_command':
+      return value['phase'] === 'input';
+    default:
+      return false;
+  }
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
 export function createKimiHarnessV2(options: KimiHarnessOptions): KimiHarness {
   const rpc = new SDKRpcClientV2(options);
   return new KimiHarness(rpc, {
@@ -2147,4 +2264,12 @@ function normalizeRequiredWorkDir(operation: string, workDir: string): string {
     throw new KimiError(ErrorCodes.REQUEST_WORK_DIR_REQUIRED, `${operation} requires workDir`);
   }
   return normalizeWorkDir(workDir);
+}
+
+function normalizeAdditionalDir(directory: string): string {
+  const normalized = directory.trim();
+  if (normalized.length === 0) {
+    throw new KimiError(ErrorCodes.REQUEST_INVALID, 'Additional directory cannot be empty');
+  }
+  return normalized;
 }

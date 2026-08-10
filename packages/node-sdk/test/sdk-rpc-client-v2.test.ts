@@ -140,6 +140,51 @@ describe('SDKRpcClientV2 (agent-core-v2 wiring MVP)', () => {
       await harness.close();
     }
   });
+
+  it('serves session turns and replaces additional dirs on the v2 route', async () => {
+    const { harness } = await makeHarness();
+    const workDir = await mkdtemp(join(tmpdir(), 'kimi-sdk-v2-turns-work-'));
+    const additionalDir = await mkdtemp(join(tmpdir(), 'kimi-sdk-v2-additional-'));
+    tempDirs.push(workDir, additionalDir);
+    try {
+      const session = await harness.createSession({ workDir });
+      expect(await session.listTurns()).toEqual([]);
+      const wireDir = join(session.summary!.sessionDir, 'agents', 'main');
+      await mkdir(wireDir, { recursive: true });
+      await writeFile(
+        join(wireDir, 'wire.jsonl'),
+        [
+          JSON.stringify({ type: 'metadata', protocol_version: '1.5', created_at: 1 }),
+          JSON.stringify({
+            type: 'context.append_message',
+            message: {
+              role: 'user',
+              content: [{ type: 'text', text: 'first question' }],
+            },
+          }),
+          JSON.stringify({
+            type: 'context.append_message',
+            message: {
+              role: 'user',
+              content: [{ type: 'text', text: 'hidden injection' }],
+              origin: { kind: 'injection', variant: 'system' },
+            },
+          }),
+        ].join('\n') + '\n',
+        'utf8',
+      );
+      expect(await session.listTurns()).toEqual([
+        { turnIndex: 0, prompt: 'first question' },
+      ]);
+      await expect(session.setAdditionalDirs([additionalDir])).resolves.toEqual({
+        additionalDirs: [additionalDir],
+      });
+      expect(session.summary?.additionalDirs).toEqual([additionalDir]);
+      await session.close();
+    } finally {
+      await harness.close();
+    }
+  });
 });
 
 describe('foldAgentWireReplay', () => {
