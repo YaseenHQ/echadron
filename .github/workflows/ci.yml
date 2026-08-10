@@ -103,7 +103,9 @@ jobs:
       - run: pnpm run lint
       - run: pnpm run sherif
       - name: Validate release plan
-        run: pnpm run release:check
+        run: |
+          git branch --force main origin/main
+          pnpm run release:check
 
   typecheck:
     runs-on: ubuntu-latest
