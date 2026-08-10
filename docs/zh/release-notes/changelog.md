@@ -732,7 +732,7 @@ outline: 2
 - 新增添加额外工作区目录的能力：
   - 使用 `/add-dir <path>` 命令将额外工作目录添加到当前会话，或将其记住到项目中。
   - 使用 `kimi --add-dir <path>` 在启动时添加它们。
-  - 项目级本地配置现在由 `.kimi-code/local.toml` 管理；我们建议将其添加到你的 `.gitignore` 中。
+  - 项目级本地配置现在由 `.echadron/local.toml` 管理；我们建议将其添加到你的 `.gitignore` 中。
 - 允许使用 `Ctrl+B` 将长时间运行的前台命令和子 Agent 移动到后台任务，并通过 `/tasks` 面板查看它们。
 
 ### 修复
@@ -936,7 +936,7 @@ outline: 2
 
 ### 新功能
 
-- 新增自定义颜色主题。在 `~/.kimi-code/themes/` 中以 JSON 文件定义自己的调色板，或使用内置的 `/custom-theme` Skill 命令生成。
+- 新增自定义颜色主题。在 `~/.echadron/themes/` 中以 JSON 文件定义自己的调色板，或使用内置的 `/custom-theme` Skill 命令生成。
 - 新增 `/import-from-cc-codex` 命令，用于导入选定的 Claude Code 和 Codex 指令、Skills 以及 MCP 设置。
 - 在 marketplace 中显示可用的 plugin 更新。
 
@@ -985,7 +985,7 @@ outline: 2
 - 直接展示完整 plan 卡片，并移除 Plan 卡片键盘快捷键。
 - 在审批提示中换行显示过长的单行 shell 命令，以便完整命令始终可见。
 - 重构 TUI 中的文件引用补全。
-- 当设置了 `KIMI_CODE_HOME` 时，从该路径加载 Kimi 特定的用户 Skills 和全局 Agent 指令。
+- 当设置了 `ECHADRON_HOME` 时，从该路径加载 Kimi 特定的用户 Skills 和全局 Agent 指令。
 
 ## 0.11.0（2026-06-05）
 
@@ -1274,7 +1274,7 @@ outline: 2
 - `/connect` 的供应商和模型选择器现支持键入即搜索过滤，长列表会自动分页；配置了较多模型时，`/model` 选择器同样支持分页。
 - 在终端界面输入框中新增 `Ctrl-J` 作为插入换行的额外快捷键。
 - 在会话回放过程中新增 wire 记录迁移处理。
-- 在首次启动迁移期间，将用户 Skill 从 `~/.kimi/skills/` 迁移到 `~/.kimi-code/skills/`；已存在的目标 Skill 会被保留。
+- 在首次启动迁移期间，将用户 Skill 从 `~/.kimi/skills/` 迁移到 `~/.echadron/skills/`；已存在的目标 Skill 会被保留。
 - 在 stream-json 输出格式中以结构化 meta 消息形式发出会话恢复提示。
 
 ### 修复

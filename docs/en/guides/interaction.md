@@ -2,7 +2,7 @@
 
 Echadron CLI runs as an interactive TUI (terminal user interface) built around three components: the input box, the conversation view, and the status bar. This page covers how to enter text, paste media, navigate the approval flow, and switch between modes.
 
-> `echadron` is the canonical executable. The legacy `kimi` command remains supported as a compatibility alias.
+> `echadron` is the canonical executable; `chad` and `maker` are aliases. Echadron does not install a `echadron` executable.
 
 ## Input box basics
 

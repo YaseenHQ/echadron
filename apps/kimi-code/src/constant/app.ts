@@ -6,6 +6,8 @@ import { ErrorCodes } from '@moonshot-ai/kimi-code-sdk';
  * use them for the host's user-facing identity or data namespace.
  */
 export const PRODUCT_NAME = 'Echadron';
+/** Display name of the managed subscription provider; this is not the host product name. */
+export const MANAGED_KIMI_DISPLAY_NAME = 'Kimi Code';
 export const CLI_COMMAND_NAME = 'echadron';
 /** Primary short commands. `ec` is deliberately not installed by default. */
 export const CLI_COMMAND_ALIASES = ['chad', 'maker'] as const;

@@ -18,7 +18,7 @@ export ECHADRON_HOME="$HOME/.config/echadron"
 
 Once set, **all** Echadron data — config, sessions, logs, OAuth credentials, Echadron-specific user Skills, global `AGENTS.md`, and more — lands under the new path. For the full reference on `ECHADRON_HOME`, see [Environment variables](./env-vars.md).
 
-The legacy `IMPERIUM_HOME` and `KIMI_CODE_HOME` variables, and the `kimi` executable, remain supported as compatibility aliases.
+The legacy `IMPERIUM_HOME` and `ECHADRON_HOME` variables remain supported as data-root compatibility aliases. Echadron does not install a `echadron` executable.
 
 ::: tip Note
 
@@ -65,7 +65,7 @@ Each top-level file under the data root serves a specific purpose; most are mana
 - **`config.toml`**: the main runtime configuration file, storing user-level settings such as providers, models, and loop control. See [Configuration files](./config-files.md).
 - **`tui.toml`**: terminal UI client preferences, including `[upgrade].auto_install` (auto-update, on by default). You can disable it in `/settings` or by manually setting `auto_install = false`.
 - **`AGENTS.md`**: global Echadron-specific agent instructions. This file moves with `ECHADRON_HOME`; generic cross-tool instructions can still live under `~/.agents/AGENTS.md`.
-- **`mcp.json`**: user-level MCP server declarations, merged with the project-local `.echadron/mcp.json` on startup. The legacy `.kimi-code/mcp.json` path is also read when present. See [MCP](../customization/mcp.md).
+- **`mcp.json`**: user-level MCP server declarations, merged with the project-local `.echadron/mcp.json` on startup. The legacy `.echadron/mcp.json` path is also read when present. See [MCP](../customization/mcp.md).
 - **`skills/`**: Echadron-specific user-level Skills. This directory moves with `ECHADRON_HOME`; generic cross-tool Skills can still live under `~/.agents/skills/`. See [Agent Skills](../customization/skills.md).
 - **`plugins/installed.json`**: records installed plugins, each plugin's enabled state, and MCP server capability state changes made via `/plugins` or `/plugins mcp disable|enable`. Files installed from local paths or zip URLs are copied to `plugins/managed/<id>/`. See [Plugins](../customization/plugins.md).
 - **`credentials/`**: OAuth credential directory, with permissions `0o700` (directory) / `0o600` (files), readable and writable only by the current user. Managed provider credentials are stored as `credentials/<name>.json`; MCP server credentials are stored under `credentials/mcp/`. Credentials are written using an atomic flow (tmp → fsync → rename) to prevent corruption.

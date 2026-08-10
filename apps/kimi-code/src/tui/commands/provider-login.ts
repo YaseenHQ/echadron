@@ -13,7 +13,7 @@ import {
 } from '@moonshot-ai/kimi-code-oauth';
 import { log } from '@moonshot-ai/kimi-code-sdk';
 
-import { DEFAULT_OAUTH_PROVIDER_NAME, PRODUCT_NAME } from '../constant/kimi-tui';
+import { DEFAULT_OAUTH_PROVIDER_NAME, MANAGED_KIMI_DISPLAY_NAME } from '../constant/kimi-tui';
 import type { LoginProgressSpinnerHandle } from '../types';
 import { formatErrorMessage } from '../utils/event-payload';
 import { getDataDir } from '../../utils/paths';
@@ -38,7 +38,7 @@ export interface OAuthProviderDefinition {
 export const OAUTH_PROVIDERS: readonly OAuthProviderDefinition[] = [
   {
     id: DEFAULT_OAUTH_PROVIDER_NAME,
-    label: PRODUCT_NAME,
+    label: MANAGED_KIMI_DISPLAY_NAME,
     description: 'Use a Kimi Code membership subscription.',
   },
   {

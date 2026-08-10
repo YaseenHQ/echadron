@@ -42,6 +42,7 @@ import '#/agent/loop/configSection';
 import {
   LOOP_CONTROL_SECTION,
   LOOP_MAX_RETRIES_PER_STEP_ENV,
+  LOOP_MAX_ATTEMPTS_PER_STEP_ENV,
   LOOP_MAX_STEPS_PER_TURN_ENV,
   type LoopControl,
 } from '#/agent/loop/configSection';
@@ -772,10 +773,10 @@ describe('loopControl config section', () => {
 
     expect(registry.validate(LOOP_CONTROL_SECTION, {})).toEqual({});
     expect(
-      registry.validate(LOOP_CONTROL_SECTION, { maxStepsPerTurn: 100, maxRetriesPerStep: 3 }),
-    ).toEqual({ maxStepsPerTurn: 100, maxRetriesPerStep: 3 });
+      registry.validate(LOOP_CONTROL_SECTION, { maxStepsPerTurn: 100, maxAttemptsPerStep: 3 }),
+    ).toEqual({ maxStepsPerTurn: 100, maxAttemptsPerStep: 3 });
     expect(() => registry.validate(LOOP_CONTROL_SECTION, { maxStepsPerTurn: -1 })).toThrow();
-    expect(() => registry.validate(LOOP_CONTROL_SECTION, { maxRetriesPerStep: 1.5 })).toThrow();
+    expect(() => registry.validate(LOOP_CONTROL_SECTION, { maxAttemptsPerStep: 1.5 })).toThrow();
   });
 
   it('re-applies loopControl env bindings on every get() and ignores invalid env', async () => {
@@ -801,8 +802,11 @@ describe('loopControl config section', () => {
     env[LOOP_MAX_RETRIES_PER_STEP_ENV] = '3';
     expect(config.get<LoopControl>(LOOP_CONTROL_SECTION)).toEqual({
       maxStepsPerTurn: 100,
-      maxRetriesPerStep: 3,
+      maxAttemptsPerStep: 3,
     });
+
+    env[LOOP_MAX_ATTEMPTS_PER_STEP_ENV] = '4';
+    expect(config.get<LoopControl>(LOOP_CONTROL_SECTION).maxAttemptsPerStep).toBe(4);
 
     env[LOOP_MAX_STEPS_PER_TURN_ENV] = '50';
     expect(config.get<LoopControl>(LOOP_CONTROL_SECTION).maxStepsPerTurn).toBe(50);
@@ -835,14 +839,14 @@ describe('loopControl config section', () => {
     // A client echoing the env-overlaid section back (plus a genuine edit).
     await config.set(LOOP_CONTROL_SECTION, {
       maxStepsPerTurn: 7,
-      maxRetriesPerStep: 2,
+      maxAttemptsPerStep: 2,
       reservedContextSize: 5000,
     });
 
     // Runtime resolution still lets the env win…
     expect(config.get<LoopControl>(LOOP_CONTROL_SECTION)).toEqual({
       maxStepsPerTurn: 7,
-      maxRetriesPerStep: 2,
+      maxAttemptsPerStep: 2,
       reservedContextSize: 5000,
     });
     // …but persistence keeps the raw value and drops the env-only field.
@@ -853,7 +857,7 @@ describe('loopControl config section', () => {
     const onDisk = new TextDecoder().decode(await storage.read('', 'config.toml'));
     expect(onDisk).toContain('max_steps_per_turn = 100');
     expect(onDisk).toContain('reserved_context_size = 5000');
-    expect(onDisk).not.toContain('max_retries_per_step');
+    expect(onDisk).not.toContain('max_attempts_per_step');
 
     disposables.dispose();
   });

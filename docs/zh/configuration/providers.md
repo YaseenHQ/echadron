@@ -1,6 +1,6 @@
 # 平台与模型
 
-Kimi Code CLI 支持同时接入多家 LLM 平台——用 Kimi Code 托管服务一键登录、用 Anthropic API key 接 Claude、用 OpenAI 兼容协议连接第三方推理服务。每个供应商对应一种 API 协议，模型在供应商之上声明自己的名称、上下文长度和能力。本页介绍如何在 `config.toml` 里配置各种供应商。
+Echadron 支持同时接入多家 LLM 平台——用 Kimi Code 托管服务一键登录、用 Anthropic API key 接 Claude、用 OpenAI 兼容协议连接第三方推理服务。每个供应商对应一种 API 协议，模型在供应商之上声明自己的名称、上下文长度和能力。本页介绍如何在 `config.toml` 里配置各种供应商。
 
 ## 支持的供应商类型
 
@@ -8,7 +8,7 @@ Kimi Code CLI 支持同时接入多家 LLM 平台——用 Kimi Code 托管服�
 
 | 类型 | 协议 | 典型用途 |
 | --- | --- | --- |
-| `kimi` | OpenAI 兼容 | Kimi Code 托管服务、Kimi Platform API 密钥 |
+| `echadron` | OpenAI 兼容 | Kimi Code 托管服务、Kimi Platform API 密钥 |
 | `anthropic` | Anthropic Messages | Claude 系列模型 |
 | `openai` | OpenAI Chat Completions | OpenAI 及兼容服务、DeepSeek、Qwen 等 |
 | `openai_responses` | OpenAI Responses API | OpenAI 较新的 Responses 接口 |
@@ -38,9 +38,9 @@ Kimi Code 目前为每个供应商保存一个 OAuth 账号。对已连接的供
 
 使用自定义 registry 时，粘贴其地址和 Bearer token。CLI 会创建 `providers` / `models` 条目。后续启动时，同一个 registry 地址下的供应商会一起刷新，因此上游新增、删除供应商以及模型元数据变化都会同步。
 
-非交互环境下也可以用 shell 命令完成同样操作：[`kimi provider`](../reference/kimi-command.md#kimi-provider)。
+非交互环境下也可以用 shell 命令完成同样操作：[`echadron provider`](../reference/kimi-command.md#echadron-provider)。
 
-## `kimi`
+## `echadron`
 
 用于对接 Moonshot AI 的 OpenAI 兼容接口，包括 Kimi Code 托管服务和 Kimi Platform API 密钥。
 
@@ -147,7 +147,7 @@ GOOGLE_CLOUD_LOCATION = "us-central1"
 
 ```sh
 gcloud auth application-default login   # 一次性完成认证
-kimi
+echadron
 ```
 
 如需让 Vertex 请求走自定义（如代理）端点，可设置 `base_url`（或 `GOOGLE_VERTEX_BASE_URL` 环境变量）；不填时使用 SDK 默认的区域化 `*-aiplatform.googleapis.com` 地址。与 `google-genai` 一样，只填主机根地址——SDK 会自行追加 `/v1beta1/publishers/google/models/…`。

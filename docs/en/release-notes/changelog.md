@@ -732,7 +732,7 @@ This page documents the changes in each Kimi Code CLI release.
 - Added the ability to add extra workspace directories:
   - Use the `/add-dir <path>` command to add extra working directories to the current session, or remember them for the project.
   - Use `kimi --add-dir <path>` to add them on startup.
-  - Project-level local config is now managed in `.kimi-code/local.toml`; we recommend adding it to your `.gitignore`.
+  - Project-level local config is now managed in `.echadron/local.toml`; we recommend adding it to your `.gitignore`.
 - Allow long-running foreground commands and subagents to be moved into background tasks with `Ctrl+B`, and inspect them via the `/tasks` panel.
 
 ### Bug Fixes
@@ -936,7 +936,7 @@ This page documents the changes in each Kimi Code CLI release.
 
 ### Features
 
-- Add custom color themes. Define your own palette as a JSON file in `~/.kimi-code/themes/`, or generate one with the built-in `/custom-theme` skill command.
+- Add custom color themes. Define your own palette as a JSON file in `~/.echadron/themes/`, or generate one with the built-in `/custom-theme` skill command.
 - Add `/import-from-cc-codex` to import selected Claude Code and Codex instructions, Skills, and MCP settings.
 - Show available plugin updates in the marketplace.
 
@@ -985,7 +985,7 @@ This page documents the changes in each Kimi Code CLI release.
 - Show full plan cards directly and remove the Plan card keyboard shortcut.
 - Wrap long single-line shell commands in approval prompts so the full command remains visible.
 - Rework file reference completion in the TUI.
-- Load Kimi-specific user Skills and global agent instructions from `KIMI_CODE_HOME` when it is set.
+- Load Kimi-specific user Skills and global agent instructions from `ECHADRON_HOME` when it is set.
 
 ## 0.11.0 (2026-06-05)
 
@@ -1281,7 +1281,7 @@ This page documents the changes in each Kimi Code CLI release.
 - The `/connect` provider and model pickers now support type-to-search filtering, and long lists are paginated. The `/model` picker is also paginated when many models are configured.
 - Add `Ctrl-J` as an additional shortcut for inserting new lines in the TUI prompt.
 - Add wire record migration handling during session replay.
-- Migrate user skills from `~/.kimi/skills/` to `~/.kimi-code/skills/` during the first-launch migration; existing target skills are kept.
+- Migrate user skills from `~/.kimi/skills/` to `~/.echadron/skills/` during the first-launch migration; existing target skills are kept.
 - Emit session resume hint as a structured meta message in stream-json output format.
 
 ### Bug Fixes

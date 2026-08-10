@@ -96,6 +96,7 @@ export * from '#/session/sessionToolPolicy/sessionToolPolicy';
 export * from '#/session/sessionToolPolicy/sessionToolPolicyService';
 export * from '#/app/config/config';
 export * from '#/app/config/configService';
+export * from '#/app/config/deprecations';
 import '#/app/kosongConfig/configSection';
 export * from '#/kosong/provider/provider';
 export * from '#/kosong/provider/providerService';

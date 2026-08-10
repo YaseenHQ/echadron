@@ -59,6 +59,8 @@ import {
   type IConfigService,
 } from '#/app/config/config';
 import { registerConfigSection } from '#/app/config/configSectionContributions';
+import type { ModelCapability } from '#/kosong/contract/capability';
+import type { IModelCatalog } from '#/kosong/model/catalog';
 
 import { SECONDARY_MODEL_FLAG_ID } from './flag';
 
@@ -155,14 +157,45 @@ export function buildSubagentModelDescriptions(
   config: IConfigService,
   flags: IFlagService,
   callerModelAlias: string | undefined,
+  modelCatalog?: IModelCatalog,
 ): string | undefined {
-  const secondaryModel = resolveSecondaryModel(config, flags)?.model;
+  const secondary = resolveSecondaryModel(config, flags);
+  const secondaryModel = secondary?.model;
   if (secondaryModel === undefined || callerModelAlias === undefined) return undefined;
+  const boundSecondary =
+    secondaryModelPatch(secondary) === undefined ? secondaryModel : SECONDARY_DERIVED_MODEL_ID;
   return [
     'Available models (pass via model):',
-    `- secondary: ${secondaryModel} (default) — the configured secondary model; prefer it for routine subagent tasks`,
-    `- primary: ${callerModelAlias} — the main model you are running on; use it for hard, quality-sensitive subagent tasks`,
+    `- secondary: ${secondaryModel} (default) — the configured secondary model; prefer it for routine subagent tasks${capabilitiesSuffix(resolvedCapabilities(modelCatalog, boundSecondary))}`,
+    `- primary: ${callerModelAlias} — the main model you are running on; use it for hard, quality-sensitive subagent tasks${capabilitiesSuffix(resolvedCapabilities(modelCatalog, callerModelAlias))}`,
   ].join('\n');
+}
+
+const ADVERTISED_CAPABILITY_FLAGS = [
+  'image_in',
+  'video_in',
+  'audio_in',
+  'thinking',
+  'tool_use',
+  'dynamically_loaded_tools',
+] as const satisfies readonly (keyof ModelCapability)[];
+
+function capabilitiesSuffix(capability: ModelCapability | undefined): string {
+  if (capability === undefined) return '';
+  const names = ADVERTISED_CAPABILITY_FLAGS.filter((flag) => capability[flag] === true);
+  return `; capabilities: ${names.length === 0 ? 'none' : names.join(', ')}`;
+}
+
+function resolvedCapabilities(
+  modelCatalog: IModelCatalog | undefined,
+  model: string,
+): ModelCapability | undefined {
+  if (modelCatalog === undefined) return undefined;
+  try {
+    return modelCatalog.get(model).capabilities;
+  } catch {
+    return undefined;
+  }
 }
 
 export function wrapSubagentModelError(

@@ -69,11 +69,11 @@ Echadron CLI scans four tiers by scope; more specific scopes take higher priorit
 - `$ECHADRON_HOME/skills/` (default: `~/.echadron/skills/`)
 - `~/.agents/skills/`
 
-The Echadron-specific user Skill directory moves with `ECHADRON_HOME`, so isolated data roots also get isolated Echadron-specific Skills. The generic `~/.agents/skills/` directory stays under the real OS home so it can be shared across tools. The legacy `IMPERIUM_HOME` and `KIMI_CODE_HOME` variables remain accepted aliases.
+The Echadron-specific user Skill directory moves with `ECHADRON_HOME`, so isolated data roots also get isolated Echadron-specific Skills. The generic `~/.agents/skills/` directory stays under the real OS home so it can be shared across tools. The legacy `IMPERIUM_HOME` and `ECHADRON_HOME` variables remain accepted aliases.
 
 **Project level** (project root = the nearest directory containing `.git`, searching upward from the working directory):
 - `.echadron/skills/`
-- `.kimi-code/skills/` (legacy project-directory alias)
+- `.echadron/skills/` (legacy project-directory alias)
 - `.agents/skills/`
 
 **Extra directories**: Declared via `extra_skill_dirs` at the top level of `config.toml`:

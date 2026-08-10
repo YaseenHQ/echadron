@@ -63,10 +63,14 @@ export interface OAuthManagerOptions {
       ) => Promise<TokenInfo>)
     | undefined;
   readonly requestDeviceImpl?:
-    | ((config: OAuthFlowConfig) => Promise<DeviceAuthorization>)
+    | ((config: OAuthFlowConfig, signal?: AbortSignal) => Promise<DeviceAuthorization>)
     | undefined;
   readonly pollDeviceImpl?:
-    | ((config: OAuthFlowConfig, deviceCode: string) => Promise<DevicePollResult>)
+    | ((
+        config: OAuthFlowConfig,
+        deviceCode: string,
+        signal?: AbortSignal,
+      ) => Promise<DevicePollResult>)
     | undefined;
   readonly deviceHeaders?: (() => OAuthRequestHeaders | undefined) | undefined;
   /**
@@ -413,7 +417,8 @@ export class OAuthManager {
     const deadlineAt = startedAt + Math.ceil(this.deviceCodeTimeoutMs / 1000);
 
     while (true) {
-      const auth = await this.requestImpl(this.config);
+      this.throwIfAborted(options.signal);
+      const auth = await this.requestImpl(this.config, options.signal);
       await options.onDeviceCode?.(auth);
 
       // RFC 8628 §3.5: clients must add at least 5s on `slow_down` and
@@ -429,7 +434,7 @@ export class OAuthManager {
           );
         }
 
-        const result = await this.pollImpl(this.config, auth.deviceCode);
+        const result = await this.pollImpl(this.config, auth.deviceCode, options.signal);
         if (result.kind === 'success') {
           await this.storage.save(this.config.name, result.token);
           return result.token;
@@ -447,7 +452,7 @@ export class OAuthManager {
         if (result.errorCode === 'slow_down') {
           currentInterval += 5;
         }
-        await this.sleep(currentInterval * 1000);
+        await this.sleepUntilNextPoll(currentInterval * 1000, options.signal);
       }
       if (!deviceExpired) break;
       // Otherwise loop outer to request a new device code.
@@ -472,6 +477,23 @@ export class OAuthManager {
     if (signal?.aborted === true) {
       throw new OAuthError('Login aborted by caller');
     }
+  }
+
+  private async sleepUntilNextPoll(ms: number, signal: AbortSignal | undefined): Promise<void> {
+    if (signal === undefined) {
+      await this.sleep(ms);
+      return;
+    }
+    this.throwIfAborted(signal);
+    await new Promise<void>((resolve, reject) => {
+      const onAbort = (): void => {
+        reject(new OAuthError('Login aborted by caller'));
+      };
+      signal.addEventListener('abort', onAbort, { once: true });
+      void this.sleep(ms).then(resolve, reject).finally(() => {
+        signal.removeEventListener('abort', onAbort);
+      });
+    });
   }
 }
 

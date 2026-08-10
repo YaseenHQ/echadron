@@ -12,6 +12,7 @@ import type {
   PermissionMode,
   PromptPart,
   Session,
+  TokenUsage,
 } from '@moonshot-ai/kimi-code-sdk';
 import type { MigrationPlan } from '@moonshot-ai/migration-legacy';
 import {
@@ -24,6 +25,7 @@ import {
 import { resolve } from 'pathe';
 
 import type { CLIOptions } from '#/cli/options';
+import { isKimiV2Enabled } from '#/cli/experimental-v2';
 import { MigrationScreenComponent, type MigrationScreenResult } from '#/migration/index';
 import { copyTextToClipboard } from '#/utils/clipboard/clipboard-text';
 import { appendInputHistory, loadInputHistory } from '#/utils/history/input-history';
@@ -46,6 +48,7 @@ import {
   type SkillListSession,
 } from './commands';
 import * as slashCommands from './commands/dispatch';
+import { CacheHintController } from './controllers/cache-hint-controller';
 import { BannerComponent } from './components/chrome/banner';
 import { DeviceCodeBoxComponent } from './components/chrome/device-code-box';
 import { GutterContainer } from './components/chrome/gutter-container';
@@ -143,6 +146,7 @@ import { formatErrorMessage } from './utils/event-payload';
 import { pickForegroundTasks } from './utils/foreground-task';
 import { ImageAttachmentStore, type ImageAttachment } from './utils/image-attachment-store';
 import { extractMediaAttachments, rewriteMediaPlaceholders } from './utils/image-placeholder';
+import type { ExtractionResult } from './utils/image-placeholder';
 import { REPLAY_TURN_LIMIT } from './utils/message-replay';
 import { hasPatchChanges } from './utils/object-patch';
 import { sessionRowsForPicker } from './utils/session-picker-rows';
@@ -252,6 +256,7 @@ function createInitialAppState(input: KimiTUIStartupInput): AppState {
     version: input.version,
     editorCommand: input.tuiConfig.editorCommand,
     disablePasteBurst: input.tuiConfig.disablePasteBurst,
+    cacheExpiryHint: input.tuiConfig.cacheExpiryHint,
     notifications: input.tuiConfig.notifications,
     upgrade: input.tuiConfig.upgrade,
     availableModels: {},
@@ -317,10 +322,12 @@ function appendSteerText(parts: PromptPart[], text: string): void {
 const DETACH_HINT_DISPLAY_MS = 4_000;
 
 export class KimiTUI {
+  readonly engineV2 = isKimiV2Enabled();
   readonly harness: KimiHarness;
   readonly options: KimiTUIOptions;
   session: Session | undefined;
   state: TUIState;
+  private readonly cacheHint = new CacheHintController(this);
   private readonly approvalController = new ApprovalController();
   private readonly questionController = new QuestionController();
   private readonly reverseRpcDisposers: Array<() => void> = [];
@@ -726,6 +733,9 @@ export class KimiTUI {
     if (this.session !== undefined) {
       this.sessionEventHandler.startSubscription();
       void this.showSessionWarnings(this.session);
+    }
+    if (shouldReplayHistory) {
+      void this.cacheHint.maybeShowOnResume();
     }
     void this.fetchSessions();
     if (this.session !== undefined) {
@@ -1159,7 +1169,7 @@ export class KimiTUI {
     this.updateQueueDisplay();
   }
 
-  sendNormalUserInput(text: string): void {
+  sendNormalUserInput(text: string, preExtracted?: ExtractionResult): void {
     if (this.btwPanelController.sendUserInput(text)) return;
     if (this.state.appState.model.trim().length === 0) {
       this.showError(LLM_NOT_SET_MESSAGE);
@@ -1170,7 +1180,11 @@ export class KimiTUI {
       // Pasted videos are copied into the cache and expand to a `file://`
       // `video_url` part; the engine resolves (uploads or degrades) them
       // inside the turn, so submission stays fully synchronous.
-      extraction = extractMediaAttachments(text, this.imageStore);
+      //
+      // A cache-hint-swallowed resend passes its pre-dialog extraction back
+      // in: the image store may already be cleared (e.g. after "Start a new
+      // session"), so re-extracting from the text would lose the media.
+      extraction = preExtracted ?? extractMediaAttachments(text, this.imageStore);
     } catch (error) {
       // A video cache copy failed (unwritable cache dir, vanished source…);
       // nothing was dispatched.
@@ -1179,6 +1193,9 @@ export class KimiTUI {
     }
     if (!this.validateMediaCapabilities(extraction)) return;
     const session = this.session;
+    // Idle cache-hint interception sits before session creation; it is
+    // synchronous unless a hint actually fires.
+    if (this.cacheHint.maybeInterceptOnSubmit(text, extraction)) return;
     if (session === undefined) {
       this.showError(LLM_NOT_SET_MESSAGE);
       return;
@@ -1283,6 +1300,7 @@ export class KimiTUI {
   }
 
   beginSessionRequest(): void {
+    this.cacheHint.onTurnBegin();
     this.streamingUI.setTurnId(undefined);
     this.streamingUI.resetLiveText();
     this.streamingUI.resetToolUi();
@@ -1570,6 +1588,8 @@ export class KimiTUI {
   }
 
   private async createSessionFromCurrentState(): Promise<Session> {
+    // Background warm-up of the cache-hint config on every new session.
+    this.cacheHint.refreshConfigInBackground();
     const model = this.state.appState.model.trim();
     if (model.length === 0) {
       throw new Error(LLM_NOT_SET_MESSAGE);
@@ -1725,6 +1745,7 @@ export class KimiTUI {
 
   resetSessionRuntime(): void {
     this.aborted = false;
+    this.cacheHint.resetRuntime();
     this.streamingUI.discardPending();
     this.state.queuedMessages = [];
     this.state.swarmModeEntry = undefined;
@@ -1810,6 +1831,7 @@ export class KimiTUI {
     }
     this.showStatus(statusMessage);
     void this.showSessionWarnings(session);
+    void this.cacheHint.maybeShowOnResume();
   }
 
   async reloadCurrentSessionView(session: Session, statusMessage: string): Promise<void> {
@@ -2846,6 +2868,26 @@ export class KimiTUI {
     this.state.editor.setText(text);
     this.updateEditorBorderHighlight(text);
     this.state.ui.requestRender();
+  }
+
+  /** Latest in-process LLM round-trip; feeds the idle cache-hint scenario. */
+  recordSessionActivity(): void {
+    this.cacheHint.recordActivity();
+  }
+
+  /** Per-step usage for the client-side cache-break detector. */
+  noteStepUsage(usage: TokenUsage | undefined): void {
+    this.cacheHint.noteStepUsage(usage);
+  }
+
+  /** Compaction shrinks the cached prefix — reset the cache-break baseline. */
+  noteCompactionFinished(): void {
+    this.cacheHint.resetCacheBreakBaseline();
+  }
+
+  /** /undo cut the context — the next step's cache drop is expected. */
+  noteContextCut(): void {
+    this.cacheHint.resetCacheBreakBaseline();
   }
 
   private async runMigrationScreen(plan: MigrationPlan): Promise<MigrationScreenResult> {

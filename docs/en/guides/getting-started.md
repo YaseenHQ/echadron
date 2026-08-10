@@ -101,12 +101,12 @@ On first launch you need to configure an API source. In the interactive UI, ente
 /login
 ```
 
-`/login` opens a platform selector supporting two options:
+`/login` first asks how you want to connect:
 
-- **Kimi Code (OAuth)** — device-code flow for the managed Kimi provider; open the link on any device, sign in, and enter the code to authorize
-- **Kimi Platform API key** — enter an API key from `platform.kimi.com` or `platform.kimi.ai`
+- **Sign in with an account (OAuth)** — choose Kimi Code, ChatGPT (OpenAI Codex), or xAI
+- **Connect with an API key** — choose Kimi Platform, a provider from the models.dev catalog, or a custom `api.json` registry
 
-To sign out, enter `/logout` to clear the current credentials.
+To sign out, enter `/logout`; it lists the credentials that are actually present and lets you clear one provider or a displayed bundle without deleting its provider/model configuration.
 
 ::: tip Using other AI providers
 To connect Anthropic, OpenAI API, Google, or another provider, use the API-key route in `/login` or edit `$ECHADRON_HOME/config.toml` directly. Interactive subscription OAuth currently covers Kimi, xAI, and OpenAI Codex (ChatGPT). See [Providers and models](../configuration/providers.md) for details.

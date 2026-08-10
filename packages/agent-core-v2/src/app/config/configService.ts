@@ -74,11 +74,27 @@ function isEnvBinding(value: unknown): value is EnvBinding {
   return typeof value === 'string' || (isPlainObject(value) && 'env' in value);
 }
 
+function parseBoundRaw(binding: EnvBinding, raw: string): unknown {
+  return typeof binding === 'string' ? raw : binding.parse ? binding.parse(raw) : raw;
+}
+
 function resolveBinding(binding: EnvBinding, getEnv: GetEnv, existing: unknown): unknown {
-  const envName = typeof binding === 'string' ? binding : binding.env;
-  const raw = getEnv(envName);
-  if (raw !== undefined) {
-    return typeof binding === 'string' ? raw : binding.parse ? binding.parse(raw) : raw;
+  if (typeof binding === 'string') {
+    const raw = getEnv(binding);
+    if (raw !== undefined) return raw;
+  } else {
+    const raw = getEnv(binding.env);
+    if (raw !== undefined) {
+      const parsed = parseBoundRaw(binding, raw);
+      if (parsed !== undefined) return parsed;
+    }
+    if (binding.deprecatedEnv !== undefined) {
+      const deprecatedRaw = getEnv(binding.deprecatedEnv);
+      if (deprecatedRaw !== undefined) {
+        const parsed = parseBoundRaw(binding, deprecatedRaw);
+        if (parsed !== undefined) return parsed;
+      }
+    }
   }
   if (typeof binding === 'object' && binding.default !== undefined && existing === undefined) {
     return binding.default;
@@ -130,7 +146,8 @@ function isSameSection(
     existing.stripEnv === (options.stripEnv as ConfigSection['stripEnv']) &&
     existing.fromToml === options.fromToml &&
     existing.toToml === options.toToml &&
-    deepEqual(existing.defaultValue, options.defaultValue)
+    deepEqual(existing.defaultValue, options.defaultValue) &&
+    deepEqual(existing.deprecations, options.deprecations)
   );
 }
 
@@ -182,6 +199,7 @@ export class ConfigRegistry implements IConfigRegistry {
       stripEnv: options.stripEnv as ConfigSection['stripEnv'],
       fromToml: options.fromToml,
       toToml: options.toToml,
+      deprecations: options.deprecations,
     });
     this._onDidRegisterSection.fire({ domain });
   }

@@ -35,9 +35,9 @@ Or with pnpm:
 pnpm add -g @yaseenhq/echadron
 ```
 
-The package is published independently from upstream Kimi Code. Its executable
+The package is versioned independently from upstream Kimi Code. Its executable
 entries are `echadron`, `chad`, and `maker`; only Echadron-owned executables are
-installed.
+installed. The first public npm publication has not happened yet.
 
 ## Quick Start
 
@@ -70,7 +70,7 @@ has its own release channel.
 
 ## Key Features
 
-- **Single-binary distribution.** Install with one command — no Node.js setup, no PATH gymnastics, no global module conflicts.
+- **Isolated npm distribution.** Echadron uses its own commands and data directory, so it can be installed beside upstream Kimi Code. A native distribution is planned after the first public npm release.
 - **Blazing-fast startup.** The TUI is ready in milliseconds, so opening a session never feels heavy.
 - **Polished TUI.** A carefully tuned interface designed for long, focused agent sessions.
 - **Video input.** Drop a screen recording or demo clip into the chat — let the agent watch instead of typing out what's hard to describe in words.

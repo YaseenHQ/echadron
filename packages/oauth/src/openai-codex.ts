@@ -104,6 +104,7 @@ const DEVICE_CODE_TIMEOUT_SECONDS = 15 * 60;
 const DEFAULT_INTERVAL_SECONDS = 5;
 const HTTP_TIMEOUT_MS = 30_000;
 const JWT_CLAIM_PATH = 'https://api.openai.com/auth';
+const OPENAI_CODEX_REQUEST_ORIGINATOR = 'echadron-cli';
 
 // Browser (authorization-code + PKCE) flow constants. The local server on
 // :1455 captures the redirect; the authorize URL uses the shared CLIENT_ID,
@@ -126,15 +127,23 @@ interface DeviceState {
   readonly userCode: string;
 }
 
-async function postJson(url: string, body: Record<string, string>): Promise<HttpResponse> {
+async function postJson(
+  url: string,
+  body: Record<string, string>,
+  signal?: AbortSignal,
+): Promise<HttpResponse> {
   return request(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
     body: JSON.stringify(body),
-  });
+  }, signal);
 }
 
-async function postForm(url: string, body: Record<string, string>): Promise<HttpResponse> {
+async function postForm(
+  url: string,
+  body: Record<string, string>,
+  signal?: AbortSignal,
+): Promise<HttpResponse> {
   return request(url, {
     method: 'POST',
     headers: {
@@ -142,13 +151,22 @@ async function postForm(url: string, body: Record<string, string>): Promise<Http
       Accept: 'application/json',
     },
     body: new URLSearchParams(body),
-  });
+  }, signal);
 }
 
-async function request(url: string, init: RequestInit): Promise<HttpResponse> {
+async function request(
+  url: string,
+  init: RequestInit,
+  callerSignal?: AbortSignal,
+): Promise<HttpResponse> {
   let response: Response;
   try {
-    response = await fetch(url, { ...init, signal: AbortSignal.timeout(HTTP_TIMEOUT_MS) });
+    const timeoutSignal = AbortSignal.timeout(HTTP_TIMEOUT_MS);
+    const signal =
+      callerSignal === undefined
+        ? timeoutSignal
+        : AbortSignal.any([callerSignal, timeoutSignal]);
+    response = await fetch(url, { ...init, signal });
   } catch (error) {
     throw new OAuthConnectionError(`OpenAI Codex OAuth request to ${url} failed.`, {
       cause: error,
@@ -230,10 +248,11 @@ function decodeDeviceState(value: string): DeviceState {
 
 export async function requestOpenAICodexDeviceAuthorization(
   config: OAuthFlowConfig,
+  signal?: AbortSignal,
 ): Promise<DeviceAuthorization> {
   const response = await postJson(`${config.oauthHost}/api/accounts/deviceauth/usercode`, {
     client_id: config.clientId,
-  });
+  }, signal);
   if (response.status < 200 || response.status >= 300) {
     throw new OAuthError(failureMessage('device authorization', response));
   }
@@ -256,12 +275,13 @@ export async function requestOpenAICodexDeviceAuthorization(
 export async function pollOpenAICodexDeviceToken(
   config: OAuthFlowConfig,
   encodedState: string,
+  signal?: AbortSignal,
 ): Promise<DevicePollResult> {
   const state = decodeDeviceState(encodedState);
   const response = await postJson(`${config.oauthHost}/api/accounts/deviceauth/token`, {
     device_auth_id: state.deviceAuthId,
     user_code: state.userCode,
-  });
+  }, signal);
   if (response.status === 403 || response.status === 404) {
     return { kind: 'pending', errorCode: 'authorization_pending', description: '' };
   }
@@ -285,7 +305,7 @@ export async function pollOpenAICodexDeviceToken(
     code: requiredString(response.data, 'authorization_code'),
     code_verifier: requiredString(response.data, 'code_verifier'),
     redirect_uri: DEVICE_REDIRECT_URI,
-  });
+  }, signal);
   if (exchange.status < 200 || exchange.status >= 300) {
     throw new OAuthError(failureMessage('token exchange', exchange));
   }
@@ -466,7 +486,7 @@ export function openAICodexRequestHeaders(accessToken: string): Record<string, s
   }
   return {
     'chatgpt-account-id': accountId,
-    originator: 'kimi-code',
+    originator: OPENAI_CODEX_REQUEST_ORIGINATOR,
     'OpenAI-Beta': 'responses=experimental',
   };
 }

@@ -1,6 +1,6 @@
 # Plugins
 
-Plugins 把可复用的 Kimi Code CLI 能力打包成可安装单元——可以添加 [Agent Skills](./skills.md)、在会话启动时自动加载指定 Skill，也可以声明 MCP servers 来提供真实工具能力。适合把工作流共享给团队、连接外部服务，或从官方 marketplace 安装扩展。
+Plugins 把可复用的 Echadron 能力打包成可安装单元——可以添加 [Agent Skills](./skills.md)、在会话启动时自动加载指定 Skill，也可以声明 MCP servers 来提供真实工具能力。适合把工作流共享给团队、连接外部服务，或从官方 marketplace 安装扩展。
 
 ## 安装与管理
 
@@ -33,7 +33,7 @@ Plugins 把可复用的 Kimi Code CLI 能力打包成可安装单元——可以
 | `/plugins mcp enable <id> <server>` | 启用 plugin 声明的 MCP server |
 | `/plugins mcp disable <id> <server>` | 禁用 plugin 声明的 MCP server |
 
-**Installed** tab 列出已安装的 plugin，并在 marketplace 有更新版本时显示更新徽章。当一次使用过旧 plugin（调用其 MCP 工具或执行 `/<plugin>:<command>` 斜杠命令）的 turn 结束时，还会显示一次更新提示并指向 `/plugins`；每个新的 marketplace 版本只提示一次。**Official** 和 **Third-party** tab 按 tier 列出 marketplace plugin；**Custom** tab 从 URL 安装。marketplace 目录会在需要时自动加载。每个安装会显示信任徽章：`kimi-official`（来自官方地址）、`curated`（来自精选地址）、`third-party`（其他所有情况）。安装第三方 plugin（任何非官方地址的 plugin，包括 Custom 安装）会先显示一个默认「取消」的确认提示，只有在你选择信任该来源后才会继续安装。
+**Installed** tab 列出已安装的 plugin，并在 marketplace 有更新版本时显示更新徽章。当一次使用过旧 plugin（调用其 MCP 工具或执行 `/<plugin>:<command>` 斜杠命令）的 turn 结束时，还会显示一次更新提示并指向 `/plugins`；每个新的 marketplace 版本只提示一次。**Official** 和 **Third-party** tab 按 tier 列出 marketplace plugin；**Custom** tab 从 URL 安装。marketplace 目录会在需要时自动加载。每个安装会显示信任徽章：`echadron-official`（来自官方地址）、`curated`（来自精选地址）、`third-party`（其他所有情况）。安装第三方 plugin（任何非官方地址的 plugin，包括 Custom 安装）会先显示一个默认「取消」的确认提示，只有在你选择信任该来源后才会继续安装。
 
 ### 从 GitHub 安装
 
@@ -49,7 +49,7 @@ Plugins 把可复用的 Kimi Code CLI 能力打包成可安装单元——可以
 ### 注意事项
 
 - Plugin 变更需要通过 `/reload` 或新会话生效。安装、启用/禁用、移除后，运行 `/reload` 或 `/new`；当前会话不会更新。
-- 本地安装会被拷贝到 `$KIMI_CODE_HOME/plugins/managed/<id>/`，CLI 始终从这份托管副本运行。安装后编辑原始源目录不会生效，需重新安装。
+- 本地安装会被拷贝到 `$ECHADRON_HOME/plugins/managed/<id>/`，CLI 始终从这份托管副本运行。安装后编辑原始源目录不会生效，需重新安装。
 - 移除 plugin 只会删除安装记录，托管副本和原始源文件仍保留在磁盘上。
 - Plugin 目前按用户安装，对所有项目生效，暂不支持项目级安装范围。
 
@@ -141,7 +141,7 @@ Plugin 是一个带 manifest 的目录或 zip 文件。Manifest 可以放在以�
 {
   "name": "kimi-finance",
   "version": "1.0.0",
-  "description": "Finance data and analysis workflows for Kimi Code CLI",
+  "description": "Finance data and analysis workflows for Echadron",
   "skills": "./skills/",
   "sessionStart": {
     "skill": "using-finance"
@@ -245,7 +245,7 @@ my-plugin/
       SKILL.md
 ```
 
-`sessionStart.skill` 在会话启动时把一个 plugin Skill 加载到主 Agent，适合放置初始化说明、工作流规则，或把其他工具中的术语映射到 Kimi Code CLI。它只注入文本，不执行代码。
+`sessionStart.skill` 在会话启动时把一个 plugin Skill 加载到主 Agent，适合放置初始化说明、工作流规则，或把其他工具中的术语映射到 Echadron。它只注入文本，不执行代码。
 
 无论 Skill 通过哪种方式加载（`sessionStart.skill`、`/skill:<name>` 或模型自动调用），`skillInstructions` 都会随该 plugin 的 Skill 一起出现。
 
@@ -311,7 +311,7 @@ plugin hooks 复用与全局 hooks 相同的机制——事件列表、stdin JSO
 
 - plugin 的 hooks 仅在 plugin **启用**期间生效；禁用 plugin 后其 hooks 停止运行。
 - 每条 hook 的工作目录为 plugin 根目录，因此 `command` 可以使用 plugin 内的 `./` 路径。
-- hook 进程会额外收到两个环境变量：`KIMI_CODE_HOME` 和 `KIMI_PLUGIN_ROOT`（plugin 根目录）。
+- hook 进程会额外收到两个环境变量：`ECHADRON_HOME` 和 `KIMI_PLUGIN_ROOT`（plugin 根目录）。
 
 仅安装 plugin 本身不会运行其 hooks——它们只在 plugin 启用期间、匹配的事件触发时运行。
 

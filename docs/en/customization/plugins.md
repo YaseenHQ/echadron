@@ -2,7 +2,7 @@
 
 Plugins package reusable Echadron CLI capabilities into installable units — they can add [Agent Skills](./skills.md), automatically load a specified Skill at session start, and declare MCP servers to provide real tool capabilities. They are ideal for sharing workflows with a team, connecting to external services, or installing extensions from the official marketplace.
 
-> `ECHADRON_HOME` is the canonical data root. The legacy `IMPERIUM_HOME` and `KIMI_CODE_HOME` aliases remain supported for existing plugin installations.
+> `ECHADRON_HOME` is the canonical data root. The legacy `IMPERIUM_HOME` and `ECHADRON_HOME` aliases remain supported for existing plugin installations.
 
 ## Installation and Management
 
@@ -35,7 +35,7 @@ You can also use slash commands directly:
 | `/plugins mcp enable <id> <server>` | Enable an MCP server declared by a plugin |
 | `/plugins mcp disable <id> <server>` | Disable an MCP server declared by a plugin |
 
-The **Installed** tab lists your installed plugins and shows an update badge when a newer version is available in the marketplace. When a turn that used an outdated plugin (its MCP tool or a `/<plugin>:<command>` slash command) ends, a one-time notice also points you to `/plugins` for the update; each new marketplace version is announced once. The **Official** and **Third-party** tabs list marketplace plugins by tier; the **Custom** tab installs from a URL. Marketplace catalogs load automatically when needed. Each install shows a trust badge: `kimi-official` (from an official address), `curated` (from a curated address), or `third-party` (everything else). Installing a third-party plugin (anything not from the official address, including Custom installs) first shows a confirmation prompt that defaults to cancelling, so it is only installed if you choose to trust the source.
+The **Installed** tab lists your installed plugins and shows an update badge when a newer version is available in the marketplace. When a turn that used an outdated plugin (its MCP tool or a `/<plugin>:<command>` slash command) ends, a one-time notice also points you to `/plugins` for the update; each new marketplace version is announced once. The **Official** and **Third-party** tabs list marketplace plugins by tier; the **Custom** tab installs from a URL. Marketplace catalogs load automatically when needed. Each install shows a trust badge: `echadron-official` (from an official address), `curated` (from a curated address), or `third-party` (everything else). Installing a third-party plugin (anything not from the official address, including Custom installs) first shows a confirmation prompt that defaults to cancelling, so it is only installed if you choose to trust the source.
 
 ### Installing from GitHub
 
@@ -143,7 +143,7 @@ Example:
 {
   "name": "kimi-finance",
   "version": "1.0.0",
-  "description": "Finance data and analysis workflows for Kimi Code CLI",
+  "description": "Finance data and analysis workflows for Echadron",
   "skills": "./skills/",
   "sessionStart": {
     "skill": "using-finance"
@@ -313,7 +313,7 @@ Plugin hooks reuse the same mechanism as global hooks — see [Hooks](./hooks.md
 
 - A plugin's hooks are active only while the plugin is **enabled**; disabling the plugin stops its hooks.
 - Each hook runs with its working directory set to the plugin root, so `command` can use `./` paths inside the plugin.
-- The hook process receives two extra environment variables: `KIMI_CODE_HOME` and `KIMI_PLUGIN_ROOT` (the plugin root directory).
+- The hook process receives two extra environment variables: `ECHADRON_HOME` and `KIMI_PLUGIN_ROOT` (the plugin root directory).
 
 Installing a plugin never runs its hooks by itself — they only fire when their matching event occurs while the plugin is enabled.
 

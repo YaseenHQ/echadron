@@ -278,7 +278,7 @@ describe('OpenAI Codex OAuth protocol adapter', () => {
     ).toString('base64url');
     expect(openAICodexRequestHeaders(`header.${payload}.signature`)).toEqual({
       'chatgpt-account-id': 'account-123',
-      originator: 'kimi-code',
+      originator: 'echadron-cli',
       'OpenAI-Beta': 'responses=experimental',
     });
 

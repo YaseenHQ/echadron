@@ -8,7 +8,7 @@ The `type` field in the `providers` table determines which protocol implementati
 
 | Type | Protocol | Typical use |
 | --- | --- | --- |
-| `kimi` | OpenAI-compatible | Kimi Code managed service, Kimi Platform API key |
+| `echadron` | OpenAI-compatible | Kimi Code managed service, Kimi Platform API key |
 | `anthropic` | Anthropic Messages | Claude model family |
 | `openai` | OpenAI Chat Completions | OpenAI and compatible services, DeepSeek, Qwen, etc. |
 | `openai_responses` | OpenAI Responses API | OpenAI's newer Responses interface |
@@ -38,9 +38,9 @@ When connecting a known third-party provider, Kimi Code fetches the [models.dev]
 
 For a custom registry, paste its URL and Bearer token. The CLI creates the `providers` / `models` entries. On later startup, providers from the same registry URL are refreshed together, so upstream provider additions, removals, and model metadata changes are synced.
 
-The same operations are also available in non-interactive environments via the shell command: [`kimi provider`](../reference/kimi-command.md#kimi-provider).
+The same operations are also available in non-interactive environments via the shell command: [`echadron provider`](../reference/kimi-command.md#echadron-provider).
 
-## `kimi`
+## `echadron`
 
 For connecting to Moonshot AI's OpenAI-compatible interface, including the Kimi Code managed service and Kimi Platform API keys.
 
@@ -147,7 +147,7 @@ GOOGLE_CLOUD_LOCATION = "us-central1"
 
 ```sh
 gcloud auth application-default login   # one-time authentication
-kimi
+echadron
 ```
 
 To route Vertex requests through a custom (e.g. proxied) endpoint, set `base_url` (or the `GOOGLE_VERTEX_BASE_URL` env var); when omitted, the SDK default regional `*-aiplatform.googleapis.com` host is used. As with `google-genai`, give the host root only — the SDK appends `/v1beta1/publishers/google/models/…` itself.
