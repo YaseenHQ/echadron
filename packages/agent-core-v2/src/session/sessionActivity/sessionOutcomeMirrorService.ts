@@ -15,7 +15,7 @@ const pendingWrites = new Set<Promise<void>>();
 
 export async function drainSessionMetadataWrites(): Promise<void> {
   while (pendingWrites.size > 0) {
-    await Promise.allSettled([...pendingWrites]);
+    await Promise.allSettled(pendingWrites);
   }
 }
 
