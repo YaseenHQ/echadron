@@ -7,6 +7,7 @@ import type {
   TelemetryContextPatch,
   TelemetryProperties,
 } from '@moonshot-ai/agent-core';
+import type { McpServerConfig as SessionMcpServerConfig } from '@moonshot-ai/agent-core-v2';
 import type { Kaos } from '@moonshot-ai/kaos';
 import type { KimiHostIdentity, OAuthRefreshOutcome } from '@moonshot-ai/kimi-code-oauth';
 import type { ContentPart } from '@moonshot-ai/kosong';
@@ -111,7 +112,7 @@ export interface CreateSessionOptions {
   readonly kaos?: Kaos | undefined;
   readonly persistenceKaos?: Kaos | undefined;
   readonly additionalDirs?: readonly string[];
-  /** MCP servers supplied by the host for this session. */
+  /** Ephemeral MCP servers supplied by the host and scoped to this session. */
   readonly mcpServers?: Readonly<Record<string, SessionMcpServerConfig>>;
   /**
    * Main-agent profile name (`--agent`): a builtin profile or one defined by

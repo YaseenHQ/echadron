@@ -984,6 +984,7 @@ export class SDKRpcClientV2 extends SDKRpcClientBase {
       sessionId: input.id,
       workDir,
       additionalDirs: input.additionalDirs,
+      mcpServers: input.mcpServers,
     });
     // Wired before the optional main-agent materialization so a profile-bind
     // warning (oversized AGENTS.md) reaches the listeners like v1's create.
