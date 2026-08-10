@@ -22,6 +22,7 @@ import {
   type AgentContext,
   type AuthMethod,
   type InitializeResponse,
+  type McpServer as V2McpServer,
   type SessionConfigOption,
   type SessionInfo,
   type SessionUpdate,
@@ -31,6 +32,7 @@ import {
   AcpSession,
   ACP_BUILTIN_SLASH_COMMANDS,
   buildSessionConfigOptions,
+  acpMcpServersToConfigs,
 } from '@moonshot-ai/acp-adapter';
 import {
   type KimiHarness,
@@ -720,7 +722,11 @@ async function sessionOptions(
 async function createSessionState(
   harness: KimiHarness,
   client: V2Client,
-  request: { cwd: string; additionalDirectories?: readonly string[] },
+  request: {
+    cwd: string;
+    additionalDirectories?: readonly string[];
+    mcpServers?: readonly V2McpServer[];
+  },
   existingSession?: Session,
 ): Promise<V2Session> {
   const cwd = toAbsolutePath(request.cwd);
@@ -729,6 +735,13 @@ async function createSessionState(
     (await harness.createSession({
       workDir: cwd,
       additionalDirs: additionalDirectories(request.additionalDirectories),
+      ...(request.mcpServers === undefined
+        ? {}
+        : {
+            mcpServers: acpMcpServersToConfigs(
+              request.mcpServers as Parameters<typeof acpMcpServersToConfigs>[0],
+            ),
+          }),
     }));
   const status = await session.getStatus();
   const state = {

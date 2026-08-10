@@ -61,17 +61,20 @@ export function isMcpMalformedResultError(error: unknown): boolean {
 }
 
 /**
- * Probes whether the client's transport is still usable by sending a ping.
- * A server that answers in any way — including `MethodNotFound`, a JSON-RPC
- * error, or an unparseable result — counts as alive; only errors that prove
- * the bytes never made a round trip (closed connection, fetch failures) or
- * a probe that itself timed out (alive socket, unresponsive server) count
- * as dead. Never rejects; an abort surfaces as a dead verdict and is the
- * caller's job to detect via the signal.
+ * Probes whether the client's transport is still usable with a read-only
+ * `tools/list` request. MCP 2026-07-28 removed the protocol-level `ping`
+ * method, so using a required request keeps the probe compatible with both
+ * modern stateless servers and older implementations. A server that answers
+ * in any way — including a JSON-RPC error or an unparseable result — counts
+ * as alive; only errors that prove the bytes never made a round trip (closed
+ * connection, fetch failures) or a probe that itself timed out count as dead.
+ * Never rejects; an abort surfaces as a dead verdict and is the caller's job
+ * to detect via the signal.
  */
 export async function probeMcpLiveness(client: MCPClient, signal: AbortSignal): Promise<boolean> {
+  const probeSignal = AbortSignal.any([signal, AbortSignal.timeout(MCP_LIVENESS_PROBE_TIMEOUT_MS)]);
   try {
-    await client.ping(signal);
+    await client.listTools(probeSignal);
     return true;
   } catch (error) {
     if (isMcpConnectionClosedError(error)) return false;

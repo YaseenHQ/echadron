@@ -88,8 +88,29 @@ describe('ACP v2 prompt lifecycle', () => {
       const created = await connection.request(methods.agent.session.new, {
         cwd: '/tmp/echadron-acp-v2',
         additionalDirectories: ['/tmp/shared'],
+        mcpServers: [
+          {
+            type: 'stdio',
+            name: 'echo',
+            command: '/usr/bin/true',
+            args: [],
+            env: [],
+          },
+        ],
       });
       expect(created.configOptions?.every((option) => typeof option.configId === 'string')).toBe(true);
+      expect(harness.createSession).toHaveBeenCalledWith(
+        expect.objectContaining({
+          mcpServers: {
+            echo: {
+              transport: 'stdio',
+              command: '/usr/bin/true',
+              args: [],
+              env: {},
+            },
+          },
+        }),
+      );
       await connection.request(methods.agent.session.resume, {
         sessionId: created.sessionId,
         cwd: '/tmp/echadron-acp-v2',

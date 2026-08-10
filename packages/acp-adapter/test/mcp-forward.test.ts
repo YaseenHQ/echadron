@@ -192,6 +192,27 @@ describe('acpMcpServersToConfigs', () => {
     expect(warnSpy).not.toHaveBeenCalled();
   });
 
+  it('converts the explicit stdio discriminator used by ACP v2', () => {
+    const out = acpMcpServersToConfigs([
+      {
+        type: 'stdio',
+        name: 'v2-fs',
+        command: '/usr/local/bin/mcp-fs',
+        args: ['--root', '/tmp'],
+        env: [{ name: 'DEBUG', value: '1' }],
+      } as unknown as McpServer,
+    ]);
+    expect(out).toEqual({
+      'v2-fs': {
+        transport: 'stdio',
+        command: '/usr/local/bin/mcp-fs',
+        args: ['--root', '/tmp'],
+        env: { DEBUG: '1' },
+      },
+    });
+    expect(warnSpy).not.toHaveBeenCalled();
+  });
+
   it('converts an SSE server with headers to a Record keyed by name', () => {
     const out = acpMcpServersToConfigs([
       sseServer('events', 'https://stream.example.com', [{ name: 'X-K', value: 'V' }]),

@@ -430,9 +430,6 @@ describe('AgentMcpService', () => {
         onCall?.();
         throw makeError();
       },
-      async ping() {
-        throw makeError();
-      },
     };
   }
 
@@ -443,7 +440,6 @@ describe('AgentMcpService', () => {
         counter.calls += 1;
         return base.callTool(name, args, signal);
       },
-      ping: (signal) => base.ping(signal),
     };
   }
 
@@ -531,7 +527,6 @@ describe('AgentMcpService', () => {
       async callTool() {
         throw new McpError(ErrorCode.InvalidParams, 'Invalid tool arguments');
       },
-      ping: () => base.ping(),
     };
     let reconnects = 0;
     manager.reconnectHandler = async () => {
@@ -606,7 +601,6 @@ describe('AgentMcpService', () => {
       async callTool() {
         throw abortError('This operation was aborted');
       },
-      ping: () => base.ping(),
     };
     let reconnects = 0;
     manager.reconnectHandler = async () => {
@@ -781,7 +775,6 @@ describe('AgentMcpService', () => {
     let calls = 0;
     const client: MCPClient = {
       listTools: () => base.listTools(),
-      ping: () => base.ping(),
       async callTool() {
         calls += 1;
         throw malformed.error;
@@ -814,7 +807,6 @@ describe('AgentMcpService', () => {
     let calls = 0;
     const flakyClient: MCPClient = {
       listTools: () => base.listTools(),
-      ping: () => base.ping(),
       callTool: (name, args, signal) => {
         calls += 1;
         if (calls === 1) return Promise.reject(new TypeError('fetch failed'));
@@ -849,7 +841,6 @@ describe('AgentMcpService', () => {
     let calls = 0;
     const deadClient: MCPClient = {
       listTools: () => base.listTools(),
-      ping: () => base.ping(),
       async callTool() {
         calls += 1;
         throw new TypeError('fetch failed');
@@ -885,11 +876,15 @@ describe('AgentMcpService', () => {
     const base = fakeMcpClient();
     const probeStarted = deferred<void>();
     const releaseProbe = deferred<void>();
+    let listCalls = 0;
     const client: MCPClient = {
-      listTools: () => base.listTools(),
-      async ping() {
-        probeStarted.resolve();
-        await releaseProbe.promise;
+      async listTools() {
+        listCalls += 1;
+        if (listCalls > 1) {
+          probeStarted.resolve();
+          await releaseProbe.promise;
+        }
+        return base.listTools();
       },
       async callTool() {
         throw new TypeError('fetch failed');
@@ -936,7 +931,6 @@ describe('AgentMcpService', () => {
           isError: false,
         };
       },
-      async ping() {},
     };
     manager.setResolved('s', client, await discoverTools(client));
     createService(manager);
@@ -972,7 +966,6 @@ describe('AgentMcpService', () => {
           isError: false,
         };
       },
-      async ping() {},
     };
     manager.setResolved('s', client, await discoverTools(client));
     createService(manager);
@@ -1019,7 +1012,6 @@ describe('AgentMcpService', () => {
           isError: false,
         };
       },
-      async ping() {},
     };
     manager.setResolved('s', client, await discoverTools(client));
     createService(manager);
@@ -1067,7 +1059,6 @@ describe('AgentMcpService', () => {
         receivedSignal = signal;
         return { content: [{ type: 'text', text: String(args['text']) }], isError: false };
       },
-      async ping() {},
     };
     manager.setResolved('s', client, await discoverTools(client));
     createService(manager);

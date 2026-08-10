@@ -556,7 +556,6 @@ describe('createMcpTool', () => {
       async callTool() {
         return { content: [{ type: 'text', text: 'ok' }], isError: false };
       },
-      async ping() {},
     } satisfies MCPClient;
     const tool = createMcpTool(
       'mcp__server__tool',

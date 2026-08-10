@@ -11,6 +11,7 @@ export { TERMINAL_AUTH_METHOD, buildTerminalAuthMethod } from './auth-methods';
 export { AcpServer, runAcpServer, runAcpServerWithStream } from './server';
 export type { SlashCommandsSnapshot } from './server';
 export { AcpSession } from './session';
+export { acpMcpServersToConfigs } from './mcp';
 export {
   buildModeOption,
   buildModelOption,
