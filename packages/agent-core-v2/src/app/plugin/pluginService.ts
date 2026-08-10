@@ -34,6 +34,8 @@ import type {
   EnabledPluginSessionStart,
   PluginCommandDef,
   PluginInfo,
+  PluginMutation,
+  PluginMutationSummary,
   PluginSummary,
   PluginUpdateStatus,
   ReloadSummary,
@@ -55,8 +57,10 @@ export class PluginService extends Disposable implements IPluginService {
   private loadError: Error | undefined;
   private mutationQueue: Promise<void> = Promise.resolve();
   private readonly onDidReloadEmitter = this._register(new Emitter<ReloadSummary>());
+  private readonly onDidMutateEmitter = this._register(new Emitter<PluginMutationSummary>());
 
   readonly onDidReload: Event<ReloadSummary> = this.onDidReloadEmitter.event;
+  readonly onDidMutate: Event<PluginMutationSummary> = this.onDidMutateEmitter.event;
 
   constructor(
     @IBootstrapService bootstrap: IBootstrapService,
@@ -81,7 +85,7 @@ export class PluginService extends Disposable implements IPluginService {
   installPlugin(input: InstallPluginInput): Promise<PluginSummary> {
     return this.runSerializedOperation(async () => {
       const record = await this.manager.install(input.source);
-      await this.publishReload();
+      await this.publishReload({ kind: 'install', id: record.id });
       const info = this.manager.info(record.id);
       if (info === undefined) throw new Error(`Plugin "${record.id}" missing right after install`);
       return info;
@@ -91,21 +95,21 @@ export class PluginService extends Disposable implements IPluginService {
   setPluginEnabled(input: SetPluginEnabledInput): Promise<void> {
     return this.runSerializedOperation(async () => {
       await this.manager.setEnabled(input.id, input.enabled);
-      await this.publishReload();
+      await this.publishReload({ kind: input.enabled ? 'enable' : 'disable', id: input.id });
     });
   }
 
   setPluginMcpServerEnabled(input: SetPluginMcpServerEnabledInput): Promise<void> {
     return this.runSerializedOperation(async () => {
       await this.manager.setMcpServerEnabled(input.id, input.server, input.enabled);
-      await this.publishReload();
+      await this.publishReload({ kind: 'mcp-server', id: input.id });
     });
   }
 
   removePlugin(input: RemovePluginInput): Promise<void> {
     return this.runSerializedOperation(async () => {
       await this.manager.remove(input.id);
-      await this.publishReload();
+      await this.publishReload({ kind: 'remove', id: input.id });
     });
   }
 
@@ -121,11 +125,14 @@ export class PluginService extends Disposable implements IPluginService {
   }
 
   /** Reload the consumption snapshot and notify live sessions immediately. */
-  private async publishReload(): Promise<ReloadSummary> {
+  private async publishReload(mutation?: PluginMutation): Promise<ReloadSummary> {
     try {
       const summary = await this.manager.reload();
       this.hasLoadedSnapshot = true;
       this.loadError = undefined;
+      // Mutation is announced first so session consumers can mark the update
+      // as baseline-preserving before the general reload event arrives.
+      if (mutation !== undefined) this.onDidMutateEmitter.fire({ ...summary, mutation });
       this.onDidReloadEmitter.fire(summary);
       return summary;
     } catch (error) {

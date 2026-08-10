@@ -35,6 +35,7 @@ export class SessionMcpService extends Disposable implements ISessionMcpService 
   private mcpManager: McpConnectionManager | undefined;
   private mcpInitialLoad: Promise<void> | undefined;
   private callerServers: Readonly<Record<string, McpServerConfig>> | undefined;
+  private mutationRefreshPending = false;
 
   constructor(
     @IBootstrapService private readonly bootstrap: IBootstrapService,
@@ -48,6 +49,12 @@ export class SessionMcpService extends Disposable implements ISessionMcpService 
     super();
     // Keep lightweight embedders/test doubles that predate the reload event
     // contract usable; the production PluginService always provides it.
+    const onPluginMutate = this.plugins.onDidMutate;
+    if (onPluginMutate !== undefined) {
+      this._register(onPluginMutate(() => {
+        this.mutationRefreshPending = true;
+      }));
+    }
     const onPluginReload = this.plugins.onDidReload;
     if (onPluginReload !== undefined) {
       this._register(
@@ -56,7 +63,9 @@ export class SessionMcpService extends Disposable implements ISessionMcpService 
           // requiring a new agent. Initial construction still owns the first
           // load; reloads only refresh an already initialized manager.
           if (this.mcpInitialLoad === undefined || this.mcpManager === undefined) return;
-          void this.connectMcpServers(this.mcpManager, this.callerServers).catch((error: unknown) => {
+          const baselineOnly = this.mutationRefreshPending;
+          this.mutationRefreshPending = false;
+          void this.connectMcpServers(this.mcpManager, this.callerServers, baselineOnly).catch((error: unknown) => {
             this.log.error('mcp reload failed', { error });
           });
         }),
@@ -107,6 +116,7 @@ export class SessionMcpService extends Disposable implements ISessionMcpService 
   private async connectMcpServers(
     manager: McpConnectionManager,
     callerServers?: Readonly<Record<string, McpServerConfig>>,
+    baselineOnly = false,
   ): Promise<void> {
     this.callerServers = callerServers;
     const [base, pluginServers] = await Promise.all([
@@ -114,7 +124,11 @@ export class SessionMcpService extends Disposable implements ISessionMcpService 
       this.plugins.enabledMcpServers(),
     ]);
     const withCaller = mergeCallerMcpServers(base, callerServers);
-    const servers = { ...withCaller?.servers, ...pluginServers };
+    const mergedServers = { ...withCaller?.servers, ...pluginServers };
+    const baselineNames = baselineOnly ? new Set(manager.list().map((entry) => entry.name)) : undefined;
+    const servers = baselineNames === undefined
+      ? mergedServers
+      : Object.fromEntries(Object.entries(mergedServers).filter(([name]) => baselineNames.has(name)));
     // Avoid creating an empty initial load for sessions with no MCP config.
     // A subsequent plugin/config reload still calls through when the manager
     // already has entries, allowing removed servers to become tombstones.

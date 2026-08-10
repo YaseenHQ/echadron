@@ -112,6 +112,8 @@ export class SubagentTool implements ISubagentTool {
 
   private readonly callerAgentId: string;
   private readonly canRunInBackground: () => boolean;
+  private catalogReady = false;
+  private frozenCatalogProfiles: readonly AgentProfile[] | undefined;
 
   constructor(
     @IAgentLifecycleService private readonly lifecycle: IAgentLifecycleService,
@@ -132,6 +134,9 @@ export class SubagentTool implements ISubagentTool {
     @IModelCatalog private readonly modelCatalog: IModelCatalog,
   ) {
     this.callerAgentId = scopeContext.agentId;
+    void this.catalog.ready.then(() => {
+      this.catalogReady = true;
+    });
     this.canRunInBackground = () =>
       this.toolPolicy.isToolActive('TaskList') &&
       this.toolPolicy.isToolActive('TaskOutput') &&
@@ -144,10 +149,11 @@ export class SubagentTool implements ISubagentTool {
       : AGENT_BACKGROUND_DISABLED_DESCRIPTION;
     let description = `${AGENT_DESCRIPTION_BASE}\n\n${backgroundDescription}`;
     const allowlist = subagentAllowlistFor(this.catalog, this.profile.data());
+    const catalogProfiles = this.catalogProfiles();
     const profiles =
       allowlist === undefined
-        ? this.catalog.list()
-        : this.catalog.list().filter((profile) => allowlist.includes(profile.name));
+        ? catalogProfiles
+        : catalogProfiles.filter((profile) => allowlist.includes(profile.name));
     const typeLines = buildProfileDescriptions(
       profiles,
       this.knownToolReferences(),
@@ -167,6 +173,15 @@ export class SubagentTool implements ISubagentTool {
       description += `\n\n${modelLines}`;
     }
     return description;
+  }
+
+  private catalogProfiles(): readonly AgentProfile[] {
+    if (this.frozenCatalogProfiles !== undefined) return this.frozenCatalogProfiles;
+    const profiles = this.catalog.list();
+    // A pre-ready catalog may be partial. Freeze only after its initial
+    // snapshot has loaded so plugin mutations cannot churn live tool schemas.
+    if (this.catalogReady) this.frozenCatalogProfiles = profiles;
+    return profiles;
   }
 
   private knownToolReferences(): ToolReference[] {
