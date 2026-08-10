@@ -19,6 +19,7 @@ import { IProjectLocalConfigService } from '#/app/projectLocalConfig/projectLoca
 import { IAgentLifecycleService, MAIN_AGENT_ID } from '#/session/agentLifecycle/agentLifecycle';
 import { ISessionStateService } from '#/session/state/sessionState';
 import { ISessionWorkspaceContext } from '#/session/workspaceContext/workspaceContext';
+import { ISessionMetadata } from '#/session/sessionMetadata/sessionMetadata';
 
 import {
   type AddAdditionalDirInput,
@@ -43,6 +44,7 @@ export class SessionWorkspaceCommandService
     @IProjectLocalConfigService
     private readonly localConfig: IProjectLocalConfigService,
     @ISessionWorkspaceContext private readonly workspace: ISessionWorkspaceContext,
+    @ISessionMetadata private readonly metadata: ISessionMetadata,
     @IAgentLifecycleService private readonly agents: IAgentLifecycleService,
   ) {
     super();
@@ -92,6 +94,11 @@ export class SessionWorkspaceCommandService
     const resolved = await this.localConfig.resolveAdditionalDirs(this.workspace.workDir, [
       input.path,
     ]);
+    const currentMeta = await this.metadata.read();
+    const additionalDirs = [...new Set([...(currentMeta.additionalDirs ?? []), ...resolved])];
+    await this.metadata.update({
+      additionalDirs,
+    });
     this.workspace.setAdditionalDirs([...this.workspace.additionalDirs, ...resolved]);
     this.injectAdditionalDirAdded(input.path, false, workspace.configPath);
     return {

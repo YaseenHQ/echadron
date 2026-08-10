@@ -35,6 +35,8 @@ export interface SessionMeta {
   readonly updatedAt: number;
   readonly archived: boolean;
   readonly cwd?: string;
+  /** Session-only workspace directories, restored on resume. */
+  readonly additionalDirs?: readonly string[];
   readonly forkedFrom?: string;
   readonly agents?: Readonly<Record<string, AgentMeta>>;
   readonly custom?: Record<string, unknown>;

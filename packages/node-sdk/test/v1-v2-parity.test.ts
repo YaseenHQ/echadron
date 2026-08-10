@@ -3607,6 +3607,10 @@ describe('v1↔v2 session MCP parity', () => {
     try {
       await createOnBoth(pair, { id: 'session_parity_mcp_list' });
       const input = { sessionId: 'session_parity_mcp_list' } as const;
+      await Promise.all([
+        pair.v1.getMcpStartupMetrics(input),
+        pair.v2.getMcpStartupMetrics(input),
+      ]);
       const [v1Servers, v2Servers] = await Promise.all([
         pair.v1.listMcpServers(input),
         pair.v2.listMcpServers(input),

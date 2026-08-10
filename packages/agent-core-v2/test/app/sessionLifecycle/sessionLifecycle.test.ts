@@ -936,7 +936,7 @@ describe('SessionLifecycleService', () => {
     expect(recordedSessionHookEvents).toEqual(['create:startup:s1', 'close:exit:s1']);
   });
 
-  it('waits for MCP initialization before create returns', async () => {
+  it('starts MCP initialization without blocking create', async () => {
     let resolveMcpReady: (() => void) | undefined;
     const mcpReady = new Promise<void>((resolve) => {
       resolveMcpReady = resolve;
@@ -951,14 +951,14 @@ describe('SessionLifecycleService', () => {
     });
 
     await tick();
-    expect(settled).toBe(false);
+    expect(settled).toBe(true);
 
     resolveMcpReady?.();
     await create;
     expect(settled).toBe(true);
   });
 
-  it('hides a session from get/list until its resume finishes', async () => {
+  it('publishes a resumed session once session state is restored', async () => {
     let resolveMcpReady: (() => void) | undefined;
     const mcpReady = new Promise<void>((resolve) => {
       resolveMcpReady = resolve;
@@ -972,8 +972,8 @@ describe('SessionLifecycleService', () => {
     const resumed = svc.resume('s1');
     await tick();
 
-    expect(svc.get('s1')).toBeUndefined();
-    expect(svc.list()).toEqual([]);
+    expect(svc.get('s1')).toBeDefined();
+    expect(svc.list()).toHaveLength(1);
 
     resolveMcpReady?.();
     const handle = await resumed;

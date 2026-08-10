@@ -22,6 +22,7 @@ import {
   MAIN_AGENT_ID,
 } from '#/session/agentLifecycle/agentLifecycle';
 import { ISessionContext, makeSessionContext } from '#/session/sessionContext/sessionContext';
+import { ISessionMetadata } from '#/session/sessionMetadata/sessionMetadata';
 import { ISessionWorkspaceCommandService } from '#/session/workspaceCommand/workspaceCommand';
 import { SessionWorkspaceCommandService } from '#/session/workspaceCommand/workspaceCommandService';
 import { ISessionWorkspaceContext } from '#/session/workspaceContext/workspaceContext';
@@ -223,6 +224,7 @@ interface Harness {
   readonly fs: MemoryHostFs;
   readonly agents: AgentsStub;
   readonly workspace: ISessionWorkspaceContext;
+  readonly metadata: { additionalDirs: readonly string[] };
 }
 
 describe('SessionWorkspaceCommandService', () => {
@@ -246,11 +248,18 @@ describe('SessionWorkspaceCommandService', () => {
     const fs = new MemoryHostFs([gitDir, workDir, ...seedDirs]);
     const agents = agentsStub();
     const ctx = sessionContext(workDir);
+    const metadata = { additionalDirs: [] as readonly string[] };
 
     ix = createServices(disposables, {
       additionalServices: (reg) => {
         registerStateServices(reg);
         reg.defineInstance(ISessionContext, ctx);
+        reg.defineInstance(ISessionMetadata, {
+          read: async () => metadata,
+          update: async (patch: { additionalDirs?: readonly string[] }) => {
+            if (patch.additionalDirs !== undefined) metadata.additionalDirs = patch.additionalDirs;
+          },
+        } as unknown as ISessionMetadata);
         reg.define(ISessionWorkspaceContext, SessionWorkspaceContextService);
         reg.defineInstance(IBootstrapService, bootstrapStub());
         reg.defineInstance(IHostFileSystem, fs);
@@ -263,7 +272,7 @@ describe('SessionWorkspaceCommandService', () => {
     const workspace = ix.get(ISessionWorkspaceContext);
     const svc = ix.get(ISessionWorkspaceCommandService);
     agents.setMain(mainPresent);
-    return { svc, fs, agents, workspace };
+    return { svc, fs, agents, workspace, metadata };
   }
 
   it('persists the directory and injects a local-command-stdout message when main exists', async () => {
@@ -294,12 +303,13 @@ describe('SessionWorkspaceCommandService', () => {
   });
 
   it('does not persist and injects a session-only message when persist is false', async () => {
-    const { svc, fs, agents, workspace } = build([EXTRA_DIR], true);
+    const { svc, fs, agents, workspace, metadata } = build([EXTRA_DIR], true);
 
     const result = await svc.addAdditionalDir({ path: 'extra', persist: false });
 
     expect(result.persisted).toBe(false);
     expect(workspace.additionalDirs).toContain(EXTRA_DIR);
+    expect(metadata.additionalDirs).toEqual([EXTRA_DIR]);
     expect(fs.files.has(`${WORK_DIR}/.echadron/local.toml`)).toBe(false);
 
     expect(agents.mainContext.messages).toHaveLength(1);

@@ -1037,25 +1037,19 @@ export class SDKRpcClientV2 extends SDKRpcClientBase {
 
   /**
    * Through `engineAccessor` (`ISessionLifecycleService.fork`) because the
-   * klient facade fork takes no explicit target id. Known gaps vs v1: the
-   * engine's fork is unconditional — it never rejects an in-flight source
-   * turn (v1's SESSION_FORK_ACTIVE_TURN) — and `turnIndex` truncation has no
-   * v2 counterpart at all, so it fails loudly. The default title also differs
+   * klient facade fork takes no explicit target id. The engine performs
+   * v2-compatible main-turn truncation and trims subagent journals at the
+   * same cutoff. The default title still differs
    * by design (v1: "New Session", v2: "Fork: <source>") — pass an explicit
    * title for identical results.
    */
   override async forkSession(input: ForkSessionInput): Promise<SessionSummary> {
-    if (input.turnIndex !== undefined) {
-      throw new KimiError(
-        ErrorCodes.NOT_IMPLEMENTED,
-        'forkSession turnIndex truncation is not wired to agent-core-v2 yet.',
-      );
-    }
     const handle = await this.sessionLifecycle.fork({
       sourceSessionId: input.id,
       newSessionId: input.forkId,
       title: input.title,
       metadata: input.metadata,
+      turnIndex: input.turnIndex,
     });
     this.wireSession(handle);
     return this.resumedSessionSummary(handle);
@@ -2148,8 +2142,8 @@ export class SDKRpcClientV2 extends SDKRpcClientBase {
 
   /**
    * Through the session scope (`ISessionMcpService.connectionManager()`).
-   * Both engines settle the initial connect before create/resume returns, so
-   * the entry list is final here; the v2 `McpServerEntry` is field-identical
+   * This is a live snapshot: session creation starts MCP in the background, so
+   * entries may still be pending. The v2 `McpServerEntry` is field-identical
    * with v1's `McpServerInfo` (the cast bridges the two packages' type
    * declarations).
    */

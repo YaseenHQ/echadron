@@ -34,6 +34,8 @@ export interface ForkSessionOptions {
   readonly newSessionId?: string;
   readonly title?: string;
   readonly metadata?: Record<string, unknown>;
+  /** Zero-based user-visible main-agent turn to fork through. */
+  readonly turnIndex?: number;
 }
 
 export interface CreateChildSessionOptions {
