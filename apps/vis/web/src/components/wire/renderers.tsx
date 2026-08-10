@@ -83,6 +83,20 @@ export const WIRE_RENDERERS: RendererMap = {
     },
   },
 
+  'profile.bind': {
+    tone: 'config',
+    label: 'profile',
+    headline: (r) => ({
+      main: (
+        <span className="flex items-center gap-2 min-w-0">
+          <Mono>{r.profileName ?? '(default)'}</Mono>
+          {r.modelAlias !== undefined ? <Dim>· {r.modelAlias}</Dim> : null}
+        </span>
+      ),
+      right: <Dim>{r.thinkingEffort}</Dim>,
+    }),
+  },
+
   'turn.prompt': {
     tone: 'turn',
     label: 'prompt',
@@ -322,6 +336,12 @@ export const WIRE_RENDERERS: RendererMap = {
         right: <Dim>{r.names.length} tools</Dim>,
       };
     },
+  },
+
+  'tools.reset_active_tools': {
+    tone: 'tools',
+    label: 'tools·reset',
+    headline: () => ({ main: <Dim>restored profile tool selection</Dim> }),
   },
 
   'tools.update_store': {
