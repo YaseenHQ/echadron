@@ -285,6 +285,36 @@ describe('AgentRecords persistence metadata', () => {
     expect(names).not.toContain('Write');
   });
 
+  it('replays a v2 profile.bind record without synthesizing config replay', async () => {
+    const persistence = new InMemoryAgentRecordPersistence([
+      { type: 'metadata', protocol_version: '1.5', created_at: 1 },
+      {
+        type: 'profile.bind',
+        modelAlias: 'mock-model',
+        profileName: 'coding',
+        thinkingEffort: 'off',
+        systemPrompt: 'You are a coding agent.',
+        activeToolNames: ['Read', 'Write', 'Bash'],
+        disallowedTools: ['Write'],
+        subagents: ['explore'],
+      } as AgentRecord,
+    ]);
+    const { agent } = testAgent({ persistence });
+
+    await agent.records.replay();
+
+    expect(agent.config.modelAlias).toBe('mock-model');
+    expect(agent.config.profileName).toBe('coding');
+    expect(agent.config.subagentNames).toEqual(['explore']);
+    expect(agent.replayBuilder.buildResult()).not.toContainEqual(
+      expect.objectContaining({ type: 'config_updated' }),
+    );
+    const names = agent.tools.loopTools.map((tool) => tool.name);
+    expect(names).toContain('Read');
+    expect(names).toContain('Bash');
+    expect(names).not.toContain('Write');
+  });
+
   it('restores goal.* records during replay', async () => {
     const persistence = new InMemoryAgentRecordPersistence([
       { type: 'metadata', protocol_version: AGENT_WIRE_PROTOCOL_VERSION, created_at: 1 },

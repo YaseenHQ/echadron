@@ -53,6 +53,21 @@ export interface AgentRecordEvents {
 
   'config.update': AgentConfigUpdateData;
 
+  /** v2 profile binding, mapped to v1 config/tool state during replay. */
+  'profile.bind': {
+    modelAlias?: string;
+    profileName?: string;
+    thinkingEffort?: string;
+    thinkingLevel?: string;
+    systemPrompt?: string;
+    activeToolNames?: readonly string[];
+    disallowedTools?: readonly string[];
+    subagents?: readonly string[];
+  };
+
+  /** v2 transition back to unrestricted tools; replay treats it as a no-op. */
+  'tools.reset_active_tools': {};
+
   'permission.set_mode': {
     mode: PermissionMode;
   };
