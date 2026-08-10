@@ -54,6 +54,7 @@ export function v2SummaryToSessionSummary(
     createdAt: summary.createdAt,
     updatedAt: summary.updatedAt,
     archived: summary.archived,
+    lastTurnReason: summary.lastTurnReason,
     metadata: summary.custom as JsonObject | undefined,
     additionalDirs: facts.additionalDirs,
   };
@@ -75,6 +76,7 @@ export function v2MetaToSessionMeta(meta: V2SessionMeta): SessionMeta {
     workDir: meta.cwd,
     agents: v2AgentsToV1(meta.agents ?? {}),
     custom: (meta.custom ?? {}) as Record<string, unknown>,
+    lastTurnReason: meta.lastTurnReason,
   };
 }
 

@@ -55,7 +55,13 @@ export interface ErrorEvent extends KimiErrorPayload {
 export interface McpServerStatusPayload {
   readonly name: string;
   readonly transport: 'stdio' | 'http' | 'sse';
-  readonly status: 'pending' | 'connected' | 'failed' | 'disabled' | 'needs-auth';
+  readonly status:
+    | 'pending'
+    | 'connected'
+    | 'failed'
+    | 'disabled'
+    | 'needs-auth'
+    | 'removed';
   readonly toolCount: number;
   readonly error?: string;
 }
@@ -231,7 +237,7 @@ export class AgentMcpService extends Disposable implements IAgentMcpService {
       this.registerNeedsAuthMcpServer(entry);
       return;
     }
-    if (entry.status === 'failed' || entry.status === 'pending') {
+    if (entry.status === 'failed' || entry.status === 'pending' || entry.status === 'removed') {
       // Keep the server's tools registered while it is down or reconnecting.
       // The captured client is closed, so the next call fails fast at the
       // transport layer and the tool adapter's reconnect-and-retry path heals
@@ -331,6 +337,11 @@ export class AgentMcpService extends Disposable implements IAgentMcpService {
             originalsDir: sessionMediaOriginalsDir(this.sessionContext.sessionDir),
             telemetry: this.telemetry,
             reconnect: (signal) => this.reconnectForToolCall(serverName, client, signal),
+            isRemoved: () =>
+              this.sessionMcp
+                .connectionManager()
+                .list()
+                .find((server) => server.name === serverName)?.status === 'removed',
           }),
           { source: 'mcp' },
         ),

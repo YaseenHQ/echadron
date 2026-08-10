@@ -339,6 +339,12 @@ export class FileSessionIndex implements ISessionIndex {
       updatedAt: parseTime(meta['updatedAt']),
       archived: meta['archived'] === true,
       custom,
+      lastTurnReason:
+        meta['lastTurnReason'] === 'completed' ||
+        meta['lastTurnReason'] === 'cancelled' ||
+        meta['lastTurnReason'] === 'failed'
+          ? meta['lastTurnReason']
+          : undefined,
     };
   }
 

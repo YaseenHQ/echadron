@@ -13,6 +13,7 @@ import {
   hostRequestHeadersSeed,
   IConfigService,
   IProviderDiscoveryService,
+  drainSessionMetadataWrites,
   IWorkspaceService,
   logSeed,
   resolveConfigPath,
@@ -366,6 +367,9 @@ export async function startServer(opts: ServerStartOptions): Promise<RunningServ
       );
     }
     try {
+      // Outcome mirrors write from turn event handlers asynchronously. Drain
+      // those writes before disposing scopes and deleting session directories.
+      await drainSessionMetadataWrites();
       core.dispose();
     } finally {
       await registration.release();

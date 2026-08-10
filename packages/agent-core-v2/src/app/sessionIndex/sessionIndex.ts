@@ -29,6 +29,7 @@ export interface SessionSummary {
   readonly updatedAt: number;
   readonly archived: boolean;
   readonly custom?: Record<string, unknown>;
+  readonly lastTurnReason?: 'completed' | 'cancelled' | 'failed';
 }
 
 export interface SessionListQuery {

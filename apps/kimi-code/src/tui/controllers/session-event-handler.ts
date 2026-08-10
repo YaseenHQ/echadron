@@ -980,6 +980,13 @@ export class SessionEventHandler {
       case 'pending':
         this.showMcpServerStatusSpinner(server.name);
         return;
+      case 'removed':
+        this.finalizeMcpServerStatusRow(
+          server.name,
+          `MCP server "${server.name}" removed`,
+          'textMuted',
+        );
+        return;
     }
   }
 

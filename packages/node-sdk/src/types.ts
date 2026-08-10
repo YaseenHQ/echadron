@@ -280,6 +280,7 @@ export interface SessionSummary {
   readonly createdAt: number;
   readonly updatedAt: number;
   readonly archived?: boolean | undefined;
+  readonly lastTurnReason?: 'completed' | 'cancelled' | 'failed' | undefined;
   readonly metadata?: JsonObject | undefined;
   readonly additionalDirs?: readonly string[];
 }

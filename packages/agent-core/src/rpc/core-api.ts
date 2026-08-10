@@ -337,7 +337,13 @@ export interface ActivatePluginCommandPayload {
 export interface McpServerInfo {
   readonly name: string;
   readonly transport: 'stdio' | 'http' | 'sse';
-  readonly status: 'pending' | 'connected' | 'failed' | 'disabled' | 'needs-auth';
+  readonly status:
+    | 'pending'
+    | 'connected'
+    | 'failed'
+    | 'disabled'
+    | 'needs-auth'
+    | 'removed';
   readonly toolCount: number;
   readonly error?: string;
 }

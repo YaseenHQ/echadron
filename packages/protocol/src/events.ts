@@ -907,7 +907,13 @@ export interface McpServerStatusEvent {
 export interface McpServerStatusPayload {
   readonly name: string;
   readonly transport: 'stdio' | 'http' | 'sse';
-  readonly status: 'pending' | 'connected' | 'failed' | 'disabled' | 'needs-auth';
+  readonly status:
+    | 'pending'
+    | 'connected'
+    | 'failed'
+    | 'disabled'
+    | 'needs-auth'
+    | 'removed';
   readonly toolCount: number;
   readonly error?: string;
 }
@@ -1772,8 +1778,8 @@ export const toolListUpdatedEventSchema = z.object({
 
 export const mcpServerStatusPayloadSchema = z.object({
   name: z.string(),
-  transport: z.enum(['stdio', 'http']),
-  status: z.enum(['pending', 'connected', 'failed', 'disabled', 'needs-auth']),
+  transport: z.enum(['stdio', 'http', 'sse']),
+  status: z.enum(['pending', 'connected', 'failed', 'disabled', 'needs-auth', 'removed']),
   toolCount: z.number(),
   error: z.string().optional(),
 }) satisfies z.ZodType<McpServerStatusPayload>;

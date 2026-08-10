@@ -77,6 +77,11 @@ import { ISessionMcpService } from '#/session/mcp/sessionMcp';
 import { labelsFromAgentMeta } from '#/session/agentLifecycle/subagentMetadata';
 import { ISessionContext, sessionContextSeed } from '#/session/sessionContext/sessionContext';
 import { ISessionMetadata, type SessionMeta } from '#/session/sessionMetadata/sessionMetadata';
+// Load the scoped implementation here as well as from the public barrel. The
+// lifecycle service is imported directly by a few embedders and tests, so
+// relying on `src/index.ts` to execute the registration would leave the
+// session-scope descriptor unavailable.
+import { drainSessionMetadataWrites } from '#/session/sessionActivity/sessionOutcomeMirrorService';
 import { ISessionSkillCatalog } from '#/session/sessionSkillCatalog/skillCatalog';
 import { ISessionAgentProfileCatalog } from '#/session/sessionAgentProfileCatalog/sessionAgentProfileCatalog';
 import { ISessionToolPolicy } from '#/session/sessionToolPolicy/sessionToolPolicy';
@@ -332,6 +337,7 @@ export class SessionLifecycleService extends Disposable implements ISessionLifec
     await this.announceWillClose({ sessionId, handle, reason: 'exit' });
     this.sessions.delete(sessionId);
     await this.drainAgents(handle);
+    await drainSessionMetadataWrites();
     handle.dispose();
     this._onDidCloseSession.fire({ sessionId });
   }
@@ -348,6 +354,7 @@ export class SessionLifecycleService extends Disposable implements ISessionLifec
     });
     await this.announceWillClose({ sessionId, handle, reason: 'exit' });
     this.sessions.delete(sessionId);
+    await drainSessionMetadataWrites();
     handle.dispose();
     this._onDidArchiveSession.fire({ sessionId });
   }
@@ -372,6 +379,11 @@ export class SessionLifecycleService extends Disposable implements ISessionLifec
 
   async fork(opts: ForkSessionOptions): Promise<ISessionScopeHandle> {
     const sourceId = opts.sourceSessionId;
+
+    // The outcome mirror writes asynchronously from the turn event bus. Make
+    // the source metadata snapshot include a just-finished turn before it is
+    // copied into the fork.
+    await drainSessionMetadataWrites();
 
     const sourceHandle = this.sessions.get(sourceId);
     const indexSummary = await this.index.get(sourceId);
@@ -458,6 +470,7 @@ export class SessionLifecycleService extends Disposable implements ISessionLifec
         forkedFrom: sourceId,
         archived: false,
         lastPrompt: sourceMeta?.lastPrompt,
+        lastTurnReason: sourceMeta?.lastTurnReason,
         custom: forkCustomMetadata(sourceMeta?.custom, opts.metadata),
       });
 

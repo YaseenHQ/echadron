@@ -24,7 +24,13 @@ import { StdioMcpClient } from './client-stdio';
 import type { McpOAuthService } from '#/agent/mcp/oauth/service';
 import { assertMcpInputSchema, type MCPClient, type MCPToolDefinition } from './types';
 
-export type McpServerStatus = 'pending' | 'connected' | 'failed' | 'disabled' | 'needs-auth';
+export type McpServerStatus =
+  | 'pending'
+  | 'connected'
+  | 'failed'
+  | 'disabled'
+  | 'needs-auth'
+  | 'removed';
 
 export interface McpServerEntry {
   readonly name: string;
@@ -194,6 +200,24 @@ export class McpConnectionManager {
     return true;
   }
 
+  /** Retain a removed server as a tombstone for already-registered tools. */
+  async markRemoved(name: string): Promise<boolean> {
+    const entry = this.entries.get(name);
+    if (entry === undefined) return false;
+    // Invalidate an in-flight startup before closing its client. Without an
+    // attempt bump, that startup could finish after the tombstone and
+    // resurrect the removed server.
+    entry.attemptId += 1;
+    await this.closeClient(entry);
+    entry.status = 'removed';
+    entry.tools = undefined;
+    entry.enabledNames = undefined;
+    entry.rawTools = undefined;
+    entry.error = undefined;
+    this.emit(entry);
+    return true;
+  }
+
   waitForInitialLoad(signal?: AbortSignal): Promise<void> {
     signal?.throwIfAborted();
     if (signal === undefined) return this.initialLoad;
@@ -207,8 +231,21 @@ export class McpConnectionManager {
   }
 
   private async connectAllNow(configs: Record<string, McpServerConfig>): Promise<void> {
+    // Config reloads are authoritative. Keep removed names as tombstones so
+    // tools already advertised to a live agent can answer with a stable
+    // removal notice instead of being silently resurrected by reconnect logic.
+    for (const name of this.entries.keys()) {
+      if (!Object.prototype.hasOwnProperty.call(configs, name)) {
+        await this.markRemoved(name);
+      }
+    }
     const tasks: Promise<unknown>[] = [];
     for (const [name, config] of Object.entries(configs)) {
+      const previous = this.entries.get(name);
+      if (previous !== undefined) {
+        previous.attemptId += 1;
+        await this.closeClient(previous);
+      }
       const disabled = config.enabled === false;
       const entry: InternalEntry = {
         name,
@@ -227,7 +264,7 @@ export class McpConnectionManager {
 
   async reconnect(name: string): Promise<void> {
     const entry = this.entries.get(name);
-    if (entry === undefined) {
+    if (entry === undefined || entry.status === 'removed') {
       throw new Error2(ErrorCodes.MCP_SERVER_NOT_FOUND, `Unknown MCP server: ${name}`);
     }
     if (entry.config.enabled === false) {

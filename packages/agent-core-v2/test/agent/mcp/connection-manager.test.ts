@@ -148,6 +148,19 @@ describe('McpConnectionManager', () => {
     }
   });
 
+  it('tombstones a removed server so existing tools can observe removal', async () => {
+    const cm = new McpConnectionManager();
+    try {
+      await cm.connectAll({ removed: stdioConfig() });
+      await expect(cm.markRemoved('removed')).resolves.toBe(true);
+      expect(cm.get('removed')).toMatchObject({ status: 'removed', toolCount: 0 });
+      await expect(cm.reconnect('removed')).rejects.toMatchObject({ code: 'mcp.server_not_found' });
+      await expect(cm.markRemoved('missing')).resolves.toBe(false);
+    } finally {
+      await cm.shutdown();
+    }
+  }, 15000);
+
   it('applies enabledTools / disabledTools filters to the resolved tool set', async () => {
     const cm = new McpConnectionManager();
     try {

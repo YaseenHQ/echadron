@@ -57,6 +57,8 @@ function mapMcpStatus(s: McpServerInfo['status']): McpServerStatus {
     case 'needs-auth':
       // Closest wire literal; `last_error` carries the explanatory message.
       return 'error';
+    case 'removed':
+      return 'disconnected';
   }
 }
 

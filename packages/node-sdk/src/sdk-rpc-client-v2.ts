@@ -758,6 +758,7 @@ export class SDKRpcClientV2 extends SDKRpcClientBase {
       createdAt: meta.createdAt,
       updatedAt: meta.updatedAt,
       archived: meta.archived,
+      lastTurnReason: meta.lastTurnReason,
       metadata: meta.custom as JsonObject | undefined,
       additionalDirs: workspace.additionalDirs,
     };

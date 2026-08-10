@@ -22,6 +22,9 @@
  * processed the call but before the response arrived, the retry may
  * duplicate side effects. There is no protocol-level dedup across
  * reconnects, so this trade-off is accepted deliberately.
+ *
+ * A tombstoned server is retained for existing sessions, but its tools
+ * short-circuit with a removal notice instead of reconnecting.
  */
 
 import type { Tool as KosongTool } from '#/kosong/contract/tool';
@@ -43,6 +46,7 @@ interface McpToolOptions {
   readonly originalsDir?: string;
   readonly telemetry?: ITelemetryService;
   readonly reconnect?: (signal?: AbortSignal) => Promise<MCPClient | undefined>;
+  readonly isRemoved?: () => boolean;
 }
 
 export function createMcpTool(
@@ -60,6 +64,14 @@ export function createMcpTool(
     resolveExecution: (args) => ({
       approvalRule: qualifiedName,
       execute: async (context) => {
+        if (options.isRemoved?.() === true) {
+          return {
+            output:
+              `MCP server for tool "${qualifiedName}" has been removed. ` +
+              'Do not call this tool again.',
+            isError: true,
+          };
+        }
         let result;
         try {
           result = await callTool(client, args, context.signal);
