@@ -79,8 +79,13 @@ interface FileProfileEntry {
   readonly override: boolean;
 }
 
-function cloneBuiltinProfiles(): Map<string, ResolvedAgentProfile> {
-  const profiles = new Map<string, ResolvedAgentProfile>(
+/**
+ * Session-local copies of the builtin profiles. `DEFAULT_AGENT_PROFILES` is a
+ * process-wide constant; clone each entry and re-link the delegation graph so
+ * a session-scoped tool projection cannot leak into later sessions.
+ */
+function sessionLocalBuiltinProfiles(): Map<string, ResolvedAgentProfile> {
+  const cloned = new Map<string, ResolvedAgentProfile>(
     Object.entries(DEFAULT_AGENT_PROFILES).map(([name, profile]) => [
       name,
       {
@@ -91,16 +96,16 @@ function cloneBuiltinProfiles(): Map<string, ResolvedAgentProfile> {
       },
     ]),
   );
-  for (const profile of profiles.values()) {
+  for (const profile of cloned.values()) {
     if (profile.subagents === undefined) continue;
     profile.subagents = Object.fromEntries(
       Object.entries(profile.subagents).map(([name, target]) => [
         name,
-        profiles.get(name) ?? target,
+        cloned.get(name) ?? target,
       ]),
     );
   }
-  return profiles;
+  return cloned;
 }
 
 export class SessionAgentProfileCatalog {
@@ -109,7 +114,7 @@ export class SessionAgentProfileCatalog {
   private snapshotValue: AgentProfileCatalogSnapshot | undefined;
 
   constructor(private readonly options: SessionAgentCatalogOptions) {
-    this.merged = cloneBuiltinProfiles();
+    this.merged = sessionLocalBuiltinProfiles();
     this.readyPromise = this.load();
     // Keep an un-awaited rejection from crashing the process; createMain /
     // spawn awaiters see the error through `ready`.
@@ -147,7 +152,7 @@ export class SessionAgentProfileCatalog {
   /** Replace live discovery with the file-backed catalog bound at creation. */
   restoreSnapshot(snapshot: AgentProfileCatalogSnapshot): void {
     const restored = AgentProfileCatalogSnapshotSchema.parse(snapshot);
-    this.merged = cloneBuiltinProfiles();
+    this.merged = sessionLocalBuiltinProfiles();
 
     const builtinDefault = this.getDefault();
     const systemMd =
