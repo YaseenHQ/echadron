@@ -33,6 +33,7 @@ import { ITelemetryService } from '#/app/telemetry/telemetry';
 import { IEventBus } from '#/app/event/eventBus';
 import { isAbortError } from '#/_base/utils/abort';
 import { IAgentLifecycleService } from '#/session/agentLifecycle/agentLifecycle';
+import { IAgentProfileService } from '#/agent/profile/profile';
 
 import { type AgentRunHandle, ISessionSubagentService } from './subagent';
 

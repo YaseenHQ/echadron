@@ -66,6 +66,7 @@ describe('SessionInitService', () => {
     const profile = {
       data: () => ({ modelAlias: 'mock-model', thinkingLevel: 'off', cwd: WORK_DIR }),
     };
+    const republishStatus = vi.fn();
     const permissionMode = { mode: 'auto', setMode: vi.fn() };
 
     handles['main'] = {

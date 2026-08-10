@@ -293,6 +293,10 @@ export class SubagentTool implements ISubagentTool {
             model: agentProfileModelAlias(profile, own.modelAlias),
             thinking:
               profile.model === own.modelAlias ? own.thinkingLevel : undefined,
+            displayModel: subagentDisplayModel(
+              this.config,
+              agentProfileModelAlias(profile, own.modelAlias),
+            ),
           }
         : resolveSubagentBinding(
             this.config,
