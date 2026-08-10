@@ -140,12 +140,6 @@ export class SubAgentEventHandler {
     return true;
   }
 
-  /** Generic on/off thinking states do not communicate a useful tier. */
-  private subagentEffortDisplay(effort: string | undefined): string | undefined {
-    if (effort === undefined || effort === 'off' || effort === 'on') return undefined;
-    return effort;
-  }
-
   handleLifecycleEvent(event: SubagentLifecycleEvent): void {
     switch (event.type) {
       case 'subagent.spawned':
