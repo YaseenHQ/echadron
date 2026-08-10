@@ -46,7 +46,8 @@
  * - `setModel` / `setPermission` / `setPlanMode` / `getPlan` / `clearPlan` /
  *   `getContext` / `getUsage` / `cancel` → the `klient.session(id).agent(id)`
  *   facade; `setThinking` / `compact` / `cancelCompaction` / `undoHistory` /
- *   `clearContext` / `importContext` → agent-scope services through the live
+ *   `clearContext` / `importContext` / `applyPersistedSecondaryModel` → agent-
+ *   and session-scope services through the live
  *   session handle (no facade exists); `getStatus` → the same six-slice
  *   aggregate the base class builds, re-read from the profile / permission /
  *   swarm services plus the facade. `importContext` composes v1's exact
@@ -74,7 +75,8 @@
  *   `handlePrintMainTurnCompleted` → rebuilt over the v2 print-mode config
  *   helpers and the session's per-agent task services (no v2 service owns
  *   the print policy).
- * - `listGlobalMcpServers` / `addGlobalMcpServer` / `updateGlobalMcpServer` /
+ * - `listGlobalMcpServers` / `listGlobalMcpServerAuthStatuses` /
+ *   `addGlobalMcpServer` / `updateGlobalMcpServer` /
  *   `removeGlobalMcpServer` / `beginGlobalMcpServerAuth` /
  *   `completeGlobalMcpServerAuth` / `cancelGlobalMcpServerAuth` /
  *   `resetGlobalMcpServerAuth` / `testGlobalMcpServer` → the v1 user-global
@@ -141,6 +143,11 @@ import {
 import { createMcpOAuthStore } from '@moonshot-ai/agent-core-v2/agent/mcp/oauth/store';
 import { IAtomicDocumentStore } from '@moonshot-ai/agent-core-v2/persistence/interface/atomicDocumentStore';
 import {
+  SECONDARY_MODEL_SECTION,
+  type SecondaryModelConfig,
+} from '@moonshot-ai/agent-core-v2/app/kosongConfig/configSection';
+import { wrapSubagentModelError } from '@moonshot-ai/agent-core-v2/session/subagent/configSection';
+import {
   applyPromptMetadataUpdate,
   bootstrap,
   BUILTIN_SKILLS,
@@ -167,6 +174,7 @@ import {
   IEventService,
   IHostEnvironment,
   IHostFileSystem,
+  IModelCatalog,
   IModelService,
   IProjectLocalConfigService,
   IProviderService,
@@ -183,6 +191,7 @@ import {
   ISessionSkillCatalog,
   ISessionWorkspaceCommandService,
   ISessionWorkspaceContext,
+  ISessionSecondaryModelWarningService,
   ISkillCatalogRuntimeOptions,
   ISkillDiscovery,
   ITelemetryService,
@@ -245,6 +254,7 @@ import type {
   ExportSessionResult,
   ForkSessionInput,
   GetConfigOptions,
+  GlobalMcpServerAuthStatus,
   GetCronTasksResult,
   GoalSnapshot,
   GoalToolResult,
@@ -1251,6 +1261,31 @@ export class SDKRpcClientV2 extends SDKRpcClientBase {
     agent.accessor.get(IAgentProfileService).setThinking(input.effort);
   }
 
+  /** Re-read and validate the persisted secondary-model recipe. */
+  override async applyPersistedSecondaryModel(input: SessionIdRpcInput): Promise<void> {
+    const session = this.requireLiveSession(input.sessionId);
+    await this.klient.global.config.reload();
+    await this.configReady;
+    await this.modelReady;
+    const secondary = this.engineAccessor
+      .get(IConfigService)
+      .get<SecondaryModelConfig | undefined>(SECONDARY_MODEL_SECTION);
+    if (secondary?.model === undefined) {
+      throw new KimiError(
+        ErrorCodes.CONFIG_INVALID,
+        'Cannot set the secondary model: persist its recipe before applying it to a session.',
+      );
+    }
+    try {
+      this.engineAccessor.get(IModelCatalog).get(secondary.model);
+    } catch (error) {
+      throw wrapSubagentModelError(error, secondary.model, '');
+    }
+    session.accessor
+      .get(ISessionSecondaryModelWarningService)
+      .recheckSecondaryModelWarning();
+  }
+
   override async setPermission(input: SetSessionPermissionRpcInput): Promise<void> {
     const agent = await this.agentFacade(input.sessionId);
     return agent.setPermission(input.mode);
@@ -1541,8 +1576,8 @@ export class SDKRpcClientV2 extends SDKRpcClientBase {
    * recomputed through the engine's own `prepareSystemPromptContext` when the
    * cache is empty — v1 recomputes on demand whenever no warning is cached,
    * so an AGENTS.md that outgrows the budget mid-session surfaces on both
-   * engines. The single warning shape (`agents-md-oversized`, severity
-   * `warning`) mirrors v1's assembly.
+   * engines. The secondary-model warning cache is included alongside the
+   * AGENTS.md warning, matching the v1 aggregate after recipe application.
    */
   override async getSessionWarnings(input: SessionIdRpcInput) {
     const agent = await this.agentScope(input.sessionId);
@@ -1560,8 +1595,17 @@ export class SDKRpcClientV2 extends SDKRpcClientBase {
       );
       warning = prepared.agentsMdWarning;
     }
-    if (warning === undefined) return [];
-    return [{ code: 'agents-md-oversized', message: warning, severity: 'warning' as const }];
+    const warnings =
+      warning === undefined
+        ? []
+        : [{ code: 'agents-md-oversized', message: warning, severity: 'warning' as const }];
+    const secondary = agent.accessor
+      .get(ISessionSecondaryModelWarningService)
+      .getSecondaryModelWarning();
+    if (secondary !== undefined) {
+      warnings.push({ ...secondary, severity: 'warning' as const });
+    }
+    return warnings;
   }
 
   /**
@@ -1886,6 +1930,62 @@ export class SDKRpcClientV2 extends SDKRpcClientBase {
 
   override async listGlobalMcpServers(): Promise<readonly McpServerConfig[]> {
     return this.globalMcpConfig.list();
+  }
+
+  /**
+   * Probe auth state for user-global MCP servers. Explicit bearer-token and
+   * OAuth configuration is answered without network I/O; unmarked remote
+   * servers use a short-lived v2 connection manager so servers that advertise
+   * OAuth during initialize are reported accurately.
+   */
+  override async listGlobalMcpServerAuthStatuses(): Promise<
+    readonly GlobalMcpServerAuthStatus[]
+  > {
+    const servers = await this.globalMcpConfig.list();
+    await this.configReady;
+    const section = this.engineAccessor
+      .get(IConfigService)
+      .get<McpSection | undefined>(MCP_SECTION);
+    return Promise.all(
+      servers.map(async (server): Promise<GlobalMcpServerAuthStatus> => {
+        const config = mcpConfigWithoutName(server);
+        if (config.transport === 'stdio') {
+          return { name: server.name, authStatus: 'not-applicable' };
+        }
+        if (config.bearerTokenEnvVar !== undefined) {
+          return { name: server.name, authStatus: 'bearer-token' };
+        }
+        if (config.headers !== undefined && config.auth !== 'oauth') {
+          return { name: server.name, authStatus: 'not-applicable' };
+        }
+        if (await this.globalMcpOAuthService.hasTokens(server.name, config.url)) {
+          return { name: server.name, authStatus: 'oauth-authorized' };
+        }
+        if (config.auth === 'oauth') {
+          return { name: server.name, authStatus: 'oauth-required' };
+        }
+
+        const manager = new McpConnectionManager({
+          oauthService: this.globalMcpOAuthService,
+          resolveDefaultTimeouts: () => ({
+            startupTimeoutMs: section?.startupTimeoutMs,
+            toolTimeoutMs: section?.toolTimeoutMs,
+          }),
+        });
+        try {
+          await manager.connectAll({ [server.name]: config });
+          return {
+            name: server.name,
+            authStatus:
+              manager.get(server.name)?.status === 'needs-auth'
+                ? 'oauth-required'
+                : 'not-applicable',
+          };
+        } finally {
+          await manager.shutdown();
+        }
+      }),
+    );
   }
 
   override async addGlobalMcpServer(
