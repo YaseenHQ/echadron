@@ -76,6 +76,7 @@ import { IHostFileSystem } from '#/os/interface/hostFileSystem';
 import { ISessionContext } from '#/session/sessionContext/sessionContext';
 import type { ToolSource } from '#/tool/toolContract';
 import { ISessionWorkspaceContext } from '#/session/workspaceContext/workspaceContext';
+import { subagentDisplayModel } from '#/session/subagent/configSection';
 import { ISessionSkillCatalog } from '#/session/sessionSkillCatalog/skillCatalog';
 import { ISessionAgentProfileCatalog } from '#/session/sessionAgentProfileCatalog/sessionAgentProfileCatalog';
 import { ISessionToolPolicy } from '#/session/sessionToolPolicy/sessionToolPolicy';
@@ -625,17 +626,25 @@ export class AgentProfileService extends Disposable implements IAgentProfileServ
       custom();
       return;
     }
-    if (!this.hasModel()) return;
+    const modelAlias = this.modelAlias;
+    if (modelAlias === undefined) return;
+    // An alias that no longer resolves (e.g. the model entry was removed from
+    // config) yields UNKNOWN_CAPABILITY whose max_context_tokens is 0 — the
+    // "unknown" marker, not a real limit. Omit the field instead of pushing 0.
+    const capabilities = this.tryResolveRawModel()?.capabilities;
+    const maxContextTokens = capabilities?.max_input_tokens ?? capabilities?.max_context_tokens;
     this.eventBus.publish({
       type: 'agent.status.updated',
-      model: this.modelAlias,
+      model: subagentDisplayModel(this.config, modelAlias),
       thinkingEffort: includeThinkingEffort
         ? this.getEffectiveThinkingLevel()
         : undefined,
-      maxContextTokens:
-        this.getModelCapabilities().max_input_tokens ??
-        this.getModelCapabilities().max_context_tokens,
+      maxContextTokens,
     });
+  }
+
+  republishStatus(): void {
+    this.emitStatusUpdated(true);
   }
 
   private get profileState(): ProfileModelState {

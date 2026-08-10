@@ -210,7 +210,13 @@ export class AgentSwarmTool implements IAgentSwarmTool {
       return {
         ...common,
         kind: 'spawn' as const,
-        binding,
+        // `displayModel` is presentation metadata for the Agent tool's
+        // spawned event; the swarm task contract intentionally carries only
+        // the executable model/thinking binding.
+        binding:
+          binding === undefined
+            ? undefined
+            : { model: binding.model, thinking: binding.thinking },
       };
     });
     const results = await this.swarmService.run({

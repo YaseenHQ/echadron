@@ -236,7 +236,11 @@ export class AgentSwarmProgressComponent implements Component {
     this.modelDisplay = modelDisplay;
   }
 
-  /** Show a concrete thinking effort next to the bound model. */
+  /**
+   * Show the thinking effort next to the model, same first-wins rule. Only
+   * ever called with a concrete level (the handler filters the boolean
+   * states), so its presence already implies a real effort tier.
+   */
   setEffortDisplay(effortDisplay: string): void {
     if (this.effortDisplay.length > 0 || effortDisplay.length === 0) return;
     this.effortDisplay = effortDisplay;
