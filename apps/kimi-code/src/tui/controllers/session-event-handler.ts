@@ -7,6 +7,7 @@ import type {
   BackgroundTaskTerminatedEvent,
   CompactionCancelledEvent,
   CompactionCompletedEvent,
+  CompactionRetryingEvent,
   CompactionStartedEvent,
   CronFiredEvent,
   ErrorEvent,
@@ -27,8 +28,8 @@ import type {
   TurnStartedEvent,
   TurnStepCompletedEvent,
   TurnStepInterruptedEvent,
+  TurnStepRetryingEvent,
   TurnStepStartedEvent,
-  TokenUsage,
   WarningEvent,
 } from '@moonshot-ai/kimi-code-sdk';
 
@@ -43,6 +44,7 @@ import {
   OAUTH_LOGIN_REQUIRED_CODE,
   OAUTH_LOGIN_REQUIRED_STARTUP_NOTICE,
 } from '../constant/kimi-tui';
+import { TUI_ANIMATIONS } from '../constant/rendering';
 import { buildGoalCompletionMessage } from '../utils/goal-completion';
 import {
   argsRecord,
@@ -105,9 +107,6 @@ export interface SessionEventHost {
   showNotice(title: string, detail?: string): void;
   updateActivityPane(): void;
   track(event: string, props?: Record<string, unknown>): void;
-  recordSessionActivity(): void;
-  noteStepUsage(usage: TokenUsage | undefined): void;
-  noteCompactionFinished(): void;
   mountEditorReplacement(panel: Component & Focusable): void;
   restoreEditor(): void;
   restoreInputText(text: string): void;
@@ -267,7 +266,7 @@ export class SessionEventHandler {
       case 'turn.step.started': this.handleStepBegin(event); break;
       case 'turn.step.interrupted': this.handleStepInterrupted(event); break;
       case 'turn.step.completed': this.handleStepCompleted(event); break;
-      case 'turn.step.retrying': break;
+      case 'turn.step.retrying': this.handleStepRetrying(event); break;
       case 'tool.progress': this.handleToolProgress(event); break;
       case 'shell.output': this.host.handleShellOutput(event); break;
       case 'shell.started': this.host.handleShellStarted(event); break;
@@ -285,6 +284,7 @@ export class SessionEventHandler {
       case 'error': this.handleSessionError(event); break;
       case 'warning': this.handleSessionWarning(event); break;
       case 'compaction.started': this.handleCompactionBegin(event); break;
+      case 'compaction.retrying': this.handleCompactionRetrying(event); break;
       case 'compaction.completed': this.handleCompactionEnd(event, sendQueued); break;
       case 'compaction.blocked': break;
       case 'compaction.cancelled': this.handleCompactionCancel(event, sendQueued); break;
@@ -331,6 +331,7 @@ export class SessionEventHandler {
     this.host.setAppState({
       streamingPhase: 'waiting',
       streamingStartTime: Date.now(),
+      retryStatus: undefined,
     });
   }
 
@@ -368,8 +369,8 @@ export class SessionEventHandler {
       this.host.streamingUI.setTodoList([]);
     }
     this.host.streamingUI.resetToolUi();
+    this.host.setAppState({ retryStatus: undefined });
     this.host.streamingUI.finalizeTurn(sendQueued);
-    this.host.recordSessionActivity();
     this.renderPendingModelBlockedFallback();
     this.currentTurnHasAssistantText = false;
     this.goalCompletionTurnEnded = true;
@@ -405,12 +406,36 @@ export class SessionEventHandler {
     this.host.setAppState({
       streamingPhase: 'waiting',
       streamingStartTime: Date.now(),
+      retryStatus: undefined,
+    });
+  }
+
+  private handleStepRetrying(event: TurnStepRetryingEvent): void {
+    this.host.streamingUI.flushNow();
+    this.host.streamingUI.finalizeLiveTextBuffers('waiting');
+    this.host.patchLivePane({
+      mode: 'waiting',
+      pendingApproval: null,
+      pendingQuestion: null,
+    });
+    this.host.setAppState({
+      streamingPhase: 'waiting',
+      streamingStartTime: Date.now(),
+      retryStatus: {
+        failedAttempt: event.failedAttempt,
+        nextAttempt: event.nextAttempt,
+        maxAttempts: event.maxAttempts,
+        delayMs: event.delayMs,
+        errorName: event.errorName,
+        errorMessage: event.errorMessage,
+        statusCode: event.statusCode,
+      },
     });
   }
 
   private handleStepCompleted(event: TurnStepCompletedEvent): void {
     this.host.streamingUI.flushNow();
-    this.host.noteStepUsage(event.usage);
+    this.host.setAppState({ retryStatus: undefined });
     this.maybeShowDebugTiming(event);
 
     if (event.providerFinishReason === 'filtered') {
@@ -433,13 +458,13 @@ export class SessionEventHandler {
         ? 'Model hit max_tokens — tool call was truncated before it could run.'
         : 'Model hit max_tokens — no tool call was emitted.';
     const detail = this.isAnthropicSessionActive()
-      ? 'If this limit is wrong for your model, set `max_output_size` on the model alias in your kimi-code config.'
+      ? 'If this limit is wrong for your model, set `max_output_size` on the model alias in your Echadron config.'
       : undefined;
     this.host.showNotice(title, detail);
   }
 
   private maybeShowDebugTiming(event: TurnStepCompletedEvent): void {
-    if (process.env['KIMI_CODE_DEBUG'] !== '1') return;
+    if ((process.env['ECHADRON_DEBUG'] ?? process.env['KIMI_CODE_DEBUG']) !== '1') return;
     const text = formatStepDebugTiming(event);
     if (text === undefined) return;
     this.host.appendTranscriptEntry({
@@ -465,6 +490,7 @@ export class SessionEventHandler {
 
   private handleStepInterrupted(event: TurnStepInterruptedEvent): void {
     this.host.streamingUI.flushNow();
+    this.host.setAppState({ retryStatus: undefined });
     this.host.streamingUI.resetToolUi();
     this.host.streamingUI.finalizeLiveTextBuffers('idle');
     const reason = event.reason;
@@ -492,9 +518,9 @@ export class SessionEventHandler {
     // opaque signature rides along. Models also occasionally stream whitespace-
     // only thinking (e.g. a single space). Such deltas carry nothing to render,
     // so switching into the `thinking` pane mode here would stop the "waiting"
-    // moon spinner while no ThinkingComponent is ever created (it needs visible
+    // activity spinner while no ThinkingComponent is ever created (it needs visible
     // text), leaving a blank, spinner-less gap until the first real text/tool
-    // token arrives. Keep the moon up until actual thinking text shows up.
+    // token arrives. Keep the activity spinner up until actual thinking text shows up.
     if (event.delta.trim().length === 0 && !streamingUI.hasThinkingDraft()) return;
     streamingUI.appendThinkingDelta(event.delta);
     this.host.patchLivePane({ mode: 'idle' });
@@ -664,6 +690,7 @@ export class SessionEventHandler {
     }
     if (event.model !== undefined) patch.model = event.model;
     if (event.thinkingEffort !== undefined) patch.thinkingEffort = event.thinkingEffort;
+    if (event.usage !== undefined) patch.usage = event.usage;
     if (Object.keys(patch).length > 0) this.host.setAppState(patch);
     if (event.swarmMode === false) {
       this.host.state.swarmModeEntry = undefined;
@@ -965,7 +992,7 @@ export class SessionEventHandler {
       return;
     }
     const tint = (s: string): string => currentTheme.fg('textMuted', s);
-    const spinner = new MoonLoader(state.ui, 'braille', tint, label);
+    const spinner = new MoonLoader(state.ui, tint, label, TUI_ANIMATIONS.mcp);
     state.transcriptContainer.addChild(spinner);
     this.mcpServerStatusSpinners.set(name, spinner);
     state.ui.requestRender();
@@ -1034,8 +1061,18 @@ export class SessionEventHandler {
       isCompacting: true,
       streamingPhase: 'waiting',
       streamingStartTime: Date.now(),
+      retryStatus: undefined,
     });
     this.host.streamingUI.beginCompaction(event.instruction);
+  }
+
+  private handleCompactionRetrying(event: CompactionRetryingEvent): void {
+    this.host.streamingUI.finalizeLiveTextBuffers('waiting');
+    this.host.setAppState({
+      isCompacting: true,
+      streamingPhase: 'waiting',
+      retryStatus: event,
+    });
   }
 
   private handleCompactionEnd(
@@ -1047,12 +1084,6 @@ export class SessionEventHandler {
       event.result.tokensAfter,
       event.result.summary,
     );
-    // A completed compaction just refreshed and shrank the cached context —
-    // count it as activity so the next submit isn't judged against the
-    // pre-compaction timestamp, and reset the cache-break baseline (the drop
-    // is expected). Cancellations do neither: the context was not cut.
-    this.host.recordSessionActivity();
-    this.host.noteCompactionFinished();
     this.finishCompaction(sendQueued);
   }
 
@@ -1074,6 +1105,7 @@ export class SessionEventHandler {
       this.host.setAppState({
         isCompacting: false,
         streamingPhase: 'idle',
+        retryStatus: undefined,
       });
       this.host.resetLivePane();
       if (next !== undefined) {
@@ -1083,7 +1115,7 @@ export class SessionEventHandler {
         }, 0);
       }
     } else {
-      this.host.setAppState({ isCompacting: false });
+      this.host.setAppState({ isCompacting: false, retryStatus: undefined });
     }
   }
 

@@ -103,7 +103,6 @@ async function undoByCount(host: SlashCommandHost, count: number): Promise<boole
     host.showError(`Failed to undo: ${message}`);
     return false;
   }
-  host.noteContextCut?.();
 
   const children = host.state.transcriptContainer.children;
   const lastUserComponentIndex = findUndoAnchorComponentIndex(children, count);

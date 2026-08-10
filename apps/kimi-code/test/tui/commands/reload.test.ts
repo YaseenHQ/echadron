@@ -34,7 +34,6 @@ describe('reload slash commands', () => {
   it('reloads tui.toml without touching Core session state', async () => {
     await writeTuiConfig(`
 theme = "light"
-cache_expiry_hint = false
 
 [editor]
 command = "vim"
@@ -57,7 +56,6 @@ auto_install = false
     expect(host.state.appState).toMatchObject({
       theme: 'light',
       editorCommand: 'vim',
-      cacheExpiryHint: false,
       notifications: { enabled: false, condition: 'always' },
       upgrade: { autoInstall: false },
     });
