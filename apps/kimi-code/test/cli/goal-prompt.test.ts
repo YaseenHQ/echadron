@@ -137,6 +137,7 @@ vi.mock('@moonshot-ai/kimi-code-sdk', async (importOriginal) => {
 
 vi.mock('@moonshot-ai/kimi-telemetry', () => ({
   initializeTelemetry: vi.fn(),
+  isTelemetryDisabledByEnv: vi.fn(() => false),
   setCrashPhase: vi.fn(),
   shutdownTelemetry: vi.fn(),
   track: vi.fn(),
@@ -154,6 +155,7 @@ function opts(overrides: Partial<Parameters<typeof runPrompt>[0]> = {}) {
     model: undefined,
     outputFormat: undefined,
     prompt: '/goal Ship feature X',
+    agentFiles: [],
     skillsDirs: [],
     ...overrides,
   } as Parameters<typeof runPrompt>[0];
@@ -168,11 +170,10 @@ describe('runPrompt headless goal mode', () => {
   let savedExitCode: typeof process.exitCode;
 
   beforeEach(() => {
-    // Pin the experimental engine flag off so runPrompt stays on the v1 path
-    // this suite mocks, regardless of the host environment (matches
-    // run-prompt.test.ts). With the flag on, runPrompt dispatches to the
-    // native v2 runner, which ignores these mocks and hangs the test.
-    vi.stubEnv('KIMI_CODE_EXPERIMENTAL_FLAG', '');
+    // Opt this legacy harness suite into the v1 compatibility path. The v2
+    // engine is the supported default; the explicit legacy switch keeps these
+    // tests focused on the mocked v1 goal orchestration.
+    vi.stubEnv('ECHADRON_LEGACY_FLAG', '1');
     savedExitCode = process.exitCode;
     mocks.experimentalFeatures = [{ id: 'micro_compaction', enabled: true }];
     mocks.sessions = [];
