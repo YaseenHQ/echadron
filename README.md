@@ -29,6 +29,16 @@ maker --version
 The npm package name is `@yaseenhq/echadron`; its CLI entries are `echadron`,
 `chad`, and `maker`. The first npm publication has not happened yet.
 
+To install the current source checkout globally:
+
+```sh
+git clone https://github.com/YaseenHQ/kimi.git echadron
+cd echadron
+pnpm install
+pnpm --filter @yaseenhq/echadron build
+npm install -g ./apps/kimi-code
+```
+
 ## Quick Start
 
 Open a project and start the interactive UI:

@@ -52,7 +52,7 @@ Some commands are only available in the idle state. Executing these commands whi
 | `/plan [on\|off]` | — | Toggle Plan mode. Without arguments, flips the current state; explicitly passing `on`/`off` forces the setting. Simply toggling does not create an empty plan file | Yes |
 | `/plan clear` | — | Clear the current plan | No |
 | `/swarm on\|off` | — | Turn swarm mode on or off without sending a prompt. | Yes |
-| `/swarm <task>` | — | Turn swarm mode on, then send `<task>` as a normal prompt. If the turn completes normally, swarm mode turns off automatically. In `manual` permission mode, Kimi Code asks whether to switch to `auto` or `yolo` before starting. | No |
+| `/swarm <task>` | — | Turn swarm mode on, then send `<task>` as a normal prompt. If the turn completes normally, swarm mode turns off automatically. In `manual` permission mode, Echadron asks whether to switch to `auto` or `yolo` before starting. | No |
 | `/goal [...]` | — | Start or manage an autonomous goal | See below |
 
 ::: warning
@@ -126,7 +126,7 @@ Echadron CLI ships with a set of built-in Skills that appear directly as `/<name
 | `/custom-theme [<text>]` | Create or edit a custom TUI color theme. See [Themes](../customization/themes.md) |
 | `/update-config` | Inspect or edit `config.toml` (model, provider, permission, hooks) and `tui.toml` (theme, editor, notifications, auto-update) |
 | `/check-kimi-code-docs` | Answer Kimi Code product questions (CLI usage, configuration, membership, error codes) against the official docs |
-| `/import-from-cc-codex` | Import Claude Code and Codex instructions, skills, and MCP settings into Kimi Code |
+| `/import-from-cc-codex` | Import Claude Code and Codex instructions, skills, and MCP settings into Echadron |
 | `/sub-skill` | Discover and reorganize the local skill inventory into hierarchical sub-skill bundles. Includes `/sub-skill.review` (read-only proposal) and `/sub-skill.consolidate` (apply the reorganization) |
 
 All built-in Skill commands are only available in the idle state.

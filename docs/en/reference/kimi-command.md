@@ -180,7 +180,7 @@ Multiple instances can share one home directory: each registers itself under `~/
 `echadron web` binds to local loopback only by default and prints the bearer token in the startup banner; the web UI authenticates automatically via the `#token=` URL fragment.
 
 ::: info
-The `echadron server` command tree is deprecated: any `echadron server …` invocation (including all legacy subcommands) only prints a deprecation notice and exits with code 1 — use `echadron web` instead. The one exception is `echadron server kill`, which stays functional for stopping servers started by a version before 0.28.0. The notice will be removed in the next major version of Kimi Code.
+The `echadron server` command tree is deprecated: any `echadron server …` invocation (including all legacy subcommands) only prints a deprecation notice and exits with code 1 — use `echadron web` instead. The one exception is `echadron server kill`, which stays functional for stopping servers started by a version before 0.28.0. The notice will be removed in the next major version of Echadron.
 :::
 
 ::: danger
@@ -252,7 +252,7 @@ echadron export 01HZ...XYZ -o ./bug-report.zip --no-include-global-log
 
 ### `echadron migrate`
 
-Migrate local data from a legacy kimi-cli installation to kimi-code, including session history and configuration files. Runs entirely interactively, guiding you through the full process.
+Migrate local data from a legacy kimi-cli installation to Echadron, including session history and configuration files. Runs entirely interactively, guiding you through the full process.
 
 ```sh
 echadron migrate

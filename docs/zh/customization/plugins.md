@@ -86,7 +86,7 @@ Kimi Datasource 是 Kimi Code 官方数据插件，让你通过自然语言直�
 
 ### 使用方式
 
-安装完成后，直接用自然语言描述你的需求，Kimi Code 会自动调用数据能力；也可以通过 `/skill:kimi-datasource` 明确触发数据查询 Skill。
+安装完成后，直接用自然语言描述你的需求，Echadron 会自动调用数据能力；也可以通过 `/skill:kimi-datasource` 明确触发数据查询 Skill。
 
 ### 能做什么
 

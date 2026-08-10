@@ -35,7 +35,8 @@ const publishedPackage = parsePublishedPackages().find(
 );
 
 const version = publishedPackage?.version ?? packageJson.version;
-const shouldPublish = publishedPackage !== undefined;
+const nativeReleaseEnabled = process.env['ECHADRON_NATIVE_RELEASE_ENABLED'] === 'true';
+const shouldPublish = nativeReleaseEnabled && publishedPackage !== undefined;
 const tag = `${packageName}@${version}`;
 const githubOutput = process.env['GITHUB_OUTPUT'];
 
@@ -51,5 +52,6 @@ if (githubOutput !== undefined) {
 }
 
 console.log(`should_publish=${String(shouldPublish)}`);
+console.log(`native_release_enabled=${String(nativeReleaseEnabled)}`);
 console.log(`version=${version}`);
 console.log(`tag=${tag}`);

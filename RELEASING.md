@@ -1,0 +1,76 @@
+# Releasing Echadron
+
+Echadron uses Changesets and `.github/workflows/release.yml`. Merging a user-facing
+change with a changeset updates the release pull request. Merging that generated
+pull request publishes `@yaseenhq/echadron`.
+
+## First npm publication
+
+npm cannot register a trusted publisher before the package exists. Bootstrap the
+first publication with a short-lived granular npm automation token:
+
+1. Confirm the `@yaseenhq` npm scope is controlled by the publisher account.
+2. Create a granular token restricted to `@yaseenhq/echadron` with publish access.
+3. Add it as the repository Actions secret `NPM_TOKEN`.
+4. Merge the generated `ci: release packages` pull request and verify the package,
+   provenance statement, tag, and GitHub release.
+5. Delete `NPM_TOKEN` after the first successful publication.
+
+Then configure npm Trusted Publishing for:
+
+- GitHub owner: `YaseenHQ`
+- Repository: `kimi`
+- Workflow filename: `release.yml`
+- Allowed action: `npm publish`
+
+The release job already grants `id-token: write`, uses a current npm CLI, and
+publishes with provenance. `NODE_AUTH_TOKEN` is empty after the bootstrap secret is
+removed, so npm uses the workflow's OIDC identity.
+
+## OAuth registrations
+
+The ChatGPT and xAI account flows currently track Pi's public OAuth registrations
+and provider-required `originator` / `referrer` values. Their client identifiers are
+public identifiers, not secrets, and API-key providers remain available if either
+vendor changes its allowlist.
+
+Before calling a release stable, request dedicated native-app registrations from
+OpenAI and xAI if those programs are available. A dedicated registration must be
+implemented and tested as one complete flow: client id, redirect URI, scopes,
+authorization parameters, token exchange, refresh, and request identity. Do not
+change only the client id or remove the shared allowlist parameters speculatively.
+
+## Native releases
+
+Native assets are deliberately opt-in. npm publishing and documentation deployment
+remain independent from Apple signing credentials.
+
+Before enabling native releases:
+
+1. Add the `APPLE_CERTIFICATE_P12`, `APPLE_CERTIFICATE_PASSWORD`,
+   `APPLE_NOTARIZATION_KEY_P8`, `APPLE_NOTARIZATION_KEY_ID`, and
+   `APPLE_NOTARIZATION_ISSUER_ID` repository secrets.
+2. Run the `Manual Native Bundle` workflow and verify all six target archives.
+3. Add the repository variable `ECHADRON_NATIVE_RELEASE_ENABLED=true`.
+
+After that, publishing a new Echadron npm version also builds, signs and notarizes
+macOS executables, creates checksummed archives, and uploads a manifest to the
+matching GitHub release.
+
+## Pre-release verification
+
+Run:
+
+```sh
+pnpm install --frozen-lockfile
+pnpm release:check
+pnpm typecheck
+pnpm lint
+pnpm sherif
+pnpm test
+pnpm build
+pnpm lint:pkg
+```
+
+For package-level verification, pack `apps/kimi-code`, install the tarball into an
+empty project, and invoke `echadron`, `chad`, and `maker` from that installation.

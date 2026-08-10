@@ -180,7 +180,7 @@ CLI 还会读取一些标准系统变量来检测运行环境，不会修改它�
 
 ## HTTP 代理
 
-Kimi Code 会遵循标准代理环境变量，让所有出网流量——模型 API 调用、MCP 服务、网络工具、遥测、登录、更新检查——都走代理：
+Echadron 会遵循标准代理环境变量，让所有出网流量——模型 API 调用、MCP 服务、网络工具、遥测、登录、更新检查——都走代理：
 
 - `HTTP_PROXY` / `http_proxy`：用于 `http://` 请求的代理
 - `HTTPS_PROXY` / `https_proxy`：用于 `https://` 请求的代理
@@ -191,7 +191,7 @@ Kimi Code 会遵循标准代理环境变量，让所有出网流量——模型 
 
 仅当设置了其中任一变量时才启用代理，否则直连。回环地址（`localhost`、`127.0.0.1`、`::1`）始终绕过代理，因此配置了代理后，本地服务（例如 localhost 上的 MCP 服务）仍能正常工作——你也可以把自己的内网主机加入 `NO_PROXY` 一并放行。
 
-以 Node 子进程运行的 stdio MCP 服务，在其 Node 版本支持 `NODE_USE_ENV_PROXY` 时（Node ≥ 22.21 或 ≥ 24.5）会自动遵循 `HTTP_PROXY` / `HTTPS_PROXY` / `NO_PROXY`；SOCKS 代理仅作用于 Kimi Code 自身的流量。
+以 Node 子进程运行的 stdio MCP 服务，在其 Node 版本支持 `NODE_USE_ENV_PROXY` 时（Node ≥ 22.21 或 ≥ 24.5）会自动遵循 `HTTP_PROXY` / `HTTPS_PROXY` / `NO_PROXY`；SOCKS 代理仅作用于 Echadron 自身的流量。
 
 ## 下一步
 

@@ -180,7 +180,7 @@ echadron web --port 58628    # 指定绑定端口
 `echadron web` 默认只绑定本机 loopback 地址，并在启动横幅中打印 bearer token；web UI 通过 URL 的 `#token=` 片段自动完成鉴权。
 
 ::: info 提示
-`echadron server` 命令树已废弃：任何 `echadron server …` 调用（含全部旧子命令）只会打印弃用提示并以退出码 1 结束，请改用 `echadron web`。唯一的例外是 `echadron server kill`，它仍然可用，仅用于停止 0.28.0 之前版本启动的服务。该提示将在 Kimi Code 下个大版本移除。
+`echadron server` 命令树已废弃：任何 `echadron server …` 调用（含全部旧子命令）只会打印弃用提示并以退出码 1 结束，请改用 `echadron web`。唯一的例外是 `echadron server kill`，它仍然可用，仅用于停止 0.28.0 之前版本启动的服务。该提示将在 Echadron 下个大版本移除。
 :::
 
 ::: danger 警告
@@ -189,7 +189,7 @@ echadron web --port 58628    # 指定绑定端口
 
 #### `echadron server kill`
 
-已废弃——仅用于停止 0.28.0 之前的 Kimi Code 版本启动的服务。那些版本可能在后台遗留服务进程，记录在 legacy 单实例锁文件 `~/.echadron/server/lock` 中；该命令先请求 `POST /api/v1/shutdown` 优雅退出，再对锁中记录的 pid 发 SIGTERM、必要时升级为 SIGKILL，并在确认进程退出后删除锁文件。`echadron web` 启动的服务在前台运行，直接用 `Ctrl+C` 停止即可。
+已废弃——仅用于停止 0.28.0 之前的 Echadron 版本启动的服务。那些版本可能在后台遗留服务进程，记录在 legacy 单实例锁文件 `~/.echadron/server/lock` 中；该命令先请求 `POST /api/v1/shutdown` 优雅退出，再对锁中记录的 pid 发 SIGTERM、必要时升级为 SIGKILL，并在确认进程退出后删除锁文件。`echadron web` 启动的服务在前台运行，直接用 `Ctrl+C` 停止即可。
 
 #### `echadron web rotate-token`
 
@@ -252,7 +252,7 @@ echadron export 01HZ...XYZ -o ./bug-report.zip --no-include-global-log
 
 ### `echadron migrate`
 
-将旧版 kimi-cli 的本地数据迁移到 kimi-code，包括历史会话和配置文件。纯交互式运行，会引导你完成全流程。
+将旧版 kimi-cli 的本地数据迁移到 Echadron，包括历史会话和配置文件。纯交互式运行，会引导你完成全流程。
 
 ```sh
 echadron migrate

@@ -88,7 +88,7 @@ Using Kimi Datasource consumes your Kimi Code plan quota; the install result rem
 
 ### How to use
 
-Once installed, describe your need in natural language and Kimi Code will automatically invoke the data capabilities. You can also explicitly trigger the data query skill with `/skill:kimi-datasource`.
+Once installed, describe your need in natural language and Echadron will automatically invoke the data capabilities. You can also explicitly trigger the data query skill with `/skill:kimi-datasource`.
 
 ### What you can do
 

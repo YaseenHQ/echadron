@@ -66,7 +66,7 @@ extra_agent_dirs = ["~/team-agents", ".agents/team-agents"]
 **内置 Agent** 随 CLI 分发，优先级最低。目录中发现的文件不会仅凭同名覆盖内置 Agent；如确需替换，必须在 Frontmatter 中声明 `override: true`。通过 `--agent-file` 加载的文件视为显式启动意图，可以覆盖同名内置 Agent，优先级高于所有目录作用域，且仅对本次启动生效。另外，`$ECHADRON_HOME/SYSTEM.md` 可永久覆盖默认主 Agent 的系统提示词（它不参与 Agent 文件发现），其优先级交互见下文 SYSTEM.md 小节。
 
 ::: warning 信任模型
-Agent 文件属于提示词配置，而项目级文件来自仓库本身 —— 包括你刚刚 clone、尚不可信的仓库。项目作用域的文件可以完全接管内置 Agent：命名为 `agent.md` 并声明 `override: true` 会替换**默认主 Agent 的整个系统提示词**，`coder.md` 加 `override: true` 则会替换默认子 Agent 类型。与 `AGENTS.md` 内容（作为参考资料注入提示词）不同，override 文件**就是**系统提示词本身，且不写 `tools` 的文件保留全部工具。在不熟悉的仓库中运行 Kimi Code 之前，请以对待脚本同样的谨慎检查其中的 `.echadron/agents/` 与 `.agents/agents/` 目录。
+Agent 文件属于提示词配置，而项目级文件来自仓库本身 —— 包括你刚刚 clone、尚不可信的仓库。项目作用域的文件可以完全接管内置 Agent：命名为 `agent.md` 并声明 `override: true` 会替换**默认主 Agent 的整个系统提示词**，`coder.md` 加 `override: true` 则会替换默认子 Agent 类型。与 `AGENTS.md` 内容（作为参考资料注入提示词）不同，override 文件**就是**系统提示词本身，且不写 `tools` 的文件保留全部工具。在不熟悉的仓库中运行 Echadron 之前，请以对待脚本同样的谨慎检查其中的 `.echadron/agents/` 与 `.agents/agents/` 目录。
 :::
 
 ### Agent 文件格式

@@ -24,5 +24,5 @@ Resolve #(issue_number)
 - [ ] I have read the [CONTRIBUTING](https://github.com/YaseenHQ/kimi/blob/main/CONTRIBUTING.md) document.
 - [ ] I have linked a related issue, or explained the problem above.
 - [ ] I have added tests that prove my feature works.
-- [ ] Ran `gen-changesets` skill, or this PR needs no changeset.
-- [ ] Ran `gen-docs` skill, or this PR needs no doc update.
+- [ ] Added a release changeset with `pnpm changeset`, or this PR needs no changeset.
+- [ ] Updated user-facing documentation, or this PR needs no documentation change.
