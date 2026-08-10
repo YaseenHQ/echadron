@@ -18,14 +18,14 @@ async function resolveRelease(options: {
   const outputDir = await mkdtemp(join(tmpdir(), 'echadron-resolve-release-'));
   const outputPath = join(outputDir, 'github-output.txt');
   const env = { ...process.env };
-  delete env.CHANGESETS_PUBLISHED_PACKAGES;
-  delete env.ECHADRON_NATIVE_RELEASE_ENABLED;
-  env.GITHUB_OUTPUT = outputPath;
+  delete env['CHANGESETS_PUBLISHED_PACKAGES'];
+  delete env['ECHADRON_NATIVE_RELEASE_ENABLED'];
+  env['GITHUB_OUTPUT'] = outputPath;
   if (options.publishedPackages !== undefined) {
-    env.CHANGESETS_PUBLISHED_PACKAGES = JSON.stringify(options.publishedPackages);
+    env['CHANGESETS_PUBLISHED_PACKAGES'] = JSON.stringify(options.publishedPackages);
   }
   if (options.nativeEnabled) {
-    env.ECHADRON_NATIVE_RELEASE_ENABLED = 'true';
+    env['ECHADRON_NATIVE_RELEASE_ENABLED'] = 'true';
   }
 
   await execFileAsync(process.execPath, [resolveReleaseScript], { cwd: appRoot, env });
