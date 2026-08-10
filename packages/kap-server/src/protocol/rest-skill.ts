@@ -6,7 +6,11 @@
 
 import { z } from 'zod';
 
-import { fileContentSchema, imageContentSchema, videoContentSchema } from './message';
+import {
+  fileContentSchema,
+  imageContentSchema,
+  videoContentSchema,
+} from '@moonshot-ai/protocol';
 import { skillDescriptorSchema } from './skill';
 
 export const listSkillsResponseSchema = z.object({
