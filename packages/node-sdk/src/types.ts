@@ -7,7 +7,6 @@ import type {
   TelemetryContextPatch,
   TelemetryProperties,
 } from '@moonshot-ai/agent-core';
-import type { McpServerConfig as SessionMcpServerConfig } from '@moonshot-ai/agent-core-v2';
 import type { Kaos } from '@moonshot-ai/kaos';
 import type { KimiHostIdentity, OAuthRefreshOutcome } from '@moonshot-ai/kimi-code-oauth';
 import type { ContentPart } from '@moonshot-ai/kosong';
