@@ -24,20 +24,21 @@ Echadron is a fully interactive TUI application. For the best visual experience,
 ### Install from source
 
 Echadron's independent release installer is not enabled yet. To run the fork
-from source, install Node.js 22.19.0 or later and pnpm, then build the CLI:
+from source, install Node.js 24.15.0 or later and pnpm 10.33.0, then build the CLI:
 
 ```sh
 git clone https://github.com/YaseenHQ/kimi.git echadron
 cd echadron
 pnpm install
 pnpm --filter @yaseenhq/echadron build
+npm install -g ./apps/kimi-code
 ```
 
 On Windows, install [Git for Windows](https://gitforwindows.org/) before
 launching the CLI. The inherited shell path behavior remains available through
 the compatibility `KIMI_SHELL_PATH` variable.
 
-### npm installation
+### npm installation (after the first public release)
 
 Requires Node.js 22.19.0 or later:
 

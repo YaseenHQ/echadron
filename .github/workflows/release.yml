@@ -62,7 +62,10 @@ jobs:
           title: "ci: release packages"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # NPM_TOKEN is not needed with Trusted Publishing (OIDC)
+          # Trusted Publishing is preferred after the package exists. A granular
+          # automation token bootstraps the first publication, when npm has no
+          # package settings page on which to register this workflow yet.
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Resolve Echadron native release
         if: steps.changesets.outputs.published == 'true'
@@ -70,6 +73,7 @@ jobs:
         run: node apps/kimi-code/scripts/native/resolve-release.mjs
         env:
           CHANGESETS_PUBLISHED_PACKAGES: ${{ steps.changesets.outputs.publishedPackages }}
+          ECHADRON_NATIVE_RELEASE_ENABLED: ${{ vars.ECHADRON_NATIVE_RELEASE_ENABLED }}
 
   deploy-docs:
     name: Deploy docs

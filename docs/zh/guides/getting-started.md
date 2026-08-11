@@ -22,18 +22,19 @@ Echadron 为全交互式 TUI 应用，推荐在支持真彩色与连字的现代
 
 ### 从源码安装
 
-安装 Node.js 22.19.0 或更高版本和 pnpm，然后构建 CLI：
+安装 Node.js 24.15.0 或更高版本和 pnpm 10.33.0，然后构建 CLI：
 
 ```sh
 git clone https://github.com/YaseenHQ/kimi.git echadron
 cd echadron
 pnpm install
 pnpm --filter @yaseenhq/echadron build
+npm install -g ./apps/kimi-code
 ```
 
 > Windows 用户首次启动前还需要安装 [Git for Windows](https://gitforwindows.org/)。如果 Git Bash 安装在非标准路径，请把兼容变量 `KIMI_SHELL_PATH` 设为 `bash.exe` 的绝对路径。
 
-### npm 安装
+### npm 安装（首个公开版本发布后）
 
 需要 Node.js 22.19.0 或更高版本：
 

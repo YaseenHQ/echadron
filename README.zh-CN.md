@@ -18,18 +18,14 @@ Echadron 是一个运行在终端里的多模型 AI 编程 agent，可以帮你�
 
 ## 安装
 
-Echadron 的独立 Native 安装器尚未发布；目前请使用 npm 包或从源码运行。
-
-- **macOS / Linux**：
+Echadron 的独立 Native 安装器和首个公开 npm 包尚未发布；目前请使用 Node.js 24.15.0 或更高版本和 pnpm 10.33.0 从源码构建并安装：
 
 ```sh
-npm install -g @yaseenhq/echadron
-```
-
-- **Windows（PowerShell）**：
-
-```powershell
-npm install -g @yaseenhq/echadron
+git clone https://github.com/YaseenHQ/kimi.git echadron
+cd echadron
+pnpm install
+pnpm --filter @yaseenhq/echadron build
+npm install -g ./apps/kimi-code
 ```
 
 > Windows 用户首次启动前还需要安装 [Git for Windows](https://gitforwindows.org/)。如果 Git Bash 安装在非标准路径，请把 `ECHADRON_SHELL_PATH` 设为 `bash.exe` 的绝对路径。
@@ -39,6 +35,8 @@ npm install -g @yaseenhq/echadron
 ```sh
 echadron --version
 ```
+
+首个公开版本发布后，可直接运行 `npm install -g @yaseenhq/echadron`。
 
 详细安装方式，见[快速上手](https://github.com/YaseenHQ/kimi/tree/main/docs/zh/guides/getting-started)。
 

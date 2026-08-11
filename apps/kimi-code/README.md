@@ -2,7 +2,7 @@
 
 > A multi-provider agent harness for your terminal
 
-[![npm](https://img.shields.io/npm/v/@yaseenhq/echadron)](https://www.npmjs.com/package/@yaseenhq/echadron) [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)  [![Docs](https://img.shields.io/badge/docs-online-blue)](https://github.com/YaseenHQ/kimi/tree/main/docs/en)
+[![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE) [![Docs](https://img.shields.io/badge/docs-online-blue)](https://github.com/YaseenHQ/kimi/tree/main/docs/en)
 
 ## What is Echadron CLI
 

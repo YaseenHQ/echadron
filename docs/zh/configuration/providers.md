@@ -32,9 +32,9 @@ OAuth token 与 `config.toml` 分开存储；供应商引用和模型元数据�
 
 如需完整删除，请在 `/logout` 中选择 **Remove saved provider configuration…**。该操作会再次确认删除所选供应商、模型、关联凭据及托管服务。手动写入 `config.toml` 的供应商会自动显示；`config.toml` 是存储格式，而不是登录方式。
 
-Kimi Code 目前为每个供应商保存一个 OAuth 账号。对已连接的供应商再次运行 `/login` 时，可以继续使用当前账号，或选择 **Switch account**。只有新登录成功后才会替换原凭证；取消或登录失败时，当前账号仍可继续使用。
+Echadron 目前为每个供应商保存一个 OAuth 账号。对已连接的供应商再次运行 `/login` 时，可以继续使用当前账号，或选择 **Switch account**。只有新登录成功后才会替换原凭证；取消或登录失败时，当前账号仍可继续使用。
 
-连接已知第三方供应商时，Kimi Code 会从 [models.dev](https://models.dev/) 拉取模型目录，然后依次选择供应商、输入 API 密钥并选择默认模型。目录未声明协议类型的供应商会按 OpenAI 兼容协议导入，并显示 "guessed" 提示；目录没有可用端点时，Kimi Code 会先要求输入 base URL。Amazon Bedrock、Cohere 等专有协议和无法识别的显式协议会被拒绝导入。已下线（deprecated）和 alpha 状态的模型不会出现在导入列表中。
+连接已知第三方供应商时，Echadron 会从 [models.dev](https://models.dev/) 拉取模型目录，然后依次选择供应商、输入 API 密钥并选择默认模型。目录未声明协议类型的供应商会按 OpenAI 兼容协议导入，并显示 "guessed" 提示；目录没有可用端点时，Echadron 会先要求输入 base URL。Amazon Bedrock、Cohere 等专有协议和无法识别的显式协议会被拒绝导入。已下线（deprecated）和 alpha 状态的模型不会出现在导入列表中。
 
 使用自定义 registry 时，粘贴其地址和 Bearer token。CLI 会创建 `providers` / `models` 条目。后续启动时，同一个 registry 地址下的供应商会一起刷新，因此上游新增、删除供应商以及模型元数据变化都会同步。
 
@@ -134,7 +134,7 @@ base_url = "https://your-gateway.example"
 
 与 `google-genai` 共用实现，`type = "vertexai"` 时切换到 Vertex AI 访问路径。
 
-认证走 Google Cloud 标准 ADC 流程（`gcloud auth application-default login` 或 `GOOGLE_APPLICATION_CREDENTIALS` 服务账号 JSON），这部分与 Kimi Code 无关。**项目 ID 和区域必须写在 `[providers.vertexai.env]` 子表里**——直接在 shell 里 `export GOOGLE_CLOUD_PROJECT` 不会被 CLI 读取。
+认证走 Google Cloud 标准 ADC 流程（`gcloud auth application-default login` 或 `GOOGLE_APPLICATION_CREDENTIALS` 服务账号 JSON），这部分独立于 Echadron 认证。**项目 ID 和区域必须写在 `[providers.vertexai.env]` 子表里**——直接在 shell 里 `export GOOGLE_CLOUD_PROJECT` 不会被 CLI 读取。
 
 ```toml
 [providers.vertexai]

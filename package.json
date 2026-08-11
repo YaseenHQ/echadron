@@ -1,5 +1,5 @@
 {
-  "name": "@moonshot-ai/monorepo",
+  "name": "@yaseenhq/echadron-monorepo",
   "version": "0.1.1",
   "private": true,
   "license": "MIT",
@@ -30,6 +30,7 @@
     "changeset": "changeset",
     "version": "changeset version",
     "version:release": "changeset version",
+    "release:check": "changeset status",
     "publish": "pnpm run typecheck && pnpm run lint && pnpm run sherif && pnpm run test && pnpm run build && pnpm run lint:pkg && changeset publish",
     "prepare": "simple-git-hooks"
   },

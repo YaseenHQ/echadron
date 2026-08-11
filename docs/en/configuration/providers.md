@@ -32,9 +32,9 @@ Signing into an OAuth account selects account authentication for that provider a
 
 For complete deletion, choose **Remove saved provider configuration…** in `/logout`. This separately confirms removal of the selected provider, its models, associated credentials, and managed services. Providers written manually in `config.toml` appear here automatically; `config.toml` is storage, not a login method.
 
-Kimi Code currently stores one OAuth account per provider. Running `/login` for a connected provider lets you keep the current account or choose **Switch account**. A switch replaces the stored credential only after the new login succeeds, so cancelling or failing the flow leaves the current account usable.
+Echadron currently stores one OAuth account per provider. Running `/login` for a connected provider lets you keep the current account or choose **Switch account**. A switch replaces the stored credential only after the new login succeeds, so cancelling or failing the flow leaves the current account usable.
 
-When connecting a known third-party provider, Kimi Code fetches the [models.dev](https://models.dev/) catalog, then asks you to select a provider, enter an API key, and choose a default model. Vendors whose protocol the catalog does not declare are imported as OpenAI-compatible with a "guessed" note; when the catalog provides no usable endpoint, Kimi Code asks for a base URL first. Proprietary protocols such as Amazon Bedrock and Cohere, and unrecognized explicit protocols, are refused. Deprecated and alpha-status models are excluded.
+When connecting a known third-party provider, Echadron fetches the [models.dev](https://models.dev/) catalog, then asks you to select a provider, enter an API key, and choose a default model. Vendors whose protocol the catalog does not declare are imported as OpenAI-compatible with a "guessed" note; when the catalog provides no usable endpoint, Echadron asks for a base URL first. Proprietary protocols such as Amazon Bedrock and Cohere, and unrecognized explicit protocols, are refused. Deprecated and alpha-status models are excluded.
 
 For a custom registry, paste its URL and Bearer token. The CLI creates the `providers` / `models` entries. On later startup, providers from the same registry URL are refreshed together, so upstream provider additions, removals, and model metadata changes are synced.
 
@@ -134,7 +134,7 @@ base_url = "https://your-gateway.example"
 
 Shares the same implementation as `google-genai`; setting `type = "vertexai"` switches to the Vertex AI access path.
 
-Authentication follows the standard Google Cloud ADC flow (`gcloud auth application-default login` or a `GOOGLE_APPLICATION_CREDENTIALS` service account JSON) — this part is unrelated to Kimi Code. **The project ID and region must be written in the `[providers.vertexai.env]` sub-table** — simply `export GOOGLE_CLOUD_PROJECT` in the shell will not be read by the CLI.
+Authentication follows the standard Google Cloud ADC flow (`gcloud auth application-default login` or a `GOOGLE_APPLICATION_CREDENTIALS` service account JSON) — this part is independent of Echadron authentication. **The project ID and region must be written in the `[providers.vertexai.env]` sub-table** — simply `export GOOGLE_CLOUD_PROJECT` in the shell will not be read by the CLI.
 
 ```toml
 [providers.vertexai]

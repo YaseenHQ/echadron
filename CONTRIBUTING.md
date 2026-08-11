@@ -80,13 +80,16 @@ This repo uses [changesets](https://github.com/changesets/changesets) to manage 
 - Every PR that affects release artifacts (code, behavior, public API) **must** include a changeset.
 - Docs-only, test-only, or CI-only PRs may skip changesets.
 - Generate one with `pnpm changeset` and follow the prompts (which packages are touched, which bump level).
-- For repo-specific conventions on package selection and bump levels, see `.changeset/README.md`. When working in this repo with coding agents, use the `gen-changesets` skill.
+- For repo-specific conventions on package selection and bump levels, see `.changeset/README.md`.
+
+Maintainers should follow [RELEASING.md](RELEASING.md) for npm bootstrap,
+trusted-publisher, and optional native-release setup.
 
 ## Pull Requests
 
 Use the [PR template](.github/pull_request_template.md) when opening a feature pull request.
 
-PR titles must follow [Conventional Commits](#commit-convention); CI runs `pnpm lint`, `pnpm typecheck`, and `pnpm test` on every PR. Update user-facing docs in `docs/` when behavior changes — use the `gen-docs` skill when working with coding agents.
+PR titles must follow [Conventional Commits](#commit-convention); CI runs linting, typechecking, release-plan validation, and tests on every PR. Update user-facing docs in `docs/` when behavior changes.
 
 ## Code Style
 
