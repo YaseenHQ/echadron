@@ -1,5 +1,39 @@
 # @moonshot-ai/kimi-code-sdk
 
+## 0.15.0
+
+### Minor Changes
+
+- [#26](https://github.com/YaseenHQ/kimi/pull/26) [`a9b1250`](https://github.com/YaseenHQ/kimi/commit/a9b125062ac298a4dab1714e292e0699400eb79b) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Run Echadron's interactive TUI, print mode, doctor, ACP, export, and provider commands on the native agent-core-v2 engine by default. Set `ECHADRON_LEGACY_FLAG=1` (or `KIMI_CODE_LEGACY_FLAG=1`) to use the v1 compatibility path. Remove the dead v1 micro-compaction implementation while preserving historical replay records.
+
+- [#16](https://github.com/YaseenHQ/kimi/pull/16) [`21369e3`](https://github.com/YaseenHQ/kimi/commit/21369e347925e0c6fd745317a25204ae7fa029dc) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Expose global MCP authorization status through the SDK, including persisted OAuth and bearer-token states.
+
+- [#1](https://github.com/YaseenHQ/kimi/pull/1) [`02606aa`](https://github.com/YaseenHQ/kimi/commit/02606aa7218b4b01a26a28889d025fd3b6c5afee) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Add unified account (OAuth) and API-key login routes with Kimi Code, xAI, OpenAI Codex, known catalog providers, and custom registries. Browser and device-code login methods are available for the supported OAuth providers. `/logout` supports individual and clearly described credential bundles plus separately confirmed provider-configuration removal; the redundant `/provider` slash command is removed.
+
+- [#13](https://github.com/YaseenHQ/kimi/pull/13) [`f2830f8`](https://github.com/YaseenHQ/kimi/commit/f2830f8f7a18f54470e979d992107f3fc2a7a886) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Rename `userAgentProduct` to `productName` and require `platform` in the host identity options exposed by the SDK.
+
+- [#1](https://github.com/YaseenHQ/kimi/pull/1) [`02606aa`](https://github.com/YaseenHQ/kimi/commit/02606aa7218b4b01a26a28889d025fd3b6c5afee) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Add the /tree slash command to browse earlier turns and fork from a selected point. Run /tree to open the turn picker, then press Ctrl-X to copy its highlighted turn without closing it.
+
+### Patch Changes
+
+- [#26](https://github.com/YaseenHQ/kimi/pull/26) [`a9b1250`](https://github.com/YaseenHQ/kimi/commit/a9b125062ac298a4dab1714e292e0699400eb79b) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Improve prompt-cache hit-rate accounting and display cache reads/writes in session usage. Add stable 64-character cache-key handling and configurable Anthropic cache retention (`none`, `short`, or `long`).
+
+- [#1](https://github.com/YaseenHQ/kimi/pull/1) [`02606aa`](https://github.com/YaseenHQ/kimi/commit/02606aa7218b4b01a26a28889d025fd3b6c5afee) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Show transient request and compaction retries in the activity pane, report aggregate token/cache usage in the footer, and make file-tool paths clickable in supporting terminals.
+
+- [#7](https://github.com/YaseenHQ/kimi/pull/7) [`aef303d`](https://github.com/YaseenHQ/kimi/commit/aef303de68acf4d8f7a75de6671d7b46d415e732) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Keep Models.dev adapter and endpoint provenance on imported providers, share the
+  persisted catalog between `update --models` and the v2 server, and honor the
+  Echadron home directory when resolving config and server paths.
+
+- [#7](https://github.com/YaseenHQ/kimi/pull/7) [`b17ea1f`](https://github.com/YaseenHQ/kimi/commit/b17ea1fcbbfd873e9e96cf4110fb97d5a6b31465) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Fail fast on quota/balance-exhausted HTTP 429 errors (e.g. Moonshot `exceeded_current_quota_error`, OpenAI `insufficient_quota`) instead of silently retrying for ~3 minutes. Transient rate-limit 429s keep the existing retry, backoff, and Retry-After behavior.
+
+- [#30](https://github.com/YaseenHQ/kimi/pull/30) [`07b4780`](https://github.com/YaseenHQ/kimi/commit/07b478055ecafb330a1fb3cfc2a9869baae6998a) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Keep the managed Kimi subscription labeled as Kimi Code inside the Echadron host, identify ChatGPT Codex requests as Echadron, make device OAuth network waits and polling sleeps cancel immediately, expose model capabilities when agents choose between primary and secondary subagent models, and add v2 config deprecation guidance without breaking existing Echadron config files.
+
+- [#28](https://github.com/YaseenHQ/kimi/pull/28) [`155adc4`](https://github.com/YaseenHQ/kimi/commit/155adc463213ccd8ae6c6b1d1a5e18664421050a) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Subagent lifecycle events and background task info now carry the subagent's bound model and thinking effort.
+
+- [#26](https://github.com/YaseenHQ/kimi/pull/26) [`a9b1250`](https://github.com/YaseenHQ/kimi/commit/a9b125062ac298a4dab1714e292e0699400eb79b) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Port compatible upstream agent-core fixes for durable cold-session turn outcomes, unknown context-limit reporting, and MCP removal tombstones.
+
+- [#26](https://github.com/YaseenHQ/kimi/pull/26) [`a9b1250`](https://github.com/YaseenHQ/kimi/commit/a9b125062ac298a4dab1714e292e0699400eb79b) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Complete v2 session parity for historical forks, session-only workspace directories, and non-blocking MCP startup.
+
 ## 0.14.0
 
 ### Minor Changes

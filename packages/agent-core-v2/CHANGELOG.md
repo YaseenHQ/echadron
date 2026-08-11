@@ -1,5 +1,51 @@
 # @moonshot-ai/agent-core-v2
 
+## 0.3.0
+
+### Minor Changes
+
+- [#1](https://github.com/YaseenHQ/kimi/pull/1) [`02606aa`](https://github.com/YaseenHQ/kimi/commit/02606aa7218b4b01a26a28889d025fd3b6c5afee) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Add unified account (OAuth) and API-key login routes with Kimi Code, xAI, OpenAI Codex, known catalog providers, and custom registries. Browser and device-code login methods are available for the supported OAuth providers. `/logout` supports individual and clearly described credential bundles plus separately confirmed provider-configuration removal; the redundant `/provider` slash command is removed.
+
+- [#7](https://github.com/YaseenHQ/kimi/pull/7) [`8ee637d`](https://github.com/YaseenHQ/kimi/commit/8ee637dd87e58f4ed327366e4655541e67740e95) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Allow custom agent profiles to select a model for delegated work. Set `model` in an agent file, or use `inherit` to keep the caller's model.
+
+- [#13](https://github.com/YaseenHQ/kimi/pull/13) [`f2830f8`](https://github.com/YaseenHQ/kimi/commit/f2830f8f7a18f54470e979d992107f3fc2a7a886) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Replace the bootstrap `clientVersion` with a required `clientIdentity` host identity object: the OAuth device-flow endpoints now send the full `X-Msh-*` device headers on every host, telemetry reads the client version from the same source, and the session export manifest gains an optional desktop version field.
+
+### Patch Changes
+
+- [#1](https://github.com/YaseenHQ/kimi/pull/1) [`02606aa`](https://github.com/YaseenHQ/kimi/commit/02606aa7218b4b01a26a28889d025fd3b6c5afee) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Show transient request and compaction retries in the activity pane, report aggregate token/cache usage in the footer, and make file-tool paths clickable in supporting terminals.
+
+- [#22](https://github.com/YaseenHQ/kimi/pull/22) [`39934ed`](https://github.com/YaseenHQ/kimi/commit/39934ed4753a8593d76e6a84229d6d0de1905486) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Upgrade Echadron's MCP clients to the July 28, 2026 stateless protocol with automatic negotiation and legacy fallback. Refresh connected tool catalogs when servers publish list changes, validate OAuth callback issuers, and retain SSE compatibility for older servers.
+
+- [#18](https://github.com/YaseenHQ/kimi/pull/18) [`8b64c43`](https://github.com/YaseenHQ/kimi/commit/8b64c4345256df35a25c2c00fe0d9f384a887825) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Start MCP connections in the background during agent construction while still waiting for readiness before the first model step.
+
+- [#16](https://github.com/YaseenHQ/kimi/pull/16) [`0f934f1`](https://github.com/YaseenHQ/kimi/commit/0f934f1c43eead620be3fabedf9ea9624395b094) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Prevent long-running print-mode and background-task waits from overflowing the host timer limit and firing immediately.
+
+- [#2144](https://github.com/MoonshotAI/kimi-code/pull/2144) [`a77ee03`](https://github.com/YaseenHQ/kimi/commit/a77ee0382965720f7ede523de1f6788bd4422df8) Thanks [@sailist](https://github.com/sailist)! - Let embedding hosts customize the agent's product name and reply-style guidance in the system prompt when starting the server.
+
+- [#7](https://github.com/YaseenHQ/kimi/pull/7) [`aef303d`](https://github.com/YaseenHQ/kimi/commit/aef303de68acf4d8f7a75de6671d7b46d415e732) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Keep Models.dev adapter and endpoint provenance on imported providers, share the
+  persisted catalog between `update --models` and the v2 server, and honor the
+  Echadron home directory when resolving config and server paths.
+
+- [#3](https://github.com/YaseenHQ/kimi/pull/3) [`55e7b53`](https://github.com/YaseenHQ/kimi/commit/55e7b53dd6b43b5671cc8a4a3d4aa829685c2e1e) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Preserve opaque OpenAI Responses compaction state across turns and automatically
+  use `/responses/compact` when the active provider exposes that capability,
+  falling back to Kimi's existing local summarizer when it does not.
+
+- [#30](https://github.com/YaseenHQ/kimi/pull/30) [`07b4780`](https://github.com/YaseenHQ/kimi/commit/07b478055ecafb330a1fb3cfc2a9869baae6998a) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Keep the managed Kimi subscription labeled as Kimi Code inside the Echadron host, identify ChatGPT Codex requests as Echadron, make device OAuth network waits and polling sleeps cancel immediately, expose model capabilities when agents choose between primary and secondary subagent models, and add v2 config deprecation guidance without breaking existing Echadron config files.
+
+- [#7](https://github.com/YaseenHQ/kimi/pull/7) [`cf99ad9`](https://github.com/YaseenHQ/kimi/commit/cf99ad9a76c306226a0420c292de57a7154483b0) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Derive the /usage plan usage window labels and reset hints from structured usage data instead of preformatted text.
+
+- [#26](https://github.com/YaseenHQ/kimi/pull/26) [`a9b1250`](https://github.com/YaseenHQ/kimi/commit/a9b125062ac298a4dab1714e292e0699400eb79b) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Port compatible upstream agent-core fixes for durable cold-session turn outcomes, unknown context-limit reporting, and MCP removal tombstones.
+
+- [#9](https://github.com/YaseenHQ/kimi/pull/9) [`2512022`](https://github.com/YaseenHQ/kimi/commit/25120226478e8d585a5939dddd11f5772458a6b8) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Count validation-rejected tool calls toward the repeat breaker so reminders fire at 3/5/8 and the turn force-stops at 12.
+
+- [#26](https://github.com/YaseenHQ/kimi/pull/26) [`a9b1250`](https://github.com/YaseenHQ/kimi/commit/a9b125062ac298a4dab1714e292e0699400eb79b) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Keep live sessions stable across plugin mutations: preserve MCP baselines, freeze agent-tool profile listings, and surface an explicit plugin-change reminder until the user reloads.
+
+- [#26](https://github.com/YaseenHQ/kimi/pull/26) [`a9b1250`](https://github.com/YaseenHQ/kimi/commit/a9b125062ac298a4dab1714e292e0699400eb79b) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Complete v2 session parity for historical forks, session-only workspace directories, and non-blocking MCP startup.
+
+- Updated dependencies [[`02606aa`](https://github.com/YaseenHQ/kimi/commit/02606aa7218b4b01a26a28889d025fd3b6c5afee), [`a9b1250`](https://github.com/YaseenHQ/kimi/commit/a9b125062ac298a4dab1714e292e0699400eb79b), [`d92ccad`](https://github.com/YaseenHQ/kimi/commit/d92ccad95aa6310c2ad9143213a61529a3c2b4a4), [`1889925`](https://github.com/YaseenHQ/kimi/commit/188992554ca1d500d8bb67792e68d29da41a5303), [`f2830f8`](https://github.com/YaseenHQ/kimi/commit/f2830f8f7a18f54470e979d992107f3fc2a7a886), [`02606aa`](https://github.com/YaseenHQ/kimi/commit/02606aa7218b4b01a26a28889d025fd3b6c5afee), [`07b4780`](https://github.com/YaseenHQ/kimi/commit/07b478055ecafb330a1fb3cfc2a9869baae6998a), [`cf99ad9`](https://github.com/YaseenHQ/kimi/commit/cf99ad9a76c306226a0420c292de57a7154483b0), [`a9b1250`](https://github.com/YaseenHQ/kimi/commit/a9b125062ac298a4dab1714e292e0699400eb79b)]:
+  - @moonshot-ai/protocol@0.6.0
+  - @moonshot-ai/kimi-code-oauth@0.3.0
+
 ## 0.2.0
 
 ### Minor Changes

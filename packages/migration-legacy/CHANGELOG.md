@@ -1,5 +1,12 @@
 # @moonshot-ai/migration-legacy
 
+## 0.1.17
+
+### Patch Changes
+
+- Updated dependencies [[`f2830f8`](https://github.com/YaseenHQ/kimi/commit/f2830f8f7a18f54470e979d992107f3fc2a7a886), [`02606aa`](https://github.com/YaseenHQ/kimi/commit/02606aa7218b4b01a26a28889d025fd3b6c5afee), [`84680a4`](https://github.com/YaseenHQ/kimi/commit/84680a4897125ed94b8c409c3488947136717306), [`a9b1250`](https://github.com/YaseenHQ/kimi/commit/a9b125062ac298a4dab1714e292e0699400eb79b), [`39934ed`](https://github.com/YaseenHQ/kimi/commit/39934ed4753a8593d76e6a84229d6d0de1905486), [`aef303d`](https://github.com/YaseenHQ/kimi/commit/aef303de68acf4d8f7a75de6671d7b46d415e732), [`55e7b53`](https://github.com/YaseenHQ/kimi/commit/55e7b53dd6b43b5671cc8a4a3d4aa829685c2e1e), [`02606aa`](https://github.com/YaseenHQ/kimi/commit/02606aa7218b4b01a26a28889d025fd3b6c5afee), [`8ee637d`](https://github.com/YaseenHQ/kimi/commit/8ee637dd87e58f4ed327366e4655541e67740e95), [`02606aa`](https://github.com/YaseenHQ/kimi/commit/02606aa7218b4b01a26a28889d025fd3b6c5afee), [`a9b1250`](https://github.com/YaseenHQ/kimi/commit/a9b125062ac298a4dab1714e292e0699400eb79b)]:
+  - @moonshot-ai/agent-core@0.16.0
+
 ## 0.1.16
 
 ### Patch Changes

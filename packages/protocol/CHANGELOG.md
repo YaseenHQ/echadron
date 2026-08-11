@@ -1,5 +1,15 @@
 # @moonshot-ai/protocol
 
+## 0.6.0
+
+### Minor Changes
+
+- [#1](https://github.com/YaseenHQ/kimi/pull/1) [`02606aa`](https://github.com/YaseenHQ/kimi/commit/02606aa7218b4b01a26a28889d025fd3b6c5afee) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Show transient request and compaction retries in the activity pane, report aggregate token/cache usage in the footer, and make file-tool paths clickable in supporting terminals.
+
+### Patch Changes
+
+- [#26](https://github.com/YaseenHQ/kimi/pull/26) [`a9b1250`](https://github.com/YaseenHQ/kimi/commit/a9b125062ac298a4dab1714e292e0699400eb79b) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Port compatible upstream agent-core fixes for durable cold-session turn outcomes, unknown context-limit reporting, and MCP removal tombstones.
+
 ## 0.5.0
 
 ### Minor Changes

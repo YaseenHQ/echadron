@@ -1,5 +1,19 @@
 # @moonshot-ai/pi-tui
 
+## 0.82.0
+
+### Minor Changes
+
+- [#26](https://github.com/YaseenHQ/kimi/pull/26) [`a9b1250`](https://github.com/YaseenHQ/kimi/commit/a9b125062ac298a4dab1714e292e0699400eb79b) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Port the compatible pi-tui improvements through upstream 0.84.1: Unicode LaTeX Markdown rendering with width-aware transforms, terminal-safe image fallbacks and iTerm2 payload metadata, OSC 8-safe truncation, Unicode grapheme width fixes, latency-sensitive input rendering, and the corrected OSC 9;4 progress-clear sequence. The alternate-screen renderer/layout stack remains intentionally deferred because Echadron still uses its existing main-screen renderer.
+
+### Patch Changes
+
+- [#1](https://github.com/YaseenHQ/kimi/pull/1) [`02606aa`](https://github.com/YaseenHQ/kimi/commit/02606aa7218b4b01a26a28889d025fd3b6c5afee) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Synchronize terminal input, paste restoration, line-ending handling, tab rendering, and cursor cleanup fixes from upstream.
+
+- [#1](https://github.com/YaseenHQ/kimi/pull/1) [`02606aa`](https://github.com/YaseenHQ/kimi/commit/02606aa7218b4b01a26a28889d025fd3b6c5afee) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Sync the vendored fork version string to the upstream release it tracks.
+
+- [#7](https://github.com/YaseenHQ/kimi/pull/7) [`2419cc3`](https://github.com/YaseenHQ/kimi/commit/2419cc3f49a49993d27886b52d656fc3d9b763cb) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Keep editor scroll indicators within narrow terminal widths while preserving their border color.
+
 ## 0.80.8
 
 ### Patch Changes

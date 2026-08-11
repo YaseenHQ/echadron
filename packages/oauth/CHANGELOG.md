@@ -1,5 +1,25 @@
 # @moonshot-ai/kimi-code-oauth
 
+## 0.3.0
+
+### Minor Changes
+
+- [#13](https://github.com/YaseenHQ/kimi/pull/13) [`f2830f8`](https://github.com/YaseenHQ/kimi/commit/f2830f8f7a18f54470e979d992107f3fc2a7a886) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Rework the host identity type: rename `userAgentProduct` to `productName` and add a required `platform` field, so every host explicitly declares the `X-Msh-Platform` value it reports instead of silently inheriting the CLI's. OAuth requests now also send the product User-Agent (with the optional runtime suffix), so the OAuth host can tell client families and surfaces apart.
+
+- [#1](https://github.com/YaseenHQ/kimi/pull/1) [`02606aa`](https://github.com/YaseenHQ/kimi/commit/02606aa7218b4b01a26a28889d025fd3b6c5afee) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Add unified account (OAuth) and API-key login routes with Kimi Code, xAI, OpenAI Codex, known catalog providers, and custom registries. Browser and device-code login methods are available for the supported OAuth providers. `/logout` supports individual and clearly described credential bundles plus separately confirmed provider-configuration removal; the redundant `/provider` slash command is removed.
+
+### Patch Changes
+
+- [#26](https://github.com/YaseenHQ/kimi/pull/26) [`a9b1250`](https://github.com/YaseenHQ/kimi/commit/a9b125062ac298a4dab1714e292e0699400eb79b) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Run Echadron's interactive TUI, print mode, doctor, ACP, export, and provider commands on the native agent-core-v2 engine by default. Set `ECHADRON_LEGACY_FLAG=1` (or `KIMI_CODE_LEGACY_FLAG=1`) to use the v1 compatibility path. Remove the dead v1 micro-compaction implementation while preserving historical replay records.
+
+- [#1](https://github.com/YaseenHQ/kimi/pull/1) [`d92ccad`](https://github.com/YaseenHQ/kimi/commit/d92ccad95aa6310c2ad9143213a61529a3c2b4a4) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Suppress the `Skipped refreshing managed:kimi-code: ... requires login` warning when switching models. The refresh orchestrator now treats an unauthenticated managed provider as not-yet-logged-in rather than a refresh failure.
+
+- [#1](https://github.com/YaseenHQ/kimi/pull/1) [`1889925`](https://github.com/YaseenHQ/kimi/commit/188992554ca1d500d8bb67792e68d29da41a5303) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Listen for OAuth browser callbacks on both IPv4 (`127.0.0.1`) and IPv6 (`::1`) loopback addresses while keeping the `localhost` redirect URI. This fixes browser login failures on systems where `localhost` resolves to `::1` first (e.g., Codex and Anthropic PKCE flows).
+
+- [#30](https://github.com/YaseenHQ/kimi/pull/30) [`07b4780`](https://github.com/YaseenHQ/kimi/commit/07b478055ecafb330a1fb3cfc2a9869baae6998a) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Keep the managed Kimi subscription labeled as Kimi Code inside the Echadron host, identify ChatGPT Codex requests as Echadron, make device OAuth network waits and polling sleeps cancel immediately, expose model capabilities when agents choose between primary and secondary subagent models, and add v2 config deprecation guidance without breaking existing Echadron config files.
+
+- [#7](https://github.com/YaseenHQ/kimi/pull/7) [`cf99ad9`](https://github.com/YaseenHQ/kimi/commit/cf99ad9a76c306226a0420c292de57a7154483b0) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Derive the /usage plan usage window labels and reset hints from structured usage data instead of preformatted text.
+
 ## 0.2.2
 
 ### Patch Changes
