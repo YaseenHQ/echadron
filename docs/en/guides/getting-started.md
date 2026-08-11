@@ -30,7 +30,7 @@ from source, install Node.js 24.15.0 or later and pnpm 10.33.0, then build the C
 git clone https://github.com/YaseenHQ/kimi.git echadron
 cd echadron
 pnpm install
-pnpm --filter @yaseenhq/echadron build
+pnpm --filter echadron build
 npm install -g ./apps/kimi-code
 ```
 
@@ -44,13 +44,13 @@ Requires Node.js 22.19.0 or later:
 
 ```sh
 node --version
-npm install -g @yaseenhq/echadron
+npm install -g echadron
 ```
 
 Or with pnpm:
 
 ```sh
-pnpm add -g @yaseenhq/echadron
+pnpm add -g echadron
 ```
 
 ## Upgrade and uninstall
@@ -66,13 +66,13 @@ does not install an upstream Kimi release. Rebuild from source or update the
 package when an Echadron release is available:
 
 ```sh
-npm install -g @yaseenhq/echadron@latest
+npm install -g echadron@latest
 ```
 
 **Uninstall**: if you installed from source, remove the checkout. If you installed via npm:
 
 ```sh
-npm uninstall -g @yaseenhq/echadron
+npm uninstall -g echadron
 ```
 
 ## First launch

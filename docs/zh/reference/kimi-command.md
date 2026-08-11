@@ -1,4 +1,4 @@
-# kimi 命令
+# Echadron 命令
 
 `echadron` 是 Echadron 的主命令，用于在终端中启动一次交互式会话。不带任何参数运行时，它会在当前工作目录下开启一个新会话；配合不同的 flag，可以续上历史会话、跳过审批、从 Plan 模式开始，或者指定自定义的 Skills 目录。
 
@@ -147,7 +147,7 @@ echadron login
 
 ### `echadron acp`
 
-把 Echadron 切换到 ACP（Agent Client Protocol）模式，在标准输入/输出上以 JSON-RPC 形式与 IDE 对话，让编辑器直接驱动 kimi 的会话和工具调用。通常不需要手动运行——IDE 会把它作为子进程入口启动。配置方式见[在 IDE 中使用](../guides/ides.md)，技术细节见 [kimi acp 参考](./kimi-acp.md)。
+把 Echadron 切换到 ACP（Agent Client Protocol）模式，在标准输入/输出上以 JSON-RPC 形式与 IDE 对话，让编辑器直接驱动 Echadron 的会话和工具调用。通常不需要手动运行——IDE 会把它作为子进程入口启动。配置方式见[在 IDE 中使用](../guides/ides.md)，技术细节见 [Echadron ACP 参考](./kimi-acp.md)。
 
 ```sh
 echadron acp
@@ -319,7 +319,7 @@ echadron provider <action> [options]
 echadron provider add https://registry.example.com/v1/models/api.json --api-key YOUR_KEY
 
 # 或通过环境变量（适合 CI / .envrc）
-KIMI_REGISTRY_API_KEY=YOUR_KEY kimi provider add https://registry.example.com/v1/models/api.json
+KIMI_REGISTRY_API_KEY=YOUR_KEY echadron provider add https://registry.example.com/v1/models/api.json
 ```
 
 如果某个 provider id 已存在，会先删除再重新写入。不会自动设置默认模型，后续可用 `-m` 或 TUI 内的 `/model` 选择。

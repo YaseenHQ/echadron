@@ -11,7 +11,7 @@ import { resolve, join } from "node:path";
 
 const ROOT = resolve(import.meta.dirname, "..");
 const FLAKE_NIX = join(ROOT, "flake.nix");
-const START_PKG = "@yaseenhq/echadron";
+const START_PKG = "echadron";
 
 /**
  * Parse pnpm-workspace.yaml to get workspace directory globs.

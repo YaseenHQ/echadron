@@ -84,7 +84,7 @@ describe('handleUpgrade', () => {
     expect(deps.promptForInstallChoice).toHaveBeenCalledWith({
       currentVersion: '0.4.0',
       target: { version: '0.5.0' },
-      installCommand: 'npm install -g @yaseenhq/echadron@0.5.0',
+      installCommand: 'npm install -g echadron@0.5.0',
       installSource: 'npm-global',
     });
     expect(deps.installUpdate).toHaveBeenCalledWith('npm-global', '0.5.0', 'darwin');
@@ -105,7 +105,7 @@ describe('handleUpgrade', () => {
       targetVersion: '0.5.0',
       source: 'npm-global',
     }));
-    expect(stdout.join('')).toContain('Updated @yaseenhq/echadron to 0.5.0');
+    expect(stdout.join('')).toContain('Updated echadron to 0.5.0');
     expect(stderr.join('')).toBe('');
   });
 
@@ -154,7 +154,7 @@ describe('handleUpgrade', () => {
       target_version: '0.5.0',
       source: 'unsupported',
     }));
-    expect(stdout.join('')).toContain('To update manually, run: npm install -g @yaseenhq/echadron@0.5.0');
+    expect(stdout.join('')).toContain('To update manually, run: npm install -g echadron@0.5.0');
   });
 
   it('prints the manual update command without prompting when not interactive', async () => {
@@ -169,7 +169,7 @@ describe('handleUpgrade', () => {
       target_version: '0.5.0',
       source: 'npm-global',
     }));
-    expect(stdout.join('')).toContain('To update manually, run: npm install -g @yaseenhq/echadron@0.5.0');
+    expect(stdout.join('')).toContain('To update manually, run: npm install -g echadron@0.5.0');
   });
 
   it('returns a failing exit code when the foreground install fails', async () => {
@@ -183,7 +183,7 @@ describe('handleUpgrade', () => {
     await expect(handleUpgrade('0.4.0', { ...deps, ...writable })).resolves.toBe(1);
 
     expect(stderr.join('')).toContain(
-      'warning: failed to install @yaseenhq/echadron@0.5.0: npm exited with code 1',
+      'warning: failed to install echadron@0.5.0: npm exited with code 1',
     );
     expect(deps.track).toHaveBeenCalledWith('upgrade_command_failed', expect.objectContaining({
       target_version: '0.5.0',
@@ -230,6 +230,6 @@ describe('handleUpgrade', () => {
     await expect(handleUpgrade('0.4.0', { ...deps, ...writable })).resolves.toBe(0);
 
     expect(deps.installUpdate).toHaveBeenCalledWith('npm-global', '0.5.0', 'darwin');
-    expect(stdout.join('')).toContain('Updated @yaseenhq/echadron to 0.5.0');
+    expect(stdout.join('')).toContain('Updated echadron to 0.5.0');
   });
 });

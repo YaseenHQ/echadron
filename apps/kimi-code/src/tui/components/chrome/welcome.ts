@@ -1,6 +1,7 @@
 /**
- * Welcome panel shown at the top of the TUI.
- * Renders a round-bordered box with the logo, session, model, and version.
+ * Compact welcome header shown at the top of the TUI.
+ * Keeps identity, workspace, model, and entry-point hints visible without
+ * surrounding the whole startup state in a large panel.
  */
 
 import type { Component } from '@moonshot-ai/pi-tui';
@@ -25,41 +26,39 @@ export class WelcomeComponent implements Component {
   render(width: number): string[] {
     const safeWidth = Math.max(0, width);
     const primary = (s: string): string => chalk.hex(currentTheme.palette.primary)(s);
+    const dim = chalk.hex(currentTheme.palette.textDim);
+    const muted = chalk.hex(currentTheme.palette.textMuted);
     const isLoggedOut = !this.state.model;
     const activeModel = this.state.availableModels[this.state.model];
     const effectiveActiveModel = activeModel === undefined ? undefined : effectiveModelAlias(activeModel);
+    const modelValue = isLoggedOut
+      ? chalk.hex(currentTheme.palette.warning)('/login to connect a model')
+      : (effectiveActiveModel?.displayName ?? effectiveActiveModel?.model ?? this.state.model);
+    const intent = primary('→') + ' ' + chalk.hex(currentTheme.palette.textStrong)('Ask, edit, or run anything');
+    const shortcuts = muted('/ commands  ·  @ files  ·  ! shell');
 
     if (safeWidth < 24) {
-      const title = chalk.bold.hex(currentTheme.palette.primary)('Welcome to Echadron!');
-      const prompt = isLoggedOut
-        ? chalk.hex(currentTheme.palette.warning)('Run /login to get started.')
-        : chalk.hex(currentTheme.palette.textDim)('Send /help for help information.');
-      const model = isLoggedOut
-        ? chalk.hex(currentTheme.palette.warning)('not set, run /login')
-        : (effectiveActiveModel?.displayName ?? effectiveActiveModel?.model ?? this.state.model);
-      return ['', title, prompt, `Model: ${model}`].map((line) =>
+      return [
+        '',
+        chalk.bold.hex(currentTheme.palette.primary)('Echadron'),
+        dim(this.state.workDir),
+        intent,
+        modelValue,
+        shortcuts,
+        '',
+      ].map((line) =>
         truncateToWidth(line, safeWidth, '…'),
       );
     }
 
-    const innerWidth = Math.max(1, safeWidth - 4);
-    const pad = '  ';
-
-    // Logo + side-by-side text.
     const logo = ['▐█▛█▛█▌', '▐█████▌'] as const;
     const logoWidth = Math.max(...logo.map((row) => visibleWidth(row)));
     const gap = '  ';
-    const textWidth = Math.max(4, innerWidth - logoWidth - gap.length);
+    const textWidth = Math.max(4, safeWidth - logoWidth - gap.length);
 
-    const rightRow0 = truncateToWidth(
-      chalk.bold.hex(currentTheme.palette.primary)('Welcome to Echadron!'),
-      textWidth,
-      '…',
-    );
-    const dim = chalk.hex(currentTheme.palette.textDim);
-    const labelStyle = chalk.bold.hex(currentTheme.palette.textDim);
+    const rightRow0 = truncateToWidth(chalk.bold.hex(currentTheme.palette.primary)('Echadron'), textWidth, '…');
     const rightRow1 = truncateToWidth(
-      dim(isLoggedOut ? 'Run /login to get started.' : 'Send /help for help information.'),
+      dim(`${this.state.workDir}  ·  `) + modelValue,
       textWidth,
       '…',
     );
@@ -72,38 +71,8 @@ export class WelcomeComponent implements Component {
       renderedHeaderLines = renderDanceWelcomeHeader(logo, textWidth, rightRow1);
     }
 
-    const modelValue = isLoggedOut
-      ? chalk.hex(currentTheme.palette.warning)('not set, run /login')
-      : (effectiveActiveModel?.displayName ?? effectiveActiveModel?.model ?? this.state.model);
-
-    const infoLines = [
-      labelStyle('Directory: ') + this.state.workDir,
-      labelStyle('Session:   ') + this.state.sessionId,
-      labelStyle('Model:     ') + modelValue,
-      labelStyle('Version:   ') + this.state.version,
-    ];
-
-    if (this.state.mcpServersSummary) {
-      infoLines.push(labelStyle('MCP:       ') + this.state.mcpServersSummary);
-    }
-
-    const contentLines: string[] = [...renderedHeaderLines, '', ...infoLines];
-
-    const lines: string[] = [
-      '',
-      primary('╭' + '─'.repeat(safeWidth - 2) + '╮'),
-      primary('│') + ' '.repeat(safeWidth - 2) + primary('│'),
-    ];
-
-    for (const content of contentLines) {
-      const truncated = truncateToWidth(content, innerWidth, '…');
-      const vis = visibleWidth(truncated);
-      const rightPad = Math.max(0, innerWidth - vis);
-      lines.push(primary('│') + pad + truncated + ' '.repeat(rightPad) + primary('│'));
-    }
-
-    lines.push(primary('│') + ' '.repeat(safeWidth - 2) + primary('│'));
-    lines.push(primary('╰' + '─'.repeat(safeWidth - 2) + '╯'));
+    const lines: string[] = ['', ...renderedHeaderLines, '', intent, shortcuts];
+    if (this.state.mcpServersSummary) lines.push(muted(`MCP  ${this.state.mcpServersSummary}`));
     lines.push('');
 
     return lines.map((line) => truncateToWidth(line, safeWidth, '…'));

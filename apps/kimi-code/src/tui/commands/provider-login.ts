@@ -37,14 +37,14 @@ export interface OAuthProviderDefinition {
 /** OAuth providers currently supported by the interactive login flow. */
 export const OAUTH_PROVIDERS: readonly OAuthProviderDefinition[] = [
   {
-    id: DEFAULT_OAUTH_PROVIDER_NAME,
-    label: MANAGED_KIMI_DISPLAY_NAME,
-    description: 'Use a Kimi Code membership subscription.',
-  },
-  {
     id: OPENAI_CODEX_PROVIDER_NAME,
     label: 'ChatGPT (OpenAI Codex)',
     description: 'Use a ChatGPT Plus or Pro account with OAuth.',
+  },
+  {
+    id: DEFAULT_OAUTH_PROVIDER_NAME,
+    label: MANAGED_KIMI_DISPLAY_NAME,
+    description: 'Use a Kimi Code membership subscription.',
   },
   {
     id: XAI_PROVIDER_NAME,
@@ -163,7 +163,12 @@ export async function handleOAuthLogin(
 }
 
 export async function handleKimiCodeOAuthLogin(host: SlashCommandHost): Promise<void> {
-  await handleOAuthLogin(host, OAUTH_PROVIDERS[0]!);
+  const provider = OAUTH_PROVIDERS.find((entry) => entry.id === DEFAULT_OAUTH_PROVIDER_NAME);
+  if (provider === undefined) {
+    host.showError('Kimi Code OAuth login is not available in this Echadron build.');
+    return;
+  }
+  await handleOAuthLogin(host, provider);
 }
 
 export async function handleOpenPlatformLogin(

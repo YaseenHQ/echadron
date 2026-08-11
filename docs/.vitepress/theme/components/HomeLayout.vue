@@ -1,9 +1,7 @@
 <script setup lang="ts">
 import DefaultTheme from 'vitepress/theme'
 import { useData } from 'vitepress'
-import HomeHero from './HomeHero.vue'
-import HomeFeatures from './HomeFeatures.vue'
-import HomeQuickStart from './HomeQuickStart.vue'
+import HomePage from './HomePage.vue'
 
 const { Layout } = DefaultTheme
 const { frontmatter } = useData()
@@ -12,16 +10,7 @@ const { frontmatter } = useData()
 <template>
   <Layout>
     <template v-if="frontmatter.layout === 'home'" #home-hero-before>
-      <div class="EchadronHome">
-        <HomeHero />
-      </div>
-    </template>
-
-    <template v-if="frontmatter.layout === 'home'" #home-features-after>
-      <div class="EchadronHome">
-        <HomeQuickStart />
-        <HomeFeatures />
-      </div>
+      <HomePage />
     </template>
   </Layout>
 </template>

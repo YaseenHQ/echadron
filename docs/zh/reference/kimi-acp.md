@@ -1,6 +1,6 @@
 # `echadron acp` 子命令
 
-`echadron acp` 把 Echadron 切换到 **ACP (Agent Client Protocol)** 模式：在标准输入/输出上以 JSON-RPC 形式与 ACP 客户端（如 Zed、JetBrains AI Chat 等）对话，让 IDE 直接驱动 kimi 的会话、prompt 与工具调用。
+`echadron acp` 把 Echadron 切换到 **ACP (Agent Client Protocol)** 模式：在标准输入/输出上以 JSON-RPC 形式与 ACP 客户端（如 Zed、JetBrains AI Chat 等）对话，让 IDE 直接驱动 Echadron 的会话、prompt 与工具调用。
 
 ```sh
 echadron acp
@@ -72,12 +72,12 @@ echadron acp
 
 ACP 客户端在 `session/new` 或 `session/load` 中提供 `mcpServers` 时，适配层做如下转换：
 
-- `http` → kimi 的 `transport: 'http'` 配置
-- `stdio` → kimi 的 `transport: 'stdio'` 配置
-- `sse` → kimi 的 `transport: 'sse'` 配置
+- `http` → Echadron 的 `transport: 'http'` 配置
+- `stdio` → Echadron 的 `transport: 'stdio'` 配置
+- `sse` → Echadron 的 `transport: 'sse'` 配置
 - `acp` → 丢弃并写一条 warn 日志
 
 ## 下一步
 
 - [在 IDE 中使用](../guides/ides.md) — Zed / JetBrains 配置步骤和故障排查
-- [kimi 命令参考](./kimi-command.md) — 完整子命令列表
+- [Echadron 命令参考](./kimi-command.md) — 完整子命令列表

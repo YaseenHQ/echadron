@@ -1707,7 +1707,36 @@ describe('KimiTUI startup', () => {
     expect(uiContainsFooter(driver)).toBe(true);
   });
 
+  it('does not load a remote banner unless a banner feed is configured', async () => {
+    const originalEnv = { ...process.env };
+    delete process.env['ECHADRON_TIPS_BANNER_URL'];
+    const loadSpy = vi.spyOn(BannerProvider.prototype, 'load');
+
+    try {
+      const session = makeSession({ id: 'ses-target' });
+      const harness = makeHarness(session, {
+        listSessions: vi.fn(async () => [{ id: 'ses-target', workDir: '/tmp/proj-a' }]),
+      });
+      const driver = makeDriver(
+        harness,
+        makeStartupInput({ session: 'ses-target' }),
+      ) as unknown as MigrateExitDriver;
+
+      await driver.initMainTui();
+
+      expect(loadSpy).not.toHaveBeenCalled();
+      expect(
+        driver.state.transcriptContainer.children.some((child) => child instanceof BannerComponent),
+      ).toBe(false);
+    } finally {
+      loadSpy.mockRestore();
+      process.env = { ...originalEnv };
+    }
+  });
+
   it('renders the banner below the welcome message after it loads', async () => {
+    const originalEnv = { ...process.env };
+    process.env['ECHADRON_TIPS_BANNER_URL'] = 'https://banners.echadron.test/tips.json';
     const banner = {
       key: 'new-banner',
       tag: 'New',
@@ -1725,32 +1754,38 @@ describe('KimiTUI startup', () => {
       makeStartupInput({ session: 'ses-target' }),
     ) as unknown as MigrateExitDriver;
 
-    await driver.initMainTui();
+    try {
+      await driver.initMainTui();
 
-    await vi.waitFor(() => {
-      expect(
-        driver.state.transcriptContainer.children.some((child) => child instanceof BannerComponent),
-      ).toBe(true);
-    });
+      await vi.waitFor(() => {
+        expect(
+          driver.state.transcriptContainer.children.some(
+            (child) => child instanceof BannerComponent,
+          ),
+        ).toBe(true);
+      });
 
-    // The banner is rendered directly below the welcome panel so it appears
-    // above later status messages such as MCP server connection summaries.
-    const welcomeIndex = driver.state.transcriptContainer.children.findIndex(
-      (child) => child instanceof WelcomeComponent,
-    );
-    const bannerIndex = driver.state.transcriptContainer.children.findIndex(
-      (child) => child instanceof BannerComponent,
-    );
-    expect(welcomeIndex).toBeGreaterThanOrEqual(0);
-    expect(bannerIndex).toBe(welcomeIndex + 1);
-
-    loadSpy.mockRestore();
+      // The banner is rendered directly below the welcome panel so it appears
+      // above later status messages such as MCP server connection summaries.
+      const welcomeIndex = driver.state.transcriptContainer.children.findIndex(
+        (child) => child instanceof WelcomeComponent,
+      );
+      const bannerIndex = driver.state.transcriptContainer.children.findIndex(
+        (child) => child instanceof BannerComponent,
+      );
+      expect(welcomeIndex).toBeGreaterThanOrEqual(0);
+      expect(bannerIndex).toBe(welcomeIndex + 1);
+    } finally {
+      loadSpy.mockRestore();
+      process.env = { ...originalEnv };
+    }
   });
 
   it('writes display state after rendering a once banner', async () => {
     const originalEnv = { ...process.env };
     const dir = mkdtempSync(join(tmpdir(), 'kimi-startup-banner-'));
     process.env['IMPERIUM_HOME'] = dir;
+    process.env['ECHADRON_TIPS_BANNER_URL'] = 'https://banners.echadron.test/tips.json';
 
     try {
       const banner = {
@@ -1808,6 +1843,7 @@ describe('KimiTUI startup', () => {
     const originalEnv = { ...process.env };
     const dir = mkdtempSync(join(tmpdir(), 'kimi-startup-banner-'));
     process.env['IMPERIUM_HOME'] = dir;
+    process.env['ECHADRON_TIPS_BANNER_URL'] = 'https://banners.echadron.test/tips.json';
 
     try {
       const banner = {

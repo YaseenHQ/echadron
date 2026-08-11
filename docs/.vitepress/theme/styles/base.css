@@ -22,7 +22,7 @@ body {
 }
 .dark .VPNav,
 .dark .VPNavBar {
-  background: rgba(13, 17, 23, 0.72) !important;
+  background: rgba(16, 16, 16, 0.78) !important;
 }
 .VPNavBar.has-sidebar .content,
 .VPNavBar:not(.home) {
@@ -145,12 +145,13 @@ body {
   font-weight: 600;
   letter-spacing: -0.005em;
 }
-.vp-doc .custom-block.tip {
-  background: rgba(10, 122, 255, 0.08);
+.vp-doc .custom-block.tip,
+.vp-doc .custom-block.info,
+.vp-doc .custom-block.note,
+.vp-doc .custom-block.important,
+.vp-doc .custom-block.details {
+  background: var(--vp-c-bg-soft);
   color: var(--vp-c-text-1);
-}
-.dark .vp-doc .custom-block.tip {
-  background: rgba(61, 149, 255, 0.12);
 }
 .vp-doc .custom-block.warning {
   background: rgba(234, 179, 8, 0.10);
@@ -160,11 +161,13 @@ body {
   background: rgba(239, 68, 68, 0.10);
   color: var(--vp-c-text-1);
 }
-.vp-doc .custom-block.info {
-  background: rgba(148, 163, 184, 0.12);
+.vp-doc .custom-block.tip .custom-block-title,
+.vp-doc .custom-block.info .custom-block-title,
+.vp-doc .custom-block.note .custom-block-title,
+.vp-doc .custom-block.important .custom-block-title,
+.vp-doc .custom-block.details .custom-block-title {
   color: var(--vp-c-text-1);
 }
-.vp-doc .custom-block.tip .custom-block-title { color: var(--vp-c-brand-1); }
 .vp-doc .custom-block.warning .custom-block-title { color: #ca8a04; }
 .vp-doc .custom-block.danger .custom-block-title { color: #dc2626; }
 .dark .vp-doc .custom-block.warning .custom-block-title { color: #eab308; }

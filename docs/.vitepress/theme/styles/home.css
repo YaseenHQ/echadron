@@ -1,85 +1,60 @@
-/**
- * Home-only styles. Scoped CSS in components handles most rules;
- * shared utilities and layout container live here.
- */
-
-.EchadronHome {
-  --section-px: clamp(20px, 5vw, 64px);
-  --section-py: clamp(28px, 4vw, 56px);
-  position: relative;
-  padding: 0 var(--section-px);
+.echadron-home-page,
+.echadron-home-page body {
+  background: #10100f;
 }
 
-.EchadronHome__section {
-  max-width: 1152px;
-  margin: 0 auto;
-  padding: var(--section-py) 0;
-  position: relative;
+html.echadron-home-page .VPNavBar,
+html.echadron-home-page .VPNavBar .content-body {
+  background: #10100f !important;
+  border-bottom-color: #292927 !important;
 }
 
-.EchadronHome__sectionTitle {
-  font-size: clamp(28px, 4vw, 40px);
-  font-weight: 700;
-  letter-spacing: -0.03em;
-  margin: 0 0 12px;
-  color: var(--vp-c-text-1);
+html.echadron-home-page .VPNavBarTitle .title,
+html.echadron-home-page .VPNavBarMenuLink,
+html.echadron-home-page .VPNavBarMenuGroup .text,
+html.echadron-home-page .VPSocialLink,
+html.echadron-home-page .VPNavBarAppearance .text,
+html.echadron-home-page .VPNavBarTranslations,
+html.echadron-home-page .VPNavBarExtra {
+  color: #d8d7d2 !important;
 }
 
-.EchadronHome__sectionLede {
-  font-size: 17px;
-  color: var(--vp-c-text-2);
-  margin: 0 0 40px;
-  max-width: 640px;
-  line-height: 1.6;
+html.echadron-home-page .VPNavBarMenuLink:hover,
+html.echadron-home-page .VPNavBarMenuLink.active {
+  color: #ffffff !important;
 }
 
-.EchadronBtn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  height: 48px;
-  padding: 0 22px;
-  border-radius: var(--echadron-radius-button);
-  font-size: 15px;
-  font-weight: 600;
-  letter-spacing: -0.005em;
-  text-decoration: none;
-  transition: transform var(--echadron-transition), box-shadow var(--echadron-transition),
-              border-color var(--echadron-transition), background var(--echadron-transition);
-  white-space: nowrap;
-  cursor: pointer;
-  border: 1px solid transparent;
+.DocSearch-Button {
+  color: var(--vp-c-text-2) !important;
+  background: var(--vp-c-bg-soft) !important;
+  border-color: var(--vp-c-border) !important;
 }
-.EchadronBtn--primary {
-  color: #ffffff;
-  background: var(--echadron-brand-gradient);
-  box-shadow: var(--vp-shadow-3);
-  border: 0;
+
+.DocSearch-Button:hover {
+  color: var(--vp-c-text-1) !important;
+  background: var(--vp-c-bg-alt) !important;
+  border-color: var(--vp-c-text-3) !important;
 }
-.EchadronBtn--primary:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--vp-shadow-4);
-  color: #ffffff;
+
+.DocSearch-Button-Key {
+  color: var(--vp-c-text-2) !important;
+  background: var(--vp-c-bg-elv) !important;
+  border-color: var(--vp-c-border) !important;
+  box-shadow: none !important;
 }
-.EchadronBtn--ghost {
-  color: var(--vp-c-text-1);
-  background: transparent;
-  border-color: var(--vp-c-divider);
+
+.DocSearch-Button:focus-visible {
+  outline: 2px solid var(--vp-c-text-1) !important;
+  outline-offset: 2px;
 }
-.EchadronBtn--ghost:hover {
-  border-color: var(--vp-c-brand-1);
-  transform: translateY(-2px);
-  color: var(--vp-c-text-1);
+
+.echadron-home-page .VPHome {
+  margin-bottom: 0;
+  padding-bottom: 0;
 }
-.EchadronBtn--link {
-  color: var(--vp-c-brand-1);
-  height: auto;
-  padding: 0;
-  background: transparent;
-  border: none;
-}
-.EchadronBtn--link:hover {
-  color: var(--vp-c-brand-2);
-  transform: translateX(2px);
+
+.echadron-home-page .VPFooter {
+  color: #8d8c87;
+  background: #10100f;
+  border-top-color: #292927;
 }

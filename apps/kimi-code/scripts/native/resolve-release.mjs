@@ -3,7 +3,7 @@ import { resolve } from 'node:path';
 
 import { appRoot } from './paths.mjs';
 
-const packageName = '@yaseenhq/echadron';
+const packageName = 'echadron';
 const packageJson = JSON.parse(
   await readFile(resolve(appRoot, 'package.json'), 'utf-8'),
 );

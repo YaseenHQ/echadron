@@ -4,7 +4,24 @@ outline: 2
 
 # Changelog
 
-This page documents the changes in each Kimi Code CLI release.
+This page documents each Echadron release. The complete package-level record is also available in the [repository changelog](https://github.com/YaseenHQ/kimi/blob/main/apps/kimi-code/CHANGELOG.md).
+
+## 0.30.0 (2026-08-10)
+
+### Echadron
+
+- Establish Echadron as a separately installable product with the `echadron`, `chad`, and `maker` commands, an isolated `~/.echadron` data directory, and its own update and release paths.
+- Run the interactive TUI, print mode, doctor, ACP, export, and provider commands on agent-core v2 by default while retaining an explicit v1 compatibility path.
+- Unify OAuth, API-key, catalog-provider, and custom-registry login. Account OAuth supports Kimi Code, ChatGPT (OpenAI Codex), and xAI, with individual and bundled logout controls.
+- Add persistent models.dev catalog updates with `echadron update --models`, provenance-aware provider metadata, model capabilities, context limits, and thinking-effort configuration.
+- Add native OpenAI Responses compaction, stronger prompt-cache keys and accounting, cache read/write usage, configurable Anthropic cache retention, and idle cache-expiry reminders.
+- Add model-aware custom agents and subagents, secondary-model selection, live thinking-effort display, turn-tree navigation, and clearer background-task status.
+- Align ACP with live provider/model configuration and add the experimental `echadron acp-v2` bridge. Upgrade MCP clients to the July 2026 stateless protocol with negotiation and legacy fallback.
+- Improve terminal input, paste handling, session restoration, retry visibility, usage reporting, clickable file paths, interrupted-turn recovery, and long-session stability.
+
+::: info Inherited upstream history
+Versions below 0.30.0 were released by upstream Kimi Code and are preserved here for continuity. Product names and commands in those historical entries describe the software as it existed at the time.
+:::
 
 ## 0.29.2 (2026-07-27)
 
