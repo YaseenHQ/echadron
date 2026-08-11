@@ -16,11 +16,11 @@
 // dialogs/messages rather than in one specific place.
 export interface ColorPalette {
   // ── Brand ──
-  /** Dominant interactive/brand colour: links & inline code, the selected item
+  /** Dominant interactive/identity tone: links & inline code, the selected item
    *  in nearly every dialog, the focused editor border, plan/"running" badges,
    *  spinners. The most widely used token. */
   primary: string;
-  /** Secondary highlight: approval "▶" prefix, device-code box, image
+  /** Secondary identity tone: approval "▶" prefix, device-code box, image
    *  placeholder, BTW / queue panes, custom-registry import. */
   accent: string;
 
@@ -68,55 +68,57 @@ export interface ColorPalette {
   diffMeta: string;
 
   // ── Roles ──
-  /** User message: bullet & text, skill-activation name. The one role colour
-   *  with its own hue — assistant/thinking/status bullets reuse text/textDim. */
+  /** User message: bullet & text, skill-activation name. Built-in themes keep
+   *  this monochrome; custom themes may use a distinct hue. */
   roleUser: string;
 
   // ── Shell mode ──
   /** Shell mode (`!`): the `!` prompt symbol, bash-mode editor border, and the
-   *  echoed `$ command` line. Its own hue (violet), distinct from
-   *  plan-mode (primary) and the user role (roleUser). */
+   *  echoed `$ command` line. Built-in themes distinguish it tonally from
+   *  plan mode and the user role rather than assigning another brand hue. */
   shellMode: string;
 }
 
 export const darkColors: ColorPalette = {
-  primary: '#4FA8FF',
-  accent: '#5BC0BE',
+  // Echadron's identity is monochrome. Keep colour for operational meaning
+  // (status and diffs), not navigation, roles, or modes.
+  primary: '#E4E4E4',
+  accent: '#B8B8B8',
 
-  text: '#E0E0E0',
-  textStrong: '#F5F5F5',
-  textDim: '#888888',
-  textMuted: '#6B6B6B',
+  text: '#E4E4E4',
+  textStrong: '#F4F4F4',
+  textDim: '#A0A0A0',
+  textMuted: '#858585',
 
-  border: '#5A5A5A',
-  borderFocus: '#E8A838',
+  border: '#646464',
+  borderFocus: '#D0D0D0',
 
-  success: '#4EC87E',
-  warning: '#E8A838',
-  error: '#E85454',
+  success: '#3FA266',
+  warning: '#D6A55D',
+  error: '#D74A6A',
 
-  diffAdded: '#4EC87E',
-  diffRemoved: '#E85454',
-  diffAddedStrong: '#7AD99B',
-  diffRemovedStrong: '#F08585',
-  diffGutter: '#6B6B6B',
-  diffMeta: '#888888',
+  diffAdded: '#3FA266',
+  diffRemoved: '#D74A6A',
+  diffAddedStrong: '#70B489',
+  diffRemovedStrong: '#ED7890',
+  diffGutter: '#858585',
+  diffMeta: '#A0A0A0',
 
-  roleUser: '#FFCB6B',
-  shellMode: '#BD93F9',
+  roleUser: '#D0D0D0',
+  shellMode: '#B0B0B0',
 };
 
 export const lightColors: ColorPalette = {
-  primary: '#1565C0',
-  accent: '#00838F',
+  primary: '#202020',
+  accent: '#4B4B4B',
 
   text: '#1A1A1A',
-  textStrong: '#1A1A1A',
-  textDim: '#454545',
+  textStrong: '#0A0A0A',
+  textDim: '#4A4A4A',
   textMuted: '#5F5F5F',
 
   border: '#737373',
-  borderFocus: '#92660A',
+  borderFocus: '#303030',
 
   success: '#0E7A38',
   warning: '#92660A',
@@ -129,8 +131,8 @@ export const lightColors: ColorPalette = {
   diffGutter: '#737373',
   diffMeta: '#5F5F5F',
 
-  roleUser: '#9A4A00',
-  shellMode: '#7C3AED',
+  roleUser: '#363636',
+  shellMode: '#565656',
 };
 
 export type ResolvedTheme = 'dark' | 'light';

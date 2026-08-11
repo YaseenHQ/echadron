@@ -11,8 +11,12 @@ const SGR = new RegExp(`${ESC}\\[[0-9;]*m`, 'g');
 const strip = (s: string): string => s.replaceAll(SGR, '');
 const TAB = '\t';
 const RIGHT = `${ESC}[C`;
-// chalk.bgHex(colors.primary) → background truecolor for #4FA8FF.
-const PRIMARY_BG = '48;2;79;168;255';
+function backgroundSgr(hex: string): string {
+  const [red, green, blue] = hex.slice(1).match(/../g)?.map((channel) => parseInt(channel, 16)) ?? [];
+  return `48;2;${String(red)};${String(green)};${String(blue)}`;
+}
+
+const PRIMARY_BG = backgroundSgr(darkColors.primary);
 
 function model(displayName: string, provider: string): ModelAlias {
   return {
