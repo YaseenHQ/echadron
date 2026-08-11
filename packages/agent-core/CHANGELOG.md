@@ -1,5 +1,42 @@
 # @moonshot-ai/agent-core
 
+## 0.16.0
+
+### Minor Changes
+
+- [#7](https://github.com/YaseenHQ/kimi/pull/7) [`8ee637d`](https://github.com/YaseenHQ/kimi/commit/8ee637dd87e58f4ed327366e4655541e67740e95) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Allow custom agent profiles to select a model for delegated work. Set `model` in an agent file, or use `inherit` to keep the caller's model.
+
+- [#1](https://github.com/YaseenHQ/kimi/pull/1) [`02606aa`](https://github.com/YaseenHQ/kimi/commit/02606aa7218b4b01a26a28889d025fd3b6c5afee) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Add the /tree slash command to browse earlier turns and fork from a selected point. Run /tree to open the turn picker, then press Ctrl-X to copy its highlighted turn without closing it.
+
+### Patch Changes
+
+- [#13](https://github.com/YaseenHQ/kimi/pull/13) [`f2830f8`](https://github.com/YaseenHQ/kimi/commit/f2830f8f7a18f54470e979d992107f3fc2a7a886) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Thread the host identity through the managed auth facades so OAuth token refreshes from inside the core carry the `X-Msh-*` device headers.
+
+- [#1](https://github.com/YaseenHQ/kimi/pull/1) [`02606aa`](https://github.com/YaseenHQ/kimi/commit/02606aa7218b4b01a26a28889d025fd3b6c5afee) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Show transient request and compaction retries in the activity pane, report aggregate token/cache usage in the footer, and make file-tool paths clickable in supporting terminals.
+
+- [#9](https://github.com/YaseenHQ/kimi/pull/9) [`84680a4`](https://github.com/YaseenHQ/kimi/commit/84680a4897125ed94b8c409c3488947136717306) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Count validation-rejected tool calls toward the repeat breaker so reminders fire at 3/5/8 and the turn force-stops at 12.
+
+- [#26](https://github.com/YaseenHQ/kimi/pull/26) [`a9b1250`](https://github.com/YaseenHQ/kimi/commit/a9b125062ac298a4dab1714e292e0699400eb79b) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Run Echadron's interactive TUI, print mode, doctor, ACP, export, and provider commands on the native agent-core-v2 engine by default. Set `ECHADRON_LEGACY_FLAG=1` (or `KIMI_CODE_LEGACY_FLAG=1`) to use the v1 compatibility path. Remove the dead v1 micro-compaction implementation while preserving historical replay records.
+
+- [#22](https://github.com/YaseenHQ/kimi/pull/22) [`39934ed`](https://github.com/YaseenHQ/kimi/commit/39934ed4753a8593d76e6a84229d6d0de1905486) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Upgrade Echadron's MCP clients to the July 28, 2026 stateless protocol with automatic negotiation and legacy fallback. Refresh connected tool catalogs when servers publish list changes, validate OAuth callback issuers, and retain SSE compatibility for older servers.
+
+- [#7](https://github.com/YaseenHQ/kimi/pull/7) [`aef303d`](https://github.com/YaseenHQ/kimi/commit/aef303de68acf4d8f7a75de6671d7b46d415e732) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Keep Models.dev adapter and endpoint provenance on imported providers, share the
+  persisted catalog between `update --models` and the v2 server, and honor the
+  Echadron home directory when resolving config and server paths.
+
+- [#3](https://github.com/YaseenHQ/kimi/pull/3) [`55e7b53`](https://github.com/YaseenHQ/kimi/commit/55e7b53dd6b43b5671cc8a4a3d4aa829685c2e1e) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Preserve opaque OpenAI Responses compaction state across turns and automatically
+  use `/responses/compact` when the active provider exposes that capability,
+  falling back to Kimi's existing local summarizer when it does not.
+
+- [#1](https://github.com/YaseenHQ/kimi/pull/1) [`02606aa`](https://github.com/YaseenHQ/kimi/commit/02606aa7218b4b01a26a28889d025fd3b6c5afee) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Add unified account (OAuth) and API-key login routes with Kimi Code, xAI, OpenAI Codex, known catalog providers, and custom registries. Browser and device-code login methods are available for the supported OAuth providers. `/logout` supports individual and clearly described credential bundles plus separately confirmed provider-configuration removal; the redundant `/provider` slash command is removed.
+
+- [#26](https://github.com/YaseenHQ/kimi/pull/26) [`a9b1250`](https://github.com/YaseenHQ/kimi/commit/a9b125062ac298a4dab1714e292e0699400eb79b) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Port compatible upstream agent-core fixes for durable cold-session turn outcomes, unknown context-limit reporting, and MCP removal tombstones.
+
+- Updated dependencies [[`02606aa`](https://github.com/YaseenHQ/kimi/commit/02606aa7218b4b01a26a28889d025fd3b6c5afee), [`a9b1250`](https://github.com/YaseenHQ/kimi/commit/a9b125062ac298a4dab1714e292e0699400eb79b), [`d92ccad`](https://github.com/YaseenHQ/kimi/commit/d92ccad95aa6310c2ad9143213a61529a3c2b4a4), [`1889925`](https://github.com/YaseenHQ/kimi/commit/188992554ca1d500d8bb67792e68d29da41a5303), [`f2830f8`](https://github.com/YaseenHQ/kimi/commit/f2830f8f7a18f54470e979d992107f3fc2a7a886), [`55e7b53`](https://github.com/YaseenHQ/kimi/commit/55e7b53dd6b43b5671cc8a4a3d4aa829685c2e1e), [`02606aa`](https://github.com/YaseenHQ/kimi/commit/02606aa7218b4b01a26a28889d025fd3b6c5afee), [`07b4780`](https://github.com/YaseenHQ/kimi/commit/07b478055ecafb330a1fb3cfc2a9869baae6998a), [`cf99ad9`](https://github.com/YaseenHQ/kimi/commit/cf99ad9a76c306226a0420c292de57a7154483b0), [`a9b1250`](https://github.com/YaseenHQ/kimi/commit/a9b125062ac298a4dab1714e292e0699400eb79b)]:
+  - @moonshot-ai/protocol@0.6.0
+  - @moonshot-ai/kimi-code-oauth@0.3.0
+  - @moonshot-ai/kosong@0.5.6
+
 ## 0.15.6
 
 ### Patch Changes

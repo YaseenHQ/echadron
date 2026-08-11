@@ -1,5 +1,14 @@
 # @moonshot-ai/klient
 
+## 0.1.1
+
+### Patch Changes
+
+- [#26](https://github.com/YaseenHQ/kimi/pull/26) [`a9b1250`](https://github.com/YaseenHQ/kimi/commit/a9b125062ac298a4dab1714e292e0699400eb79b) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Port compatible upstream agent-core fixes for durable cold-session turn outcomes, unknown context-limit reporting, and MCP removal tombstones.
+
+- Updated dependencies [[`02606aa`](https://github.com/YaseenHQ/kimi/commit/02606aa7218b4b01a26a28889d025fd3b6c5afee), [`39934ed`](https://github.com/YaseenHQ/kimi/commit/39934ed4753a8593d76e6a84229d6d0de1905486), [`8b64c43`](https://github.com/YaseenHQ/kimi/commit/8b64c4345256df35a25c2c00fe0d9f384a887825), [`0f934f1`](https://github.com/YaseenHQ/kimi/commit/0f934f1c43eead620be3fabedf9ea9624395b094), [`a77ee03`](https://github.com/YaseenHQ/kimi/commit/a77ee0382965720f7ede523de1f6788bd4422df8), [`aef303d`](https://github.com/YaseenHQ/kimi/commit/aef303de68acf4d8f7a75de6671d7b46d415e732), [`55e7b53`](https://github.com/YaseenHQ/kimi/commit/55e7b53dd6b43b5671cc8a4a3d4aa829685c2e1e), [`02606aa`](https://github.com/YaseenHQ/kimi/commit/02606aa7218b4b01a26a28889d025fd3b6c5afee), [`07b4780`](https://github.com/YaseenHQ/kimi/commit/07b478055ecafb330a1fb3cfc2a9869baae6998a), [`8ee637d`](https://github.com/YaseenHQ/kimi/commit/8ee637dd87e58f4ed327366e4655541e67740e95), [`cf99ad9`](https://github.com/YaseenHQ/kimi/commit/cf99ad9a76c306226a0420c292de57a7154483b0), [`a9b1250`](https://github.com/YaseenHQ/kimi/commit/a9b125062ac298a4dab1714e292e0699400eb79b), [`f2830f8`](https://github.com/YaseenHQ/kimi/commit/f2830f8f7a18f54470e979d992107f3fc2a7a886), [`2512022`](https://github.com/YaseenHQ/kimi/commit/25120226478e8d585a5939dddd11f5772458a6b8), [`a9b1250`](https://github.com/YaseenHQ/kimi/commit/a9b125062ac298a4dab1714e292e0699400eb79b), [`a9b1250`](https://github.com/YaseenHQ/kimi/commit/a9b125062ac298a4dab1714e292e0699400eb79b)]:
+  - @moonshot-ai/agent-core-v2@0.3.0
+
 ## 0.1.0
 
 ### Minor Changes

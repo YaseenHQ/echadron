@@ -1,5 +1,119 @@
 # @moonshot-ai/kimi-code
 
+## 0.30.0
+
+### Minor Changes
+
+- [#30](https://github.com/YaseenHQ/kimi/pull/30) [`07b4780`](https://github.com/YaseenHQ/kimi/commit/07b478055ecafb330a1fb3cfc2a9869baae6998a) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Show a cache-expiry reminder when resuming a long-idle session or submitting after a long idle stretch.
+
+- [#26](https://github.com/YaseenHQ/kimi/pull/26) [`a9b1250`](https://github.com/YaseenHQ/kimi/commit/a9b125062ac298a4dab1714e292e0699400eb79b) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Improve prompt-cache hit-rate accounting and display cache reads/writes in session usage. Add stable 64-character cache-key handling and configurable Anthropic cache retention (`none`, `short`, or `long`).
+
+- [#26](https://github.com/YaseenHQ/kimi/pull/26) [`a9b1250`](https://github.com/YaseenHQ/kimi/commit/a9b125062ac298a4dab1714e292e0699400eb79b) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Run Echadron's interactive TUI, print mode, doctor, ACP, export, and provider commands on the native agent-core-v2 engine by default. Set `ECHADRON_LEGACY_FLAG=1` (or `KIMI_CODE_LEGACY_FLAG=1`) to use the v1 compatibility path. Remove the dead v1 micro-compaction implementation while preserving historical replay records.
+
+- [#7](https://github.com/YaseenHQ/kimi/pull/7) [`aef303d`](https://github.com/YaseenHQ/kimi/commit/aef303de68acf4d8f7a75de6671d7b46d415e732) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Make the fork-owned CLI launch as Echadron (`echadron`/`chad`/`maker`) with an isolated
+  `~/.echadron` data namespace, and add `echadron update --models` for a
+  persistent, validator-aware models.dev catalog refresh. Echadron no longer
+  invokes the upstream Kimi Code self-update path by default, and its install
+  hook no longer renames or removes an existing `kimi` executable.
+
+- [#1](https://github.com/YaseenHQ/kimi/pull/1) [`02606aa`](https://github.com/YaseenHQ/kimi/commit/02606aa7218b4b01a26a28889d025fd3b6c5afee) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Add unified account (OAuth) and API-key login routes with Kimi Code, xAI, OpenAI Codex, known catalog providers, and custom registries. Browser and device-code login methods are available for the supported OAuth providers. `/logout` supports individual and clearly described credential bundles plus separately confirmed provider-configuration removal; the redundant `/provider` slash command is removed.
+
+- [#7](https://github.com/YaseenHQ/kimi/pull/7) [`8ee637d`](https://github.com/YaseenHQ/kimi/commit/8ee637dd87e58f4ed327366e4655541e67740e95) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Allow custom agent profiles to select a model for delegated work. Set `model` in an agent file, or use `inherit` to keep the caller's model.
+
+- [#1](https://github.com/YaseenHQ/kimi/pull/1) [`02606aa`](https://github.com/YaseenHQ/kimi/commit/02606aa7218b4b01a26a28889d025fd3b6c5afee) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Add the /tree slash command to browse earlier turns and fork from a selected point. Run /tree to open the turn picker, then press Ctrl-X to copy its highlighted turn without closing it.
+
+- [#8](https://github.com/YaseenHQ/kimi/pull/8) [`8d820c9`](https://github.com/YaseenHQ/kimi/commit/8d820c9233c8cc5024f7157b48b5794a91412054) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Remove the 50 MB size limit on file uploads to the built-in server, so large attachments (for example in the web UI) no longer fail with an upload-too-large error. Uploads now stream to disk instead of being buffered in memory.
+
+- [#12](https://github.com/YaseenHQ/kimi/pull/12) [`71f7552`](https://github.com/YaseenHQ/kimi/commit/71f7552c04a54145bd7dadb5a73a40d8d35db488) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Support Markdown-defined custom agents on agent-core.
+
+- [#12](https://github.com/YaseenHQ/kimi/pull/12) [`71f7552`](https://github.com/YaseenHQ/kimi/commit/71f7552c04a54145bd7dadb5a73a40d8d35db488) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Add the /secondary_model slash command to configure the secondary model used by subagents.
+
+### Patch Changes
+
+- [#16](https://github.com/YaseenHQ/kimi/pull/16) [`7ef6f0c`](https://github.com/YaseenHQ/kimi/commit/7ef6f0c2fbb92fefd7eb94c65bcb57936093a2ca) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Restore the last completed turn outcome in the activity view when resuming a session.
+
+- [#7](https://github.com/YaseenHQ/kimi/pull/7) [`fb9a15d`](https://github.com/YaseenHQ/kimi/commit/fb9a15d2a91a8f393e582a1437adf3313f077c4c) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Add an internal bash parsing capability that turns shell command strings into syntax trees, in preparation for per-command permission analysis. No user-facing behavior change yet.
+
+- [#1](https://github.com/YaseenHQ/kimi/pull/1) [`02606aa`](https://github.com/YaseenHQ/kimi/commit/02606aa7218b4b01a26a28889d025fd3b6c5afee) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Fix terminal paste restoration, legacy Alt-symbol input, tab rendering, mixed line endings, and cursor cleanup on exit.
+
+- [#13](https://github.com/YaseenHQ/kimi/pull/13) [`f2830f8`](https://github.com/YaseenHQ/kimi/commit/f2830f8f7a18f54470e979d992107f3fc2a7a886) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Fix request headers not being passed correctly on some requests.
+
+- [#1](https://github.com/YaseenHQ/kimi/pull/1) [`02606aa`](https://github.com/YaseenHQ/kimi/commit/02606aa7218b4b01a26a28889d025fd3b6c5afee) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Show transient request and compaction retries in the activity pane, report aggregate token/cache usage in the footer, and make file-tool paths clickable in supporting terminals.
+
+- [#7](https://github.com/YaseenHQ/kimi/pull/7) [`aef303d`](https://github.com/YaseenHQ/kimi/commit/aef303de68acf4d8f7a75de6671d7b46d415e732) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Allow updating the subagent secondary model through the configuration API.
+
+- [#1](https://github.com/YaseenHQ/kimi/pull/1) [`02606aa`](https://github.com/YaseenHQ/kimi/commit/02606aa7218b4b01a26a28889d025fd3b6c5afee) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Add Ctrl-X as a shortcut for copying the last assistant response.
+
+- [#7](https://github.com/YaseenHQ/kimi/pull/7) [`aef303d`](https://github.com/YaseenHQ/kimi/commit/aef303de68acf4d8f7a75de6671d7b46d415e732) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Align ACP with Echadron's live provider/model configuration: forward additional workspace roots, reload configuration after authentication and catalog changes, expose safe model context metadata, and stream context-window usage updates. Rename the terminal OAuth method and ACP identity to Echadron.
+
+- [#22](https://github.com/YaseenHQ/kimi/pull/22) [`bbd3d57`](https://github.com/YaseenHQ/kimi/commit/bbd3d578424352d7089b6612a9eb2ce26da0e0fc) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Add an explicit experimental `echadron acp-v2` entry point for the draft ACP protocol v2. The stable `echadron acp` command remains unchanged; the v2 bridge adds batch-capable transport, message IDs, unified tool-call updates, structured plan/state updates, and terminal OAuth metadata.
+
+- [#7](https://github.com/YaseenHQ/kimi/pull/7) [`aef303d`](https://github.com/YaseenHQ/kimi/commit/aef303de68acf4d8f7a75de6671d7b46d415e732) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Make Echadron (`echadron` / `chad` / `maker`) the fork's user-facing identity while retaining the legacy storage interfaces for compatibility.
+
+- [#19](https://github.com/YaseenHQ/kimi/pull/19) [`e788920`](https://github.com/YaseenHQ/kimi/commit/e788920b48d15fa28b651dcb8d53f275132acd3d) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Add `/bug` as a shorthand alias for `/feedback`.
+
+- [#22](https://github.com/YaseenHQ/kimi/pull/22) [`39934ed`](https://github.com/YaseenHQ/kimi/commit/39934ed4753a8593d76e6a84229d6d0de1905486) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Upgrade Echadron's MCP clients to the July 28, 2026 stateless protocol with automatic negotiation and legacy fallback. Refresh connected tool catalogs when servers publish list changes, validate OAuth callback issuers, and retain SSE compatibility for older servers.
+
+- [#18](https://github.com/YaseenHQ/kimi/pull/18) [`8b64c43`](https://github.com/YaseenHQ/kimi/commit/8b64c4345256df35a25c2c00fe0d9f384a887825) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Start MCP connections in the background during agent construction while still waiting for readiness before the first model step.
+
+- [#20](https://github.com/YaseenHQ/kimi/pull/20) [`975f3a3`](https://github.com/YaseenHQ/kimi/commit/975f3a3f03a6043d8a5d2143dd56137009e82741) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Show concrete thinking-effort levels on live subagent cards and swarm progress.
+
+- [#17](https://github.com/YaseenHQ/kimi/pull/17) [`5d294e7`](https://github.com/YaseenHQ/kimi/commit/5d294e7199591d4ac27cbe34f5c01d41dff55e9b) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Render v2 background-task completion notifications as status cards when replaying sessions.
+
+- [#16](https://github.com/YaseenHQ/kimi/pull/16) [`0f934f1`](https://github.com/YaseenHQ/kimi/commit/0f934f1c43eead620be3fabedf9ea9624395b094) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Prevent long-running print-mode and background-task waits from overflowing the host timer limit and firing immediately.
+
+- [#1](https://github.com/YaseenHQ/kimi/pull/1) [`d92ccad`](https://github.com/YaseenHQ/kimi/commit/d92ccad95aa6310c2ad9143213a61529a3c2b4a4) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Suppress the `Skipped refreshing managed:kimi-code: ... requires login` warning when switching models. The refresh orchestrator now treats an unauthenticated managed provider as not-yet-logged-in rather than a refresh failure.
+
+- [#7](https://github.com/YaseenHQ/kimi/pull/7) [`2419cc3`](https://github.com/YaseenHQ/kimi/commit/2419cc3f49a49993d27886b52d656fc3d9b763cb) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Keep editor scroll indicators readable without overflowing narrow terminals.
+
+- [#1](https://github.com/YaseenHQ/kimi/pull/1) [`1889925`](https://github.com/YaseenHQ/kimi/commit/188992554ca1d500d8bb67792e68d29da41a5303) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Listen for OAuth browser callbacks on both IPv4 (`127.0.0.1`) and IPv6 (`::1`) loopback addresses while keeping the `localhost` redirect URI. This fixes browser login failures on systems where `localhost` resolves to `::1` first (e.g., Codex and Anthropic PKCE flows).
+
+- [#16](https://github.com/YaseenHQ/kimi/pull/16) [`7ef6f0c`](https://github.com/YaseenHQ/kimi/commit/7ef6f0c2fbb92fefd7eb94c65bcb57936093a2ca) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Keep compaction token accounting on the same full-request basis as live context measurements.
+
+- [#11](https://github.com/YaseenHQ/kimi/pull/11) [`b4f4788`](https://github.com/YaseenHQ/kimi/commit/b4f4788f8fbf06c8da971aa1b15d4e57eb3acb46) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Fix sporadic "model is not configured" errors when starting kimi web, caused by the background provider-model refresh transiently clearing the model catalog while the first session was being created.
+
+- [#10](https://github.com/YaseenHQ/kimi/pull/10) [`b6019f6`](https://github.com/YaseenHQ/kimi/commit/b6019f6753bac2f182a314c56b1780ae2814065e) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Preserve the assistant's partial output when a turn is interrupted with Esc, and remind the model that the previous turn was deliberately interrupted.
+
+- [#27](https://github.com/YaseenHQ/kimi/pull/27) [`f65bb85`](https://github.com/YaseenHQ/kimi/commit/f65bb85ab7ae85a298ae3b6dea626b4e2cddb70e) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Prevent one session's subagent tool projection from changing builtin profiles in later sessions.
+
+- [#16](https://github.com/YaseenHQ/kimi/pull/16) [`b0f4039`](https://github.com/YaseenHQ/kimi/commit/b0f40396aee0665340b3c9b0eac4fecaad7f1077) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Allow explicitly OAuth-enabled MCP servers to use OAuth discovery alongside non-secret headers in the v2 connection manager.
+
+- [#7](https://github.com/YaseenHQ/kimi/pull/7) [`aef303d`](https://github.com/YaseenHQ/kimi/commit/aef303de68acf4d8f7a75de6671d7b46d415e732) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Keep Models.dev adapter and endpoint provenance on imported providers, share the
+  persisted catalog between `update --models` and the v2 server, and honor the
+  Echadron home directory when resolving config and server paths.
+
+- [#2147](https://github.com/MoonshotAI/kimi-code/pull/2147) [`29783e4`](https://github.com/YaseenHQ/kimi/commit/29783e471afcf7975852e496907646458264d2e6) Thanks [@wbxl2000](https://github.com/wbxl2000)! - Show a quota consumption note after installing official plugins that bill against plan quota (such as Kimi Datasource).
+
+- [#2147](https://github.com/MoonshotAI/kimi-code/pull/2147) [`29783e4`](https://github.com/YaseenHQ/kimi/commit/29783e471afcf7975852e496907646458264d2e6) Thanks [@wbxl2000](https://github.com/wbxl2000)! - Show an update notice when a turn that used an outdated plugin ends and the Official Marketplace has a newer version; each new version is announced once. Run /plugins to install the latest version.
+
+- [#3](https://github.com/YaseenHQ/kimi/pull/3) [`55e7b53`](https://github.com/YaseenHQ/kimi/commit/55e7b53dd6b43b5671cc8a4a3d4aa829685c2e1e) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Preserve opaque OpenAI Responses compaction state across turns and automatically
+  use `/responses/compact` when the active provider exposes that capability,
+  falling back to Kimi's existing local summarizer when it does not.
+
+- [#7](https://github.com/YaseenHQ/kimi/pull/7) [`b17ea1f`](https://github.com/YaseenHQ/kimi/commit/b17ea1fcbbfd873e9e96cf4110fb97d5a6b31465) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Fail fast on quota/balance-exhausted HTTP 429 errors (e.g. Moonshot `exceeded_current_quota_error`, OpenAI `insufficient_quota`) instead of silently retrying for ~3 minutes. Transient rate-limit 429s keep the existing retry, backoff, and Retry-After behavior.
+
+- [#30](https://github.com/YaseenHQ/kimi/pull/30) [`07b4780`](https://github.com/YaseenHQ/kimi/commit/07b478055ecafb330a1fb3cfc2a9869baae6998a) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Keep the managed Kimi subscription labeled as Kimi Code inside the Echadron host, identify ChatGPT Codex requests as Echadron, make device OAuth network waits and polling sleeps cancel immediately, expose model capabilities when agents choose between primary and secondary subagent models, and add v2 config deprecation guidance without breaking existing Echadron config files.
+
+- [#31](https://github.com/YaseenHQ/kimi/pull/31) [`7b85759`](https://github.com/YaseenHQ/kimi/commit/7b85759625c4bca15d8f105c9b755e15a6463586) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Repair the release plan after the Echadron package rename and make npm publishing independent from optional native signing.
+
+- [#15](https://github.com/YaseenHQ/kimi/pull/15) [`195f8d2`](https://github.com/YaseenHQ/kimi/commit/195f8d2b99c4a79da2d507fd05b3502ba41edcd2) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Keep builtin agent profile state isolated between sessions.
+
+- [#28](https://github.com/YaseenHQ/kimi/pull/28) [`155adc4`](https://github.com/YaseenHQ/kimi/commit/155adc463213ccd8ae6c6b1d1a5e18664421050a) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Subagent UIs now show each subagent's bound model and thinking effort.
+
+- [#10](https://github.com/YaseenHQ/kimi/pull/10) [`ad546bb`](https://github.com/YaseenHQ/kimi/commit/ad546bb484393ac93a20f7b4a177df1cfbe61392) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Remove the blocking `block`/`timeout` wait from the TaskOutput tool so checking a background task can no longer stall the conversation; it now always returns an immediate snapshot, and completion still arrives via automatic notification.
+
+- [#8](https://github.com/YaseenHQ/kimi/pull/8) [`3bbf786`](https://github.com/YaseenHQ/kimi/commit/3bbf7864901bcd15951fc56ad0d943230affb215) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Fix sessions missing from the session picker when their cached metadata predates the archived flag.
+
+- [#1](https://github.com/YaseenHQ/kimi/pull/1) [`02606aa`](https://github.com/YaseenHQ/kimi/commit/02606aa7218b4b01a26a28889d025fd3b6c5afee) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Replace decorative terminal emoji with restrained Unicode markers and semantic tool glyphs.
+
+- [#7](https://github.com/YaseenHQ/kimi/pull/7) [`67a08cf`](https://github.com/YaseenHQ/kimi/commit/67a08cfd3b7df4dbcf5d3499348ad0d28c1861b0) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - web: Fix garbled line numbers in code blocks.
+
+- [#26](https://github.com/YaseenHQ/kimi/pull/26) [`a9b1250`](https://github.com/YaseenHQ/kimi/commit/a9b125062ac298a4dab1714e292e0699400eb79b) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Port compatible upstream agent-core fixes for durable cold-session turn outcomes, unknown context-limit reporting, and MCP removal tombstones.
+
+- [#15](https://github.com/YaseenHQ/kimi/pull/15) [`195f8d2`](https://github.com/YaseenHQ/kimi/commit/195f8d2b99c4a79da2d507fd05b3502ba41edcd2) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Improve upstream-compatible session isolation, MCP OAuth recovery, structured MCP results, and UTF-16 file reading.
+
+- [#26](https://github.com/YaseenHQ/kimi/pull/26) [`a9b1250`](https://github.com/YaseenHQ/kimi/commit/a9b125062ac298a4dab1714e292e0699400eb79b) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Keep live sessions stable across plugin mutations: preserve MCP baselines, freeze agent-tool profile listings, and surface an explicit plugin-change reminder until the user reloads.
+
 ## 0.29.2
 
 ### Patch Changes
