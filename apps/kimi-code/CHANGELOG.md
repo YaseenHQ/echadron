@@ -1,5 +1,13 @@
 # @moonshot-ai/kimi-code
 
+## 0.30.2
+
+### Patch Changes
+
+- [#38](https://github.com/YaseenHQ/kimi/pull/38) [`2a522ed`](https://github.com/YaseenHQ/kimi/commit/2a522edd67fd19bb9d3ce9f48919542239d88762) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Give Echadron's built-in dark and light terminal themes a restrained monochrome identity while preserving semantic color for status and diffs.
+
+- [#38](https://github.com/YaseenHQ/kimi/pull/38) [`7dfddd5`](https://github.com/YaseenHQ/kimi/commit/7dfddd5b16fcc47872a6a7761072ae2e8984616b) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Harden browser OAuth callbacks with a deadline, provider-error propagation, and a fallback loopback port. Broaden transient 5xx retries and recognize provider "message exceeds budget" failures as context overflow so Echadron can compact and recover.
+
 ## 0.30.1
 
 ### Patch Changes
