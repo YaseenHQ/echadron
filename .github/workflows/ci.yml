@@ -107,7 +107,7 @@ jobs:
       - run: pnpm run sherif
       - name: Validate release plan
         run: |
-          git branch --force main origin/main
+          git show-ref --verify --quiet refs/heads/main || git branch main origin/main
           pnpm run release:check
 
   typecheck:
