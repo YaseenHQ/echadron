@@ -6,7 +6,13 @@
  * the real fetch code path.
  */
 
-import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
+import {
+  createServer,
+  request as httpRequest,
+  type IncomingMessage,
+  type Server,
+  type ServerResponse,
+} from 'node:http';
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -26,6 +32,7 @@ import { KIMI_CODE_PLATFORM } from '../src/identity';
 import {
   OPENAI_CODEX_OAUTH_FLOW_CONFIG,
   applyOpenAICodexConfig,
+  loginOpenAICodexBrowser,
   openAICodexRequestHeaders,
   pollOpenAICodexDeviceToken,
   refreshOpenAICodexAccessToken,
@@ -189,6 +196,71 @@ afterEach(async () => {
 });
 
 describe('OpenAI Codex OAuth protocol adapter', () => {
+  it('completes browser PKCE login through the loopback callback', async () => {
+    const fetchMock = vi.fn(async (_input: unknown, init?: RequestInit) =>
+      new Response(
+        JSON.stringify({
+          access_token: 'header.payload.signature',
+          refresh_token: 'browser-refresh',
+          expires_in: 3600,
+        }),
+        { status: 200 },
+      ),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    let authorizeUrl: URL | undefined;
+    const token = await loginOpenAICodexBrowser(async (authorization) => {
+      authorizeUrl = new URL(authorization.url);
+      const state = authorizeUrl.searchParams.get('state');
+      expect(state).not.toBeNull();
+
+      await new Promise<void>((resolve, reject) => {
+        const request = httpRequest(
+          {
+            host: '127.0.0.1',
+            port: 1455,
+            path: `/auth/callback?code=browser-code&state=${encodeURIComponent(state!)}`,
+          },
+          (response) => {
+            response.resume();
+            response.once('end', resolve);
+          },
+        );
+        request.once('error', reject);
+        request.end();
+      });
+
+      return new Promise<string | undefined>((resolve) => {
+        authorization.signal?.addEventListener(
+          'abort',
+          () => {
+            resolve(undefined);
+          },
+          { once: true },
+        );
+      });
+    });
+
+    expect(token).toMatchObject({
+      accessToken: 'header.payload.signature',
+      refreshToken: 'browser-refresh',
+    });
+    expect(authorizeUrl?.searchParams.get('redirect_uri')).toBe(
+      'http://localhost:1455/auth/callback',
+    );
+    expect(authorizeUrl?.searchParams.get('code_challenge_method')).toBe('S256');
+    expect(authorizeUrl?.searchParams.get('originator')).toBe('pi');
+
+    expect(fetchMock).toHaveBeenCalledOnce();
+    const exchangeBody = fetchMock.mock.calls[0]?.[1]?.body;
+    expect(exchangeBody).toBeInstanceOf(URLSearchParams);
+    expect((exchangeBody as URLSearchParams).get('code')).toBe('browser-code');
+    expect((exchangeBody as URLSearchParams).get('redirect_uri')).toBe(
+      'http://localhost:1455/auth/callback',
+    );
+  });
+
   it('exchanges the two-stage device flow for a persisted token', async () => {
     const responses = [
       new Response(
