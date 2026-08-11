@@ -107,7 +107,7 @@
         "@moonshot-ai/kimi-telemetry"
         "@moonshot-ai/transcript"
         "@moonshot-ai/tree-sitter-bash"
-        "@yaseenhq/echadron"
+        "echadron"
         "echadron-code"
         "@moonshot-ai/kimi-inspect"
         "@yaseenhq/echadron-web"
@@ -207,7 +207,7 @@
               # before producing the native executable.
               pnpm --filter=@yaseenhq/echadron-web run build
               node apps/kimi-code/scripts/copy-web-assets.mjs
-              pnpm --filter=@yaseenhq/echadron run build:native:sea
+              pnpm --filter=echadron run build:native:sea
               runHook postBuild
             '';
 

@@ -26,13 +26,13 @@ maker --version
 If you prefer npm, use Node.js 22.19.0 or later:
 
 ```sh
-npm install -g @yaseenhq/echadron
+npm install -g echadron
 ```
 
 Or with pnpm:
 
 ```sh
-pnpm add -g @yaseenhq/echadron
+pnpm add -g echadron
 ```
 
 The package is versioned independently from upstream Kimi Code. Its executable

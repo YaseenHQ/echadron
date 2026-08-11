@@ -50,7 +50,7 @@ export const HEADLESS_FORCE_EXIT_GRACE_MS = 2000;
 export const HEADLESS_STDIO_DRAIN_TIMEOUT_MS = 10000;
 
 // Published npm package name; this can differ from the executable command.
-export const NPM_PACKAGE_NAME = '@yaseenhq/echadron';
+export const NPM_PACKAGE_NAME = 'echadron';
 /** Previous upstream package name, accepted only when locating old installs. */
 export const LEGACY_NPM_PACKAGE_NAME = '@moonshot-ai/kimi-code';
 
@@ -113,7 +113,10 @@ export const KIMI_CODE_CDN_LATEST_URL = `${KIMI_CODE_CDN_BASE}/latest`;
 // stays unchanged forever — already-shipped clients hard-fail on non-semver
 // bodies, and the CDN install scripts read it for fresh installs.
 export const KIMI_CODE_CDN_LATEST_JSON_URL = `${KIMI_CODE_CDN_BASE}/latest.json`;
-export const KIMI_CODE_TIPS_BANNER_URL = 'https://cdn.kimi.com/kimi-code-tips/tips.json';
+// Remote banners are disabled unless an Echadron-owned feed is explicitly
+// configured. This prevents provider marketing from appearing in the generic
+// harness while preserving the banner machinery for downstream deployments.
+export const ECHADRON_TIPS_BANNER_URL_ENV = 'ECHADRON_TIPS_BANNER_URL';
 export const KIMI_CODE_PLUGIN_MARKETPLACE_URL = `${KIMI_CODE_CDN_BASE}/plugins/marketplace.json`;
 export const ECHADRON_PLUGIN_MARKETPLACE_URL_ENV = 'ECHADRON_PLUGIN_MARKETPLACE_URL';
 export const KIMI_CODE_PLUGIN_MARKETPLACE_URL_ENV = 'KIMI_CODE_PLUGIN_MARKETPLACE_URL';

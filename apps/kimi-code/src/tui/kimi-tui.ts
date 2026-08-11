@@ -26,6 +26,7 @@ import { resolve } from 'pathe';
 
 import type { CLIOptions } from '#/cli/options';
 import { isKimiV2Enabled } from '#/cli/experimental-v2';
+import { ECHADRON_TIPS_BANNER_URL_ENV } from '#/constant/app';
 import { MigrationScreenComponent, type MigrationScreenResult } from '#/migration/index';
 import { copyTextToClipboard } from '#/utils/clipboard/clipboard-text';
 import { appendInputHistory, loadInputHistory } from '#/utils/history/input-history';
@@ -599,7 +600,13 @@ export class KimiTUI {
   }
 
   private async loadBanner(): Promise<void> {
-    const provider = new BannerProvider(this.state.appState.version);
+    const bannerUrl = process.env[ECHADRON_TIPS_BANNER_URL_ENV]?.trim();
+    if (!bannerUrl) {
+      this.state.appState.banner = null;
+      return;
+    }
+
+    const provider = new BannerProvider(this.state.appState.version, bannerUrl);
     const displayState = await readBannerDisplayState();
     const now = new Date();
     const banner = await provider.load(fetch, {

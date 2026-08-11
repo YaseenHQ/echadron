@@ -1,120 +1,124 @@
-/**
- * Design tokens for the Echadron Code docs theme.
- * Light + dark live side by side; VitePress toggles the .dark class on <html>.
- */
+/** Neutral Echadron documentation tokens. */
 
 :root {
-  /* Brand palette — cool blue family from design board */
-  --echadron-brand-1: #0a7aff;          /* primary */
-  --echadron-brand-2: #5baeff;           /* mid */
-  --echadron-brand-3: #81c4ff;           /* soft sky */
-  --echadron-brand-deep: #043153;        /* deep navy (anchor for dark surfaces) */
-  --echadron-brand-whisper: #eff8ff;     /* near-white blue (light tints) */
-  --echadron-brand-gradient: linear-gradient(135deg, #0a7aff 0%, #5baeff 60%, #81c4ff 100%);
-  --echadron-brand-gradient-soft: linear-gradient(135deg, rgba(10, 122, 255, 0.14) 0%, rgba(91, 174, 255, 0.12) 60%, rgba(129, 196, 255, 0.10) 100%);
-  --echadron-brand-soft: rgba(10, 122, 255, 0.10);
-  --echadron-brand-soft-strong: rgba(10, 122, 255, 0.16);
+  --echadron-brand-1: #272725;
+  --echadron-brand-2: #111110;
+  --echadron-brand-3: #3f3f3c;
+  --echadron-brand-deep: #171716;
+  --echadron-brand-whisper: #f5f5f3;
+  --echadron-brand-gradient: linear-gradient(135deg, #111110, #4a4a47);
+  --echadron-brand-gradient-soft: linear-gradient(
+    135deg,
+    rgba(17, 17, 16, 0.08),
+    rgba(74, 74, 71, 0.05)
+  );
+  --echadron-brand-soft: rgba(39, 39, 37, 0.09);
+  --echadron-brand-soft-strong: rgba(39, 39, 37, 0.14);
 
-  /* Shape */
   --echadron-radius-card: 16px;
   --echadron-radius-button: 10px;
   --echadron-radius-chip: 999px;
   --echadron-radius-code: 12px;
   --echadron-transition: 200ms cubic-bezier(0.4, 0, 0.2, 1);
 
-  /* Typography */
-  --vp-font-family-base:
-    'Inter', -apple-system, BlinkMacSystemFont,
-    'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei',
-    'Helvetica Neue', 'Segoe UI', Arial, sans-serif;
-  --vp-font-family-mono:
-    ui-monospace, SFMono-Regular, 'SF Mono',
-    Menlo, Consolas, 'Liberation Mono', 'Courier New', monospace;
+  --vp-font-family-base: Figtree, -apple-system, BlinkMacSystemFont,
+    "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue",
+    "Segoe UI", Arial, sans-serif;
+  --vp-font-family-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo,
+    Consolas, "Liberation Mono", "Courier New", monospace;
 
-  /* Surfaces (light) — clean white + subtle blue-tinted off-white */
-  --vp-c-bg: #ffffff;
-  --vp-c-bg-alt: #f6f9fd;
+  --vp-c-bg: #fafafa;
+  --vp-c-bg-alt: #f2f2f0;
   --vp-c-bg-elv: #ffffff;
-  --vp-c-bg-soft: #eff5fc;
+  --vp-c-bg-soft: #eeeeec;
+  --vp-c-text-1: #171716;
+  --vp-c-text-2: #565653;
+  --vp-c-text-3: #858581;
+  --vp-c-divider: #ddddda;
+  --vp-c-gutter: #ddddda;
+  --vp-c-border: #d2d2cf;
 
-  /* Text (light) */
-  --vp-c-text-1: #0b1a30;
-  --vp-c-text-2: #475569;
-  --vp-c-text-3: #94a3b8;
-
-  /* Borders (light) — picked up from palette E1E3E6 */
-  --vp-c-divider: #e1e3e6;
-  --vp-c-gutter: #e1e3e6;
-  --vp-c-border: #e1e3e6;
-
-  /* Brand applied to VitePress vars (light) */
   --vp-c-brand-1: var(--echadron-brand-1);
   --vp-c-brand-2: var(--echadron-brand-2);
-  --vp-c-brand-3: #006ae3;          /* hover, slightly deeper than primary */
+  --vp-c-brand-3: var(--echadron-brand-3);
   --vp-c-brand-soft: var(--echadron-brand-soft);
 
-  /* Shadows (light) — no negative spread, avoids "kink" at rounded corners */
-  --vp-shadow-1: 0 1px 2px rgba(11, 26, 48, 0.04);
-  --vp-shadow-2: 0 6px 20px rgba(10, 122, 255, 0.15);
-  --vp-shadow-3: 0 10px 28px rgba(10, 122, 255, 0.22);
-  --vp-shadow-4: 0 18px 44px rgba(10, 122, 255, 0.30);
+  --vp-shadow-1: 0 1px 2px rgba(17, 17, 16, 0.05);
+  --vp-shadow-2: 0 8px 22px rgba(17, 17, 16, 0.08);
+  --vp-shadow-3: 0 12px 32px rgba(17, 17, 16, 0.12);
+  --vp-shadow-4: 0 18px 48px rgba(17, 17, 16, 0.16);
 
-  /* Buttons (light) */
-  --vp-button-brand-bg: var(--echadron-brand-1);
-  --vp-button-brand-hover-bg: var(--vp-c-brand-3);
-  --vp-button-brand-active-bg: var(--vp-c-brand-3);
+  --vp-button-brand-bg: #272725;
+  --vp-button-brand-hover-bg: #111110;
+  --vp-button-brand-active-bg: #111110;
   --vp-button-brand-border: transparent;
   --vp-button-brand-hover-border: transparent;
   --vp-button-brand-text: #ffffff;
   --vp-button-brand-hover-text: #ffffff;
   --vp-button-brand-active-text: #ffffff;
 
-  /* Custom blocks tinting (light) */
-  --vp-custom-block-tip-border: transparent;
+  --vp-custom-block-tip-border: #bdbdb9;
   --vp-custom-block-tip-text: var(--vp-c-text-1);
-  --vp-custom-block-tip-bg: rgba(10, 122, 255, 0.07);
-  --vp-custom-block-tip-code-bg: rgba(10, 122, 255, 0.10);
+  --vp-custom-block-tip-bg: #eeeeec;
+  --vp-custom-block-tip-code-bg: #e2e2df;
+  --vp-custom-block-info-border: #d2d2cf;
+  --vp-custom-block-info-text: var(--vp-c-text-1);
+  --vp-custom-block-info-bg: #eeeeec;
+  --vp-custom-block-info-code-bg: #e2e2df;
+  --vp-custom-block-note-border: #d2d2cf;
+  --vp-custom-block-note-text: var(--vp-c-text-1);
+  --vp-custom-block-note-bg: #eeeeec;
+  --vp-custom-block-note-code-bg: #e2e2df;
+  --vp-custom-block-important-border: #d2d2cf;
+  --vp-custom-block-important-text: var(--vp-c-text-1);
+  --vp-custom-block-important-bg: #eeeeec;
+  --vp-custom-block-important-code-bg: #e2e2df;
 }
 
 .dark {
-  /* Surfaces (dark) — neutral dark with subtle navy undertone */
-  --vp-c-bg: #0a1422;
-  --vp-c-bg-alt: #0f1b2e;
-  --vp-c-bg-elv: #0f1b2e;
-  --vp-c-bg-soft: #15263f;
+  --vp-c-bg: #101010;
+  --vp-c-bg-alt: #171716;
+  --vp-c-bg-elv: #1d1d1c;
+  --vp-c-bg-soft: #222220;
+  --vp-c-text-1: #f2f2ef;
+  --vp-c-text-2: #aaa9a5;
+  --vp-c-text-3: #767672;
+  --vp-c-divider: #323230;
+  --vp-c-gutter: #323230;
+  --vp-c-border: #3c3c39;
 
-  /* Text (dark) — avoid pure white */
-  --vp-c-text-1: #e2e8f0;
-  --vp-c-text-2: #94a3b8;
-  --vp-c-text-3: #64748b;
+  --vp-c-brand-1: #eeeeeb;
+  --vp-c-brand-2: #ffffff;
+  --vp-c-brand-3: #c7c7c3;
+  --vp-c-brand-soft: rgba(238, 238, 235, 0.1);
+  --echadron-brand-soft: rgba(238, 238, 235, 0.1);
+  --echadron-brand-soft-strong: rgba(238, 238, 235, 0.16);
 
-  /* Borders (dark) — navy-leaning to stay in family */
-  --vp-c-divider: #1b2e47;
-  --vp-c-gutter: #1b2e47;
-  --vp-c-border: #1b2e47;
+  --vp-shadow-1: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --vp-shadow-2: 0 8px 24px rgba(0, 0, 0, 0.32);
+  --vp-shadow-3: 0 12px 34px rgba(0, 0, 0, 0.4);
+  --vp-shadow-4: 0 18px 50px rgba(0, 0, 0, 0.48);
 
-  /* Brand applied (dark) — keep the pure blue family, brightened */
-  --vp-c-brand-1: #3d95ff;
-  --vp-c-brand-2: #81c4ff;
-  --vp-c-brand-3: #5baeff;
-  --vp-c-brand-soft: rgba(61, 149, 255, 0.16);
+  --vp-button-brand-bg: #eeeeeb;
+  --vp-button-brand-hover-bg: #ffffff;
+  --vp-button-brand-active-bg: #d8d8d4;
+  --vp-button-brand-text: #171716;
+  --vp-button-brand-hover-text: #171716;
+  --vp-button-brand-active-text: #171716;
 
-  /* Softs (dark) */
-  --echadron-brand-soft: rgba(61, 149, 255, 0.16);
-  --echadron-brand-soft-strong: rgba(61, 149, 255, 0.22);
-
-  /* Shadows (dark) — brand-tinted glow, no negative spread */
-  --vp-shadow-1: 0 1px 2px rgba(0, 0, 0, 0.4);
-  --vp-shadow-2: 0 6px 24px rgba(61, 149, 255, 0.22);
-  --vp-shadow-3: 0 10px 32px rgba(61, 149, 255, 0.32);
-  --vp-shadow-4: 0 18px 48px rgba(61, 149, 255, 0.42);
-
-  /* Buttons (dark) */
-  --vp-button-brand-bg: var(--echadron-brand-1);
-  --vp-button-brand-hover-bg: #1f8cff;
-  --vp-button-brand-active-bg: #1f8cff;
-
-  /* Custom blocks tinting (dark) */
-  --vp-custom-block-tip-bg: rgba(61, 149, 255, 0.12);
-  --vp-custom-block-tip-code-bg: rgba(61, 149, 255, 0.16);
+  --vp-custom-block-tip-border: #555551;
+  --vp-custom-block-tip-bg: #20201f;
+  --vp-custom-block-tip-code-bg: #2a2a28;
+  --vp-custom-block-info-border: #555551;
+  --vp-custom-block-info-text: var(--vp-c-text-1);
+  --vp-custom-block-info-bg: #20201f;
+  --vp-custom-block-info-code-bg: #2a2a28;
+  --vp-custom-block-note-border: #555551;
+  --vp-custom-block-note-text: var(--vp-c-text-1);
+  --vp-custom-block-note-bg: #20201f;
+  --vp-custom-block-note-code-bg: #2a2a28;
+  --vp-custom-block-important-border: #555551;
+  --vp-custom-block-important-text: var(--vp-c-text-1);
+  --vp-custom-block-important-bg: #20201f;
+  --vp-custom-block-important-code-bg: #2a2a28;
 }

@@ -163,7 +163,7 @@ export class PluginUpdateNotifier {
       const session = this.deps.getSession();
       if (session === undefined) return;
       const marketplace = await this.loadCatalog();
-      // Only the default official catalog can back an "Official Marketplace"
+      // Only the default upstream catalog can back a marketplace update
       // notice — a custom catalog (KIMI_CODE_PLUGIN_MARKETPLACE_URL) may
       // advertise anything under any id.
       if (marketplace.source !== KIMI_CODE_PLUGIN_MARKETPLACE_URL) return;
@@ -171,7 +171,7 @@ export class PluginUpdateNotifier {
       if (entry === undefined) return;
       const installed = (await session.listPlugins()).find((plugin) => plugin.id === pluginId);
       if (installed === undefined) return;
-      // Only official installs are tracked against the Official Marketplace —
+      // Only upstream catalog installs are tracked against the marketplace —
       // a local/GitHub fork that happens to share a catalog id is not it.
       if (!isOfficialPluginInstall(installed)) return;
       const status = computeUpdateStatus(entry.version, installed.version, true);
@@ -180,7 +180,7 @@ export class PluginUpdateNotifier {
       if (state.notified[pluginId] === status.latest) return;
       this.deps.notify(
         `Update detected: ${installed.displayName} ${status.latest} is available. ` +
-          'Run /plugins to install the latest version from the Official Marketplace.',
+          'Run /plugins to install the latest version from the plugin marketplace.',
       );
       await writePluginUpdateNoticeState(
         { ...state, notified: { ...state.notified, [pluginId]: status.latest } },

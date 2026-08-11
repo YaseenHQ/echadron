@@ -106,7 +106,7 @@ async function collectAssetRoot({
 
 export async function collectWebAssets({ appRoot, target }) {
   const buildCommand =
-    'pnpm --filter @yaseenhq/echadron-web run build && pnpm --filter @yaseenhq/echadron run build';
+    'pnpm --filter @yaseenhq/echadron-web run build && pnpm --filter echadron run build';
   return collectAssetRoot({
     appRoot,
     target,

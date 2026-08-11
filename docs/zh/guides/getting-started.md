@@ -28,7 +28,7 @@ Echadron 为全交互式 TUI 应用，推荐在支持真彩色与连字的现代
 git clone https://github.com/YaseenHQ/kimi.git echadron
 cd echadron
 pnpm install
-pnpm --filter @yaseenhq/echadron build
+pnpm --filter echadron build
 npm install -g ./apps/kimi-code
 ```
 
@@ -40,13 +40,13 @@ npm install -g ./apps/kimi-code
 
 ```sh
 node --version
-npm install -g @yaseenhq/echadron
+npm install -g echadron
 ```
 
 或用 pnpm：
 
 ```sh
-pnpm add -g @yaseenhq/echadron
+pnpm add -g echadron
 ```
 
 ## 升级与卸载
@@ -60,13 +60,13 @@ echadron --version
 **升级**：Echadron 的发行渠道尚未启用，所以 `echadron upgrade` 不会安装上游 Kimi Code。首个 Echadron 版本发布后可用包管理器升级：
 
 ```sh
-npm install -g @yaseenhq/echadron@latest
+npm install -g echadron@latest
 ```
 
 **卸载**：源码用户删除检出目录；npm 安装的用户：
 
 ```sh
-npm uninstall -g @yaseenhq/echadron
+npm uninstall -g echadron
 ```
 
 ## 第一次启动

@@ -1,5 +1,5 @@
 {
-  "name": "@yaseenhq/echadron",
+  "name": "echadron",
   "version": "0.30.0",
   "description": "Echadron multi-provider agent harness for the terminal",
   "license": "MIT",

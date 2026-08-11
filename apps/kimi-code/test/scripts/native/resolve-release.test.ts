@@ -38,13 +38,13 @@ async function resolveRelease(options: {
 }
 
 describe('native release resolution', () => {
-  const publishedPackages = [{ name: '@yaseenhq/echadron', version: '0.30.0' }];
+  const publishedPackages = [{ name: 'echadron', version: '0.30.0' }];
 
   it('keeps native publishing disabled until the repository opts in', async () => {
     await expect(resolveRelease({ publishedPackages })).resolves.toMatchObject({
       should_publish: 'false',
       version: '0.30.0',
-      tag: '@yaseenhq/echadron@0.30.0',
+      tag: 'echadron@0.30.0',
     });
   });
 
@@ -54,7 +54,7 @@ describe('native release resolution', () => {
     ).resolves.toMatchObject({
       should_publish: 'true',
       version: '0.30.0',
-      tag: '@yaseenhq/echadron@0.30.0',
+      tag: 'echadron@0.30.0',
     });
 
     await expect(

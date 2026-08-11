@@ -4,7 +4,24 @@ outline: 2
 
 # 变更记录
 
-本页记录 Kimi Code CLI 每个版本的变更内容。
+本页记录 Echadron 每个版本的变更内容。完整的软件包级记录也可在[仓库变更记录](https://github.com/YaseenHQ/kimi/blob/main/apps/kimi-code/CHANGELOG.md)中查看。
+
+## 0.30.0（2026-08-10）
+
+### Echadron
+
+- 将 Echadron 建立为可独立安装的产品，提供 `echadron`、`chad` 与 `maker` 命令、独立的 `~/.echadron` 数据目录，以及自己的更新与发布路径。
+- 交互式 TUI、打印模式、doctor、ACP、导出与供应商命令默认使用 agent-core v2，同时保留明确的 v1 兼容路径。
+- 统一 OAuth、API 密钥、目录供应商与自定义注册表登录。账号 OAuth 支持 Kimi Code、ChatGPT（OpenAI Codex）与 xAI，并提供单独及批量退出控制。
+- 新增 `echadron update --models` 持久化 models.dev 目录更新，并保留供应商来源、模型能力、上下文上限与思考强度配置。
+- 新增原生 OpenAI Responses 压缩、更稳定的提示词缓存键与统计、缓存读写用量、可配置的 Anthropic 缓存保留时间，以及长时间空闲后的缓存过期提醒。
+- 新增可选择模型的自定义 Agent 与子 Agent、辅助模型选择、实时思考强度显示、对话树导航，以及更清晰的后台任务状态。
+- 让 ACP 与实时供应商及模型配置保持一致，并新增实验性 `echadron acp-v2` 桥接。MCP 客户端升级至 2026 年 7 月无状态协议，同时支持协商与旧版回退。
+- 改进终端输入、粘贴处理、会话恢复、重试可见性、用量统计、可点击文件路径、中断轮次恢复及长会话稳定性。
+
+::: info 上游历史
+0.30.0 之前的版本由上游 Kimi Code 发布，此处保留以便追溯。这些历史条目中的产品名与命令描述的是当时的软件状态。
+:::
 
 ## 0.29.2（2026-07-27）
 

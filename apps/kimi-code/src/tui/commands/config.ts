@@ -260,7 +260,7 @@ export async function handleSecondaryModelCommand(host: SlashCommandHost, args: 
   if (Object.keys(models).length === 0) {
     host.showNotice(
       'No models configured',
-      'Run /login to sign in to Kimi, or /provider to add another provider from a model catalog.',
+      'Run /login to connect an account, API key, or custom provider.',
     );
     return;
   }

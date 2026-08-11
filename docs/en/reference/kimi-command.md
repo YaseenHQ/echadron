@@ -147,7 +147,7 @@ This subcommand has no flags. Press `Ctrl-C` at any time during polling to cance
 
 ### `echadron acp`
 
-Switch Echadron to ACP (Agent Client Protocol) mode, communicating with an IDE via JSON-RPC over stdin/stdout so the editor can directly drive Echadron sessions and tool calls. You typically do not need to run this manually — the IDE starts it as a subprocess entry point. For configuration, see [Using in IDEs](../guides/ides.md); for technical details, see the [kimi acp reference](./kimi-acp.md).
+Switch Echadron to ACP (Agent Client Protocol) mode, communicating with an IDE via JSON-RPC over stdin/stdout so the editor can directly drive Echadron sessions and tool calls. You typically do not need to run this manually — the IDE starts it as a subprocess entry point. For configuration, see [Using in IDEs](../guides/ides.md); for technical details, see the [Echadron ACP reference](./kimi-acp.md).
 
 ```sh
 echadron acp
@@ -319,7 +319,7 @@ Bulk-import all providers from a custom registry (`api.json`). The command fetch
 echadron provider add https://registry.example.com/v1/models/api.json --api-key YOUR_KEY
 
 # Or via environment variable (suitable for CI / .envrc)
-KIMI_REGISTRY_API_KEY=YOUR_KEY kimi provider add https://registry.example.com/v1/models/api.json
+KIMI_REGISTRY_API_KEY=YOUR_KEY echadron provider add https://registry.example.com/v1/models/api.json
 ```
 
 If a provider ID already exists, it is removed and re-created. The default model is not set automatically; you can select one later with `-m` or `/model` in the TUI.

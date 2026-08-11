@@ -45,9 +45,9 @@ function truecolorCodes(text: string): Set<string> {
   return codes;
 }
 
-/** The two header rows (logo + title) of the rendered welcome box. */
+/** The two identity rows (logo + product/workspace metadata). */
 function headerOf(lines: string[]): string {
-  return [lines[3], lines[4]].join('\n');
+  return [lines[1], lines[2]].join('\n');
 }
 
 function setDanceView(colored: boolean, phase: number): void {
@@ -93,6 +93,18 @@ describe('WelcomeComponent', () => {
     const off = headerOf(new WelcomeComponent(appState).render(80));
 
     expect(off).toBe(base);
+  });
+
+  it('uses compact command-line hierarchy without a surrounding panel', () => {
+    const rendered = new WelcomeComponent(appState).render(80).join('\n');
+
+    expect(rendered).toContain('Echadron');
+    expect(rendered).toContain('/tmp/project');
+    expect(rendered).toContain('Ask, edit, or run anything');
+    expect(rendered).toContain('/ commands');
+    expect(rendered).not.toContain('Directory:');
+    expect(rendered).not.toContain('Session:');
+    expect(rendered).not.toContain('╭');
   });
 
   it('keeps every line within the requested width on narrow terminals', () => {

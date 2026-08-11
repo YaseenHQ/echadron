@@ -24,7 +24,7 @@ Echadron 的独立 Native 安装器和首个公开 npm 包尚未发布；目前�
 git clone https://github.com/YaseenHQ/kimi.git echadron
 cd echadron
 pnpm install
-pnpm --filter @yaseenhq/echadron build
+pnpm --filter echadron build
 npm install -g ./apps/kimi-code
 ```
 
@@ -36,7 +36,7 @@ npm install -g ./apps/kimi-code
 echadron --version
 ```
 
-首个公开版本发布后，可直接运行 `npm install -g @yaseenhq/echadron`。
+首个公开版本发布后，可直接运行 `npm install -g echadron`。
 
 详细安装方式，见[快速上手](https://github.com/YaseenHQ/kimi/tree/main/docs/zh/guides/getting-started)。
 

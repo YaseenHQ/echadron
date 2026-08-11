@@ -78,7 +78,7 @@ function makeHarness(options: HarnessOptions = {}) {
 const DATASOURCE_TOOL = 'mcp__plugin-kimi-datasource_data__call_data_source_tool';
 const EXPECTED_MESSAGE =
   'Update detected: Kimi Datasource 3.4.0 is available. ' +
-  'Run /plugins to install the latest version from the Official Marketplace.';
+  'Run /plugins to install the latest version from the plugin marketplace.';
 
 describe('PluginUpdateNotifier', () => {
   let tempDir: string;
@@ -223,7 +223,7 @@ describe('PluginUpdateNotifier', () => {
     await thirdNotifier.handlePluginCommandCompleted('kimi-datasource');
     expect(third.notify).toHaveBeenCalledWith(
       'Update detected: Kimi Datasource 3.5.0 is available. ' +
-        'Run /plugins to install the latest version from the Official Marketplace.',
+        'Run /plugins to install the latest version from the plugin marketplace.',
     );
   });
 

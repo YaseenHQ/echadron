@@ -24,7 +24,7 @@ const config = withMermaid(defineConfig({
 
   head: [
     ['link', { rel: 'icon', type: 'image/x-icon', href: `${base}favicon.ico` }],
-    ['meta', { name: 'theme-color', content: '#0a7aff' }],
+    ['meta', { name: 'theme-color', content: '#101010' }],
   ],
 
   srcExclude: ['AGENTS.md', 'superpowers/**'],

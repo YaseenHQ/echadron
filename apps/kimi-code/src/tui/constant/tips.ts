@@ -21,7 +21,7 @@ export const WORKING_TIPS: readonly ToolbarTip[] = [
   { text: '/init: generate AGENTS.md', priority: 2 },
   { text: 'Try /dance for a hidden Easter egg' },
   {
-    text: '/plugins: manage plugins — try the "Kimi Datasource" for reliable financial, economic, and academic data',
+    text: '/plugins: manage plugins and extend your toolset',
     solo: true,
     priority: 3,
   },

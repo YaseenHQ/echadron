@@ -83,7 +83,7 @@ function promptProviderAuthMethod(
         {
           value: 'api-key',
           label: 'Connect with an API key',
-          description: 'Use Kimi Platform, a known provider, or a custom registry.',
+          description: 'Use a known provider or a custom registry.',
         },
       ],
       onSelect: (value) => {
