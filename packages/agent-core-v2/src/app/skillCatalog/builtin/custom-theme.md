@@ -78,7 +78,7 @@ Only set tokens from this set — unknown keys are silently ignored at load. If 
 | `diffRemovedStrong` | Diff intra-line changed words, removed (bold) |
 | `diffGutter` | Diff line-number gutter |
 | `diffMeta` | Diff meta / hunk headers |
-| `roleUser` | User message bullet and text, skill-activation name (the one role color with its own hue) |
+| `roleUser` | User message bullet and text, skill-activation name |
 | `shellMode` | Shell mode (`!`) prompt, editor border, and the echoed `$ command` line |
 
 ## Workflow
@@ -99,7 +99,7 @@ Only set tokens from this set — unknown keys are silently ignored at load. If 
    - Every value is a 6-digit hex `#RRGGBB` (not 3-digit, not a named color).
    - Keep contrast usable against the user's terminal background: don't let `text` / `textDim` sit too close to the background, and keep `success` / `warning` / `error` clearly distinguishable from each other.
    - `primary` is the most-seen color (links, selection, focus) — make it readable and distinct from `text`.
-   - `roleUser` is the one role color meant to stand on its own — give it a distinct hue.
+   - `roleUser` may use a distinct hue, but a tonal contrast also works for monochrome themes.
 
 4. **Create a candidate file; never edit the live theme in place.**
    - Use Bash to create a candidate. If the target theme already exists, copy it verbatim: `cp <name>.json <name>.json.new` (inside `<ECHADRON_HOME>/themes/`). If it doesn't exist, use **Write** to create a minimal skeleton named `<name>.json.new`.

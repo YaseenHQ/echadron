@@ -173,3 +173,21 @@ describe('ColorPalette warning token', () => {
     expect(getBuiltInPalette('light')).toBe(lightColors);
   });
 });
+
+describe('built-in palette identity', () => {
+  const isGrayscale = (hex: string): boolean => {
+    const [, red, green, blue] = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex) ?? [];
+    return red !== undefined && red === green && green === blue;
+  };
+
+  it.each([darkColors, lightColors])('keeps identity and mode tokens monochrome', (palette) => {
+    for (const token of ['primary', 'accent', 'roleUser', 'shellMode'] as const) {
+      expect(isGrayscale(palette[token]), token).toBe(true);
+    }
+  });
+
+  it.each([darkColors, lightColors])('reserves color for operational semantics', (palette) => {
+    expect(new Set([palette.success, palette.warning, palette.error]).size).toBe(3);
+    expect(palette.diffAdded).not.toBe(palette.diffRemoved);
+  });
+});

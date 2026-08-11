@@ -8,25 +8,25 @@ Custom themes can override the tokens below. The `dark` and `light` columns show
 
 | Token | `dark` | `light` | What it controls |
 | --- | --- | --- | --- |
-| `primary` | `#4FA8FF` | `#1565C0` | The most-used color. Links, inline code, the selected item in nearly every dialog, the focused editor border, Plan/"running" badges, spinners |
-| `accent` | `#5BC0BE` | `#00838F` | Secondary highlight. Approval `▶` prefix, device-code box, image placeholder, BTW / queue panes, registry import |
-| `text` | `#E0E0E0` | `#1A1A1A` | Body text. Dialog bodies, todo titles, footer model label, Markdown headings, assistant/tool message bullets, list bullets |
-| `textStrong` | `#F5F5F5` | `#1A1A1A` | Emphasized / bold text. Input dialogs, status messages |
-| `textDim` | `#888888` | `#454545` | Secondary, dimmed text. Thinking, hints, descriptions, completed todos, Markdown quotes, footer status bar |
-| `textMuted` | `#6B6B6B` | `#5F5F5F` | Faintest text. Counters, scroll info, descriptions, Markdown link URLs, code-block borders |
-| `border` | `#5A5A5A` | `#737373` | Pane and editor borders, Markdown horizontal rule |
-| `borderFocus` | `#E8A838` | `#92660A` | Focus / attention border, currently only the approval panel |
-| `success` | `#4EC87E` | `#0E7A38` | Success state. `✓`, "enabled", completed |
-| `warning` | `#E8A838` | `#92660A` | Warning state. auto/yolo badges, stale markers, Plan mode hint |
-| `error` | `#E85454` | `#B91C1C` | Error state. Error messages, failed tool output |
-| `diffAdded` | `#4EC87E` | `#0E7A38` | Diff added lines |
-| `diffRemoved` | `#E85454` | `#B91C1C` | Diff removed lines |
-| `diffAddedStrong` | `#7AD99B` | `#0E7A38` | Diff intra-line changed words, added and bold |
-| `diffRemovedStrong` | `#F08585` | `#B91C1C` | Diff intra-line changed words, removed and bold |
-| `diffGutter` | `#6B6B6B` | `#737373` | Diff line-number gutter |
-| `diffMeta` | `#888888` | `#5F5F5F` | Diff meta / hunk headers |
-| `roleUser` | `#FFCB6B` | `#9A4A00` | User message bullet and text, skill-activation name |
-| `shellMode` | `#BD93F9` | `#7C3AED` | Shell mode (`!`) prompt, editor border, and the echoed `$ command` line |
+| `primary` | `#E4E4E4` | `#202020` | The most-used identity tone. Links, inline code, selected items, focused editor border, Plan/"running" badges, spinners |
+| `accent` | `#B8B8B8` | `#4B4B4B` | Secondary identity tone. Approval `▶` prefix, device-code box, image placeholder, BTW / queue panes, registry import |
+| `text` | `#E4E4E4` | `#1A1A1A` | Body text. Dialog bodies, todo titles, footer model label, Markdown headings, assistant/tool message bullets, list bullets |
+| `textStrong` | `#F4F4F4` | `#0A0A0A` | Emphasized / bold text. Input dialogs, status messages |
+| `textDim` | `#A0A0A0` | `#4A4A4A` | Secondary, dimmed text. Thinking, hints, descriptions, completed todos, Markdown quotes, footer status bar |
+| `textMuted` | `#858585` | `#5F5F5F` | Faintest text. Counters, scroll info, descriptions, Markdown link URLs, code-block borders |
+| `border` | `#646464` | `#737373` | Pane and editor borders, Markdown horizontal rule |
+| `borderFocus` | `#D0D0D0` | `#303030` | Focus / attention border, currently only the approval panel |
+| `success` | `#3FA266` | `#0E7A38` | Success state. `✓`, "enabled", completed |
+| `warning` | `#D6A55D` | `#92660A` | Warning state. auto/yolo badges, stale markers, Plan mode hint |
+| `error` | `#D74A6A` | `#B91C1C` | Error state. Error messages, failed tool output |
+| `diffAdded` | `#3FA266` | `#0E7A38` | Diff added lines |
+| `diffRemoved` | `#D74A6A` | `#B91C1C` | Diff removed lines |
+| `diffAddedStrong` | `#70B489` | `#0E7A38` | Diff intra-line changed words, added and bold |
+| `diffRemovedStrong` | `#ED7890` | `#B91C1C` | Diff intra-line changed words, removed and bold |
+| `diffGutter` | `#858585` | `#737373` | Diff line-number gutter |
+| `diffMeta` | `#A0A0A0` | `#5F5F5F` | Diff meta / hunk headers |
+| `roleUser` | `#D0D0D0` | `#363636` | User message bullet and text, skill-activation name |
+| `shellMode` | `#B0B0B0` | `#565656` | Shell mode (`!`) prompt, editor border, and the echoed `$ command` line |
 
 ## Use the custom-theme skill
 

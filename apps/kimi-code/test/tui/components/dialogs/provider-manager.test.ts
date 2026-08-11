@@ -9,10 +9,15 @@ import {
 import { DEFAULT_OAUTH_PROVIDER_NAME } from '#/constant/app';
 import { darkColors } from '#/tui/theme/colors';
 
-// Truecolor SGR fragments for the darkColors tokens we assert on
-// (see theme/colors.ts). Forcing chalk.level below guarantees they appear.
-const PRIMARY = '38;2;79;168;255'; // colors.primary  #4FA8FF
-const MUTED = '38;2;107;107;107'; // colors.textMuted #6B6B6B
+function foregroundSgr(hex: string): string {
+  const [red, green, blue] = hex.slice(1).match(/../g)?.map((channel) => parseInt(channel, 16)) ?? [];
+  return `38;2;${String(red)};${String(green)};${String(blue)}`;
+}
+
+// Truecolor SGR fragments for the semantic tokens we assert on. Derive these
+// from the palette so an intentional identity update does not stale the test.
+const PRIMARY = foregroundSgr(darkColors.primary);
+const MUTED = foregroundSgr(darkColors.textMuted);
 const BOLD = '[1m';
 const ESC = String.fromCodePoint(27);
 

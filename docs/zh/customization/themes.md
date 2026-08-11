@@ -8,25 +8,25 @@ Echadron 可以使用内置配色，也可以使用自定义 JSON 主题文件�
 
 | Token | `dark` | `light` | 控制什么 |
 | --- | --- | --- | --- |
-| `primary` | `#4FA8FF` | `#1565C0` | 最常用色。链接、行内代码、几乎所有对话框的选中项、编辑器聚焦边框、Plan/运行中徽章、spinner |
-| `accent` | `#5BC0BE` | `#00838F` | 次级强调。审批 `▶` 前缀、设备码框、图片占位、BTW/队列面板、注册表导入 |
-| `text` | `#E0E0E0` | `#1A1A1A` | 正文。对话框正文、todo 标题、footer 模型名、Markdown 标题、助手/工具消息子弹头、列表符号 |
-| `textStrong` | `#F5F5F5` | `#1A1A1A` | 加粗强调文字。输入类对话框、状态消息 |
-| `textDim` | `#888888` | `#454545` | 次级、变暗文字。思考、提示、描述、已完成 todo、Markdown 引用、footer 状态栏 |
-| `textMuted` | `#6B6B6B` | `#5F5F5F` | 最浅文字。计数、滚动信息、描述、Markdown 链接 URL、代码块边框 |
-| `border` | `#5A5A5A` | `#737373` | 面板与编辑器的普通边框、Markdown 分隔线 |
-| `borderFocus` | `#E8A838` | `#92660A` | 聚焦/注意边框，目前仅审批面板使用 |
-| `success` | `#4EC87E` | `#0E7A38` | 成功态。`✓`、已启用、完成 |
-| `warning` | `#E8A838` | `#92660A` | 警告态。auto/yolo 徽章、过期标记、Plan 模式提示 |
-| `error` | `#E85454` | `#B91C1C` | 错误态。错误信息、失败的工具输出 |
-| `diffAdded` | `#4EC87E` | `#0E7A38` | diff 新增行 |
-| `diffRemoved` | `#E85454` | `#B91C1C` | diff 删除行 |
-| `diffAddedStrong` | `#7AD99B` | `#0E7A38` | diff 行内改动的新增词（加粗高亮） |
-| `diffRemovedStrong` | `#F08585` | `#B91C1C` | diff 行内改动的删除词（加粗高亮） |
-| `diffGutter` | `#6B6B6B` | `#737373` | diff 行号槽 |
-| `diffMeta` | `#888888` | `#5F5F5F` | diff 元信息 / hunk 头 |
-| `roleUser` | `#FFCB6B` | `#9A4A00` | 用户消息的子弹头与文字、技能激活名 |
-| `shellMode` | `#BD93F9` | `#7C3AED` | Shell 模式（`!`）的提示符、编辑器边框，以及回显的 `$ 命令` 行 |
+| `primary` | `#E4E4E4` | `#202020` | 最常用身份色。链接、行内代码、几乎所有对话框的选中项、编辑器聚焦边框、Plan/运行中徽章、spinner |
+| `accent` | `#B8B8B8` | `#4B4B4B` | 次级身份色。审批 `▶` 前缀、设备码框、图片占位、BTW/队列面板、注册表导入 |
+| `text` | `#E4E4E4` | `#1A1A1A` | 正文。对话框正文、todo 标题、footer 模型名、Markdown 标题、助手/工具消息子弹头、列表符号 |
+| `textStrong` | `#F4F4F4` | `#0A0A0A` | 加粗强调文字。输入类对话框、状态消息 |
+| `textDim` | `#A0A0A0` | `#4A4A4A` | 次级、变暗文字。思考、提示、描述、已完成 todo、Markdown 引用、footer 状态栏 |
+| `textMuted` | `#858585` | `#5F5F5F` | 最浅文字。计数、滚动信息、描述、Markdown 链接 URL、代码块边框 |
+| `border` | `#646464` | `#737373` | 面板与编辑器的普通边框、Markdown 分隔线 |
+| `borderFocus` | `#D0D0D0` | `#303030` | 聚焦/注意边框，目前仅审批面板使用 |
+| `success` | `#3FA266` | `#0E7A38` | 成功态。`✓`、已启用、完成 |
+| `warning` | `#D6A55D` | `#92660A` | 警告态。auto/yolo 徽章、过期标记、Plan 模式提示 |
+| `error` | `#D74A6A` | `#B91C1C` | 错误态。错误信息、失败的工具输出 |
+| `diffAdded` | `#3FA266` | `#0E7A38` | diff 新增行 |
+| `diffRemoved` | `#D74A6A` | `#B91C1C` | diff 删除行 |
+| `diffAddedStrong` | `#70B489` | `#0E7A38` | diff 行内改动的新增词（加粗高亮） |
+| `diffRemovedStrong` | `#ED7890` | `#B91C1C` | diff 行内改动的删除词（加粗高亮） |
+| `diffGutter` | `#858585` | `#737373` | diff 行号槽 |
+| `diffMeta` | `#A0A0A0` | `#5F5F5F` | diff 元信息 / hunk 头 |
+| `roleUser` | `#D0D0D0` | `#363636` | 用户消息的子弹头与文字、技能激活名 |
+| `shellMode` | `#B0B0B0` | `#565656` | Shell 模式（`!`）的提示符、编辑器边框，以及回显的 `$ 命令` 行 |
 
 ## 使用 custom-theme skill
 
