@@ -251,7 +251,10 @@ export function isRetryableGenerateError(error: unknown): boolean {
     if (error instanceof APIProviderQuotaExhaustedError) {
       return false;
     }
-    return [408, 409, 429, 500, 502, 503, 504, 529].includes(error.statusCode);
+    return (
+      [408, 409, 429, 529].includes(error.statusCode) ||
+      (error.statusCode >= 500 && error.statusCode < 600)
+    );
   }
   return error instanceof ChatProviderError && !isImageFormatError(error);
 }
@@ -278,6 +281,8 @@ const CONTEXT_OVERFLOW_MESSAGE_PATTERNS = [
   /prompt is too long.*maximum/,
   /input token count.*exceeds?.*maximum number of tokens/,
   /request.*exceed(?:ed|s|ing)?.*model token limit/,
+  /current message.*exceeds budget/,
+  /attached file content.*causes message to exceed budget/,
 ] as const;
 
 const PROVIDER_RATE_LIMIT_MESSAGE_PATTERNS = [
@@ -382,8 +387,14 @@ export function parseTraceId(headers: unknown): string | null {
 }
 
 export function isContextOverflowStatusError(statusCode: number, message: string): boolean {
-  if (statusCode !== 400 && statusCode !== 413 && statusCode !== 422) return false;
   const lowerMessage = message.toLowerCase();
+  if (statusCode === 500) {
+    return (
+      /current message.*exceeds budget/.test(lowerMessage) ||
+      /attached file content.*causes message to exceed budget/.test(lowerMessage)
+    );
+  }
+  if (statusCode !== 400 && statusCode !== 413 && statusCode !== 422) return false;
   return CONTEXT_OVERFLOW_MESSAGE_PATTERNS.some((pattern) => pattern.test(lowerMessage));
 }
 

@@ -166,7 +166,7 @@ describe('isRetryableGenerateError', () => {
     expect(isRetryableGenerateError(new APIEmptyResponseError('empty'))).toBe(true);
   });
 
-  it.each([408, 409, 429, 500, 502, 503, 504, 529])(
+  it.each([408, 409, 429, 500, 502, 503, 504, 520, 522, 529, 599])(
     'treats HTTP %i as retryable',
     (statusCode) => {
       expect(isRetryableGenerateError(new APIStatusError(statusCode, 'retryable'))).toBe(true);
@@ -367,6 +367,8 @@ describe('normalizeAPIStatusError', () => {
     [400, 'prompt is too long: 210000 tokens exceeds the maximum'],
     [400, 'input token count 131072 exceeds the maximum number of tokens allowed'],
     [400, 'Invalid request: Your request exceeded model token limit: 262144 (requested: 274613)'],
+    [500, 'Current message (1000000 tokens) exceeds budget (500000 tokens)'],
+    [500, 'Attached file content (300000 tokens) causes message to exceed budget'],
   ])('normalizes %i "%s" to APIContextOverflowError', (statusCode, message) => {
     const error = normalizeAPIStatusError(statusCode, message, 'req-context');
     expect(error).toBeInstanceOf(APIContextOverflowError);
@@ -377,6 +379,7 @@ describe('normalizeAPIStatusError', () => {
   it.each([
     [401, 'Context length exceeded'],
     [500, 'Context length exceeded'],
+    [500, 'compact index estimate 2.0 GB exceeds budget 1.0 GB'],
     [400, 'Bad request'],
     [422, 'Invalid tool schema'],
     [400, 'max_tokens must be less than or equal to 4096'],

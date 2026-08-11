@@ -112,10 +112,11 @@ const OPENAI_CODEX_REQUEST_ORIGINATOR = 'echadron-cli';
 // ('pi'), so we keep it rather than risk a rejection with 'kimi-code'.
 const BROWSER_CALLBACK_HOST = '127.0.0.1';
 const BROWSER_CALLBACK_PORT = 1455;
+const BROWSER_CALLBACK_FALLBACK_PORT = 1457;
 const BROWSER_CALLBACK_PATH = '/auth/callback';
-const BROWSER_REDIRECT_URI = `http://localhost:${BROWSER_CALLBACK_PORT}${BROWSER_CALLBACK_PATH}`;
 const BROWSER_AUTHORIZE_URL = 'https://auth.openai.com/oauth/authorize';
 const BROWSER_SCOPE = 'openid profile email offline_access';
+const BROWSER_CALLBACK_TIMEOUT_MS = 10 * 60 * 1000;
 
 interface HttpResponse {
   readonly status: number;
@@ -357,21 +358,26 @@ export async function loginOpenAICodexBrowser(
   crypto.getRandomValues(stateBytes);
   const state = Array.from(stateBytes, (b) => b.toString(16).padStart(2, '0')).join('');
 
-  let server: CallbackServerHandle;
-  try {
-    server = await runOAuthCallbackServer({
-      host: BROWSER_CALLBACK_HOST,
-      port: BROWSER_CALLBACK_PORT,
-      path: BROWSER_CALLBACK_PATH,
-      expectedState: state,
-      successMessage: 'OpenAI authentication completed. You can close this window.',
-      providerLabel: 'OpenAI Codex',
-    });
-  } catch {
-    // EADDRINUSE / other bind failure: re-throw so the chooser can fall back
-    // to device-code.
+  let server: CallbackServerHandle | undefined;
+  for (const port of [BROWSER_CALLBACK_PORT, BROWSER_CALLBACK_FALLBACK_PORT]) {
+    try {
+      server = await runOAuthCallbackServer({
+        host: BROWSER_CALLBACK_HOST,
+        port,
+        path: BROWSER_CALLBACK_PATH,
+        expectedState: state,
+        successMessage: 'OpenAI authentication completed. You can close this window.',
+        providerLabel: 'OpenAI Codex',
+        timeoutMs: BROWSER_CALLBACK_TIMEOUT_MS,
+      });
+      break;
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'EADDRINUSE') throw error;
+    }
+  }
+  if (server === undefined) {
     throw new OAuthError(
-      `OpenAI Codex browser login could not start the local callback server on port ${BROWSER_CALLBACK_PORT}. Use device-code login instead.`,
+      `OpenAI Codex browser login could not start the local callback server on ports ${BROWSER_CALLBACK_PORT} or ${BROWSER_CALLBACK_FALLBACK_PORT}. Use device-code login instead.`,
     );
   }
 
@@ -389,7 +395,7 @@ export async function loginOpenAICodexBrowser(
     const url = new URL(BROWSER_AUTHORIZE_URL);
     url.searchParams.set('response_type', 'code');
     url.searchParams.set('client_id', OPENAI_CODEX_OAUTH_FLOW_CONFIG.clientId);
-    url.searchParams.set('redirect_uri', BROWSER_REDIRECT_URI);
+    url.searchParams.set('redirect_uri', server.redirectUri);
     url.searchParams.set('scope', BROWSER_SCOPE);
     url.searchParams.set('code_challenge', challenge);
     url.searchParams.set('code_challenge_method', 'S256');
@@ -408,7 +414,7 @@ export async function loginOpenAICodexBrowser(
       url: url.toString(),
       instructions:
         'Complete login in your browser. If it does not close automatically, paste the final redirect URL here.',
-      placeholder: BROWSER_REDIRECT_URI,
+      placeholder: server.redirectUri,
       signal: manualAbort.signal,
     });
 
@@ -419,7 +425,7 @@ export async function loginOpenAICodexBrowser(
 
     if (winner.kind === 'server' && winner.result !== null) {
       manualAbort.abort();
-      return await exchangeBrowserCode(winner.result.code, verifier);
+      return await exchangeBrowserCode(winner.result.code, verifier, server.redirectUri);
     }
     // Server lost/cancelled or returned null — use the manual paste.
     const manualInput = winner.kind === 'manual' ? winner.input : await manualPromise;
@@ -429,7 +435,7 @@ export async function loginOpenAICodexBrowser(
     }
     const code = extractCode(manualInput);
     if (code === undefined) throw new OAuthError('OpenAI Codex authorization code is missing.');
-    return await exchangeBrowserCode(code, verifier);
+    return await exchangeBrowserCode(code, verifier, server.redirectUri);
   } finally {
     manualAbort.abort();
     server.cancelWait();
@@ -438,13 +444,17 @@ export async function loginOpenAICodexBrowser(
 }
 
 /** Exchange an authorization code (from browser capture or paste) for tokens. */
-async function exchangeBrowserCode(code: string, verifier: string): Promise<TokenInfo> {
+async function exchangeBrowserCode(
+  code: string,
+  verifier: string,
+  redirectUri: string,
+): Promise<TokenInfo> {
   const exchange = await postForm(`${OPENAI_CODEX_OAUTH_FLOW_CONFIG.oauthHost}/oauth/token`, {
     grant_type: 'authorization_code',
     client_id: OPENAI_CODEX_OAUTH_FLOW_CONFIG.clientId,
     code,
     code_verifier: verifier,
-    redirect_uri: BROWSER_REDIRECT_URI,
+    redirect_uri: redirectUri,
   });
   if (exchange.status < 200 || exchange.status >= 300) {
     throw new OAuthError(failureMessage('browser token exchange', exchange));

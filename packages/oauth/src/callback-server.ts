@@ -11,9 +11,10 @@
  *     falls back to manual paste, but we surface the error rather than silently
  *     resolving `null` — a stale server from a crashed session should be
  *     visible, not hidden.
- *   - `waitForCode` resolves `{ code, state }` on a valid callback, or `null`
- *     when cancelled (the manual arm won the race). It is one-shot: subsequent
- *     callbacks are ignored after the first settle.
+ *   - `waitForCode` resolves `{ code, state }` on a valid callback, resolves
+ *     `null` when cancelled (the manual arm won the race), and rejects on a
+ *     provider error or deadline. It is one-shot: subsequent callbacks are
+ *     ignored after the first settle.
  *   - To stay reachable when the OS resolves `localhost` to either IPv4 or IPv6,
  *     we listen on both `127.0.0.1` and `::1` whenever the requested host is a
  *     loopback address. The advertised redirect URI remains `localhost` to match
@@ -37,6 +38,8 @@ export interface CallbackServerOptions {
   readonly successMessage: string;
   /** Provider name for error messages. */
   readonly providerLabel: string;
+  /** Optional deadline for receiving a valid callback. */
+  readonly timeoutMs?: number;
 }
 
 export interface CallbackResult {
@@ -47,7 +50,7 @@ export interface CallbackResult {
 export interface CallbackServerHandle {
   /** The redirect URI registered with the OAuth provider. */
   readonly redirectUri: string;
-  /** Resolves `{ code, state }` on capture, or `null` if cancelled. One-shot. */
+  /** Resolves on capture/cancel; rejects on provider error or deadline. One-shot. */
   readonly waitForCode: () => Promise<CallbackResult | null>;
   /** Cancel a pending wait; the manual-paste arm of the race calls this on win. */
   readonly cancelWait: () => void;
@@ -75,15 +78,23 @@ export function runOAuthCallbackServer(options: CallbackServerOptions): Promise<
   }
 
   let settleWait: ((value: CallbackResult | null) => void) | undefined;
-  const waitForCodePromise = new Promise<CallbackResult | null>((resolveWait) => {
+  let rejectWait: ((error: Error) => void) | undefined;
+  let timeout: ReturnType<typeof setTimeout> | undefined;
+  const waitForCodePromise = new Promise<CallbackResult | null>((resolveWait, reject) => {
     let settled = false;
     settleWait = (value: CallbackResult | null): void => {
       if (settled) return;
       settled = true;
+      if (timeout !== undefined) clearTimeout(timeout);
       resolveWait(value);
     };
+    rejectWait = (error: Error): void => {
+      if (settled) return;
+      settled = true;
+      if (timeout !== undefined) clearTimeout(timeout);
+      reject(error);
+    };
   });
-
   const bindHosts = LOOPBACK_BIND_HOSTS;
 
   const requestHandler = (req: IncomingMessage, res: ServerResponse): void => {
@@ -103,27 +114,33 @@ export function runOAuthCallbackServer(options: CallbackServerOptions): Promise<
       const code = url.searchParams.get('code');
       const state = url.searchParams.get('state');
       const error = url.searchParams.get('error');
+      const errorDescription = url.searchParams.get('error_description');
+
+      if (state !== options.expectedState) {
+        res.writeHead(400, { 'Content-Type': 'text/html; charset=utf-8' });
+        res.end(oauthErrorHtml('State mismatch.'));
+        return;
+      }
 
       if (error !== null) {
         res.writeHead(400, { 'Content-Type': 'text/html; charset=utf-8' });
         res.end(
           oauthErrorHtml(
             `${options.providerLabel} authentication did not complete.`,
-            `Error: ${error}`,
+            `Error: ${errorDescription ?? error}`,
+          ),
+        );
+        rejectWait?.(
+          new Error(
+            `${options.providerLabel} authentication failed: ${errorDescription ?? error}`,
           ),
         );
         return;
       }
 
-      if (code === null || code.length === 0 || state === null) {
+      if (code === null || code.length === 0) {
         res.writeHead(400, { 'Content-Type': 'text/html; charset=utf-8' });
         res.end(oauthErrorHtml('Missing code or state parameter.'));
-        return;
-      }
-
-      if (state !== options.expectedState) {
-        res.writeHead(400, { 'Content-Type': 'text/html; charset=utf-8' });
-        res.end(oauthErrorHtml('State mismatch.'));
         return;
       }
 
@@ -161,11 +178,23 @@ export function runOAuthCallbackServer(options: CallbackServerOptions): Promise<
         const redirectUri = `http://localhost:${options.port}${options.path}`;
         resolve({
           redirectUri,
-          waitForCode: () => waitForCodePromise,
+          waitForCode: () => {
+            if (timeout === undefined && options.timeoutMs !== undefined) {
+              timeout = setTimeout(() => {
+                rejectWait?.(
+                  new Error(`Timed out waiting for ${options.providerLabel} authentication.`),
+                );
+              }, options.timeoutMs);
+            }
+            return waitForCodePromise;
+          },
           cancelWait: () => {
             settleWait?.(null);
           },
-          close: closeAll,
+          close: () => {
+            settleWait?.(null);
+            closeAll();
+          },
         });
       } else {
         closeAll();
