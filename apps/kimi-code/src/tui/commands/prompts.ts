@@ -19,6 +19,7 @@ import { FeedbackInputDialogComponent, type FeedbackInputDialogResult } from '..
 import { ModelSelectorComponent } from '../components/dialogs/model-selector';
 import type { SlashCommandHost } from './dispatch';
 import { toTerminalHyperlink } from '#/utils/terminal-hyperlink';
+import { openUrl } from '#/utils/open-url';
 import { getDataDir } from '#/utils/paths';
 
 export function promptLogoutProviderSelection(
@@ -210,6 +211,14 @@ export function promptOAuthAuthorizationCode(
   providerName: string,
   authorization: BrowserAuthorization,
 ): Promise<string | undefined> {
+  // Match the device-code flow: browser login must actually launch the
+  // authorization URL. The visible hyperlink remains the manual fallback for
+  // headless environments or systems where the opener is unavailable.
+  try {
+    openUrl(authorization.url);
+  } catch {
+    // Best effort only; the dialog below always exposes the URL.
+  }
   return new Promise((resolve) => {
     let settled = false;
     const finish = (value: string | undefined): void => {
