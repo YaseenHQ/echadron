@@ -1,5 +1,13 @@
 # @moonshot-ai/kimi-code
 
+## 0.30.1
+
+### Patch Changes
+
+- [#37](https://github.com/YaseenHQ/kimi/pull/37) [`b916da6`](https://github.com/YaseenHQ/kimi/commit/b916da6ebc651559dbcd8bd94e9993dffe50b757) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Open ChatGPT browser OAuth automatically while retaining the manual redirect fallback.
+
+- [#35](https://github.com/YaseenHQ/kimi/pull/35) [`e26a4d4`](https://github.com/YaseenHQ/kimi/commit/e26a4d42b1b299f3f67ac2416b39da006297b36a) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Stop loading provider promotional banners by default, make ambient provider guidance neutral, and streamline the startup header.
+
 ## 0.30.0
 
 ### Minor Changes
