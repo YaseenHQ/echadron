@@ -26,6 +26,7 @@ import {
   createKimiHarness,
   createKimiHarnessV2,
   DEFAULT_CATALOG_URL,
+  redact,
   resolveCatalogImport,
   type Catalog,
   type CatalogProviderEntry,
@@ -176,8 +177,9 @@ export async function handleProviderList(
   const config = await harness.getConfig();
 
   if (opts.json) {
+    const safeConfig = redact({ providers: config.providers, models: config.models ?? {} });
     deps.stdout.write(
-      `${JSON.stringify({ providers: config.providers, models: config.models ?? {} }, null, 2)}\n`,
+      `${JSON.stringify(safeConfig, null, 2)}\n`,
     );
     return;
   }
@@ -505,7 +507,7 @@ export function registerProviderCommand(parent: Command, deps?: Partial<Provider
   provider
     .command('list')
     .description('Show configured providers and their model counts.')
-    .option('--json', 'Emit the raw providers/models config as JSON.', false)
+    .option('--json', 'Emit providers/models config as JSON with credentials redacted.', false)
     .action(async (options: { json?: boolean }) => {
       const resolved = resolveDeps(deps);
       await runAction(resolved, () => handleProviderList(resolved, { json: options.json === true }));

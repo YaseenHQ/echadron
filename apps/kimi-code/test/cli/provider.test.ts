@@ -515,6 +515,23 @@ describe('kimi provider list', () => {
     ]);
     expect(Object.keys(parsed.models)).toContain('kohub/a');
   });
+
+  it('redacts credentials from JSON output', async () => {
+    const { harness } = makeHarness(config);
+    const { deps, stdout } = makeDeps(harness);
+
+    await tryRun(() => handleProviderList(deps, { json: true }));
+
+    const output = stdout.join('');
+    const parsed = JSON.parse(output) as {
+      providers: Record<string, { apiKey?: string; source?: { apiKey?: string } }>;
+    };
+    expect(parsed.providers['kohub']?.apiKey).toBe('[REDACTED]');
+    expect(parsed.providers['kohub']?.source?.apiKey).toBe('[REDACTED]');
+    expect(parsed.providers['manual']?.apiKey).toBe('[REDACTED]');
+    expect(output).not.toContain('"apiKey": "k"');
+    expect(output).not.toContain('"apiKey": "m"');
+  });
 });
 
 describe('registerProviderCommand', () => {
