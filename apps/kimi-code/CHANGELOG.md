@@ -1,5 +1,11 @@
 # @moonshot-ai/kimi-code
 
+## 0.31.1
+
+### Patch Changes
+
+- [#43](https://github.com/YaseenHQ/echadron/pull/43) [`8a687ec`](https://github.com/YaseenHQ/echadron/commit/8a687ecae19a4a66304e3e9a42843c48cb8d1e89) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Redact API keys, tokens, passwords, and other credentials from `echadron provider list --json` output.
+
 ## 0.31.0
 
 ### Minor Changes
