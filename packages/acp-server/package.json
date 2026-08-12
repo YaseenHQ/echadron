@@ -1,6 +1,6 @@
 {
   "name": "@moonshot-ai/acp-server",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "private": true,
   "description": "ACP v2 server for Echadron, backed by the existing SDK harness",
   "license": "MIT",

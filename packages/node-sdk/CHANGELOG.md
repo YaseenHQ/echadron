@@ -1,5 +1,11 @@
 # @moonshot-ai/kimi-code-sdk
 
+## 0.16.0
+
+### Minor Changes
+
+- [#40](https://github.com/YaseenHQ/echadron/pull/40) [`9cc4653`](https://github.com/YaseenHQ/echadron/commit/9cc465313ebf018476be38b3a21d0742b10d0f14) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Graduate the completed tool-disclosure, secondary-model, and minidb read-model features to default-on behavior with retained rollback controls. Make `echadron acp` negotiate ACP v1 or v2 transparently, preserve legacy environment aliases, and remove the internal fault-injection experiment.
+
 ## 0.15.0
 
 ### Minor Changes

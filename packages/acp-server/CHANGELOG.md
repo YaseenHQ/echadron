@@ -1,5 +1,13 @@
 # @moonshot-ai/acp-server
 
+## 0.0.2
+
+### Patch Changes
+
+- Updated dependencies [[`9cc4653`](https://github.com/YaseenHQ/echadron/commit/9cc465313ebf018476be38b3a21d0742b10d0f14)]:
+  - @moonshot-ai/kimi-code-sdk@0.16.0
+  - @moonshot-ai/acp-adapter@0.3.7
+
 ## 0.0.1
 
 ### Patch Changes
