@@ -129,9 +129,14 @@ echadron
 | `KIMI_CODE_PLUGIN_MARKETPLACE_URL` | 覆盖 `/plugins` 加载的 plugin marketplace JSON，适合 dev loopback server、测试 CDN 文件或替换 marketplace 目录 | `https://code.kimi.com/kimi-code/plugins/marketplace.json`；也接受 `http://`、`file://` URL 和本地路径 |
 | `KIMI_CODE_AGENT_SWARM_MAX_CONCURRENCY` | 限制 AgentSwarm 初始提升并发阶段可同时运行的子 Agent 数量；不设置表示不限制 | 正整数；非法值会立即失败 |
 | `KIMI_SUBAGENT_TIMEOUT_MS` | 单个子 Agent（`Agent` / `AgentSwarm`）可运行的最长时间（毫秒）；优先级高于 `config.toml` 的 `[subagent] timeout_ms`（默认 `7200000`，即 2 小时） | 正整数；非法值回退到配置或默认值 |
-| `KIMI_CODE_EXPERIMENTAL_SECONDARY_MODEL` | 在包括交互式 TUI 在内的所有启动方式下启用实验性的次主力模型功能；master `KIMI_CODE_EXPERIMENTAL_FLAG=1` 也会启用本功能 | 真值：`1`/`true`/`yes`/`on`；假值：`0`/`false`/`no`/`off` |
-| `KIMI_SECONDARY_MODEL` | 次主力模型；优先级高于 `config.toml` 的 `[secondary_model] model`。次主力模型实验功能启用后，新派生的子 Agent 默认绑定该模型，而不再继承主 Agent 的模型 | 已配置 `[models]` 中的模型 id，如 `echadron-code/kimi-k2.5`；空白值被忽略 |
-| `KIMI_SECONDARY_EFFORT` | 次主力模型的 thinking effort；优先级高于 `config.toml` 的 `[secondary_model] default_effort`，仅在次主力模型及其实验功能均启用时生效 | effort 取值，如 `low`；空白值被忽略 |
+| `ECHADRON_EXPERIMENTAL_TOOL_SELECT` | 覆盖默认开启的渐进式 MCP 工具披露功能；使用假值可回退关闭 | 真值：`1`/`true`/`yes`/`on`；假值：`0`/`false`/`no`/`off` |
+| `KIMI_CODE_EXPERIMENTAL_TOOL_SELECT` | `ECHADRON_EXPERIMENTAL_TOOL_SELECT` 的历史别名 | 同上所列真值或假值 |
+| `ECHADRON_EXPERIMENTAL_SECONDARY_MODEL` | 覆盖默认开启的次主力模型功能；使用假值可回退关闭 | 真值：`1`/`true`/`yes`/`on`；假值：`0`/`false`/`no`/`off` |
+| `KIMI_CODE_EXPERIMENTAL_SECONDARY_MODEL` | `ECHADRON_EXPERIMENTAL_SECONDARY_MODEL` 的历史别名 | 同上所列真值或假值 |
+| `ECHADRON_EXPERIMENTAL_PERSISTENCE_MINIDB_READMODEL` | 覆盖默认开启的 minidb 派生会话读取模型；使用假值可回退关闭 | 真值：`1`/`true`/`yes`/`on`；假值：`0`/`false`/`no`/`off` |
+| `KIMI_CODE_EXPERIMENTAL_PERSISTENCE_MINIDB_READMODEL` | `ECHADRON_EXPERIMENTAL_PERSISTENCE_MINIDB_READMODEL` 的历史别名 | 同上所列真值或假值 |
+| `KIMI_SECONDARY_MODEL` | 次主力模型；优先级高于 `config.toml` 的 `[secondary_model] model`。新派生的子 Agent 默认绑定该模型，而不再继承主 Agent 的模型 | 已配置 `[models]` 中的模型 id，如 `echadron-code/kimi-k2.5`；空白值被忽略 |
+| `KIMI_SECONDARY_EFFORT` | 次主力模型的 thinking effort；优先级高于 `config.toml` 的 `[secondary_model] default_effort`，配置次主力模型后生效 | effort 取值，如 `low`；空白值被忽略 |
 | `KIMI_MCP_STARTUP_TIMEOUT_MS` | 所有 MCP server 的全局默认连接超时（毫秒）；优先级高于 `config.toml` 的 `[mcp] startup_timeout_ms`，但低于 `mcp.json` 中单个 server 的 `startupTimeoutMs`（默认 `30000`） | `1` 到 `2147483647` 的整数；非法值被忽略 |
 | `KIMI_MCP_TOOL_TIMEOUT_MS` | 所有 MCP server 的全局默认单次工具调用超时（毫秒）；优先级高于 `config.toml` 的 `[mcp] tool_timeout_ms`，但低于 `mcp.json` 中单个 server 的 `toolTimeoutMs`（默认 `60000`） | `1` 到 `2147483647` 的整数；非法值被忽略 |
 | `KIMI_LOOP_MAX_STEPS_PER_TURN` | Agent 单轮最大步数；优先级高于 `config.toml` 的 `[loop_control] max_steps_per_turn`（不设或 `0` 表示无上限） | 非负整数；非法值被忽略 |
@@ -141,7 +146,8 @@ echadron
 | `KIMI_WEB_SEARCH_API_KEY` | 网页搜索（`WebSearch`）服务的 API 密钥；设置后同时替换配置中的 API 密钥和 OAuth 凭据 | 非空字符串；空白值被忽略 |
 | `KIMI_WEB_FETCH_BASE_URL` | 网页抓取（`FetchURL`）服务的 API URL；优先级高于 `[services.moonshot_fetch] base_url`。文件中持久化的凭据和自定义 header 不会发送到环境变量指定的端点。环境变量和配置都没有指定端点时，已登录用户会先尝试 Kimi OAuth 托管抓取服务，再回退到本地直接请求 | 非空字符串；空白值被忽略 |
 | `KIMI_WEB_FETCH_API_KEY` | 网页抓取（`FetchURL`）服务的 API 密钥；设置后同时替换配置中的 API 密钥和 OAuth 凭据 | 非空字符串；空白值被忽略 |
-| `KIMI_CODE_EXPERIMENTAL_FLAG` | 在当前进程启用所有已注册的实验功能 | `1`、`true`、`yes`、`on` |
+| `ECHADRON_EXPERIMENTAL_FLAG` | 在当前进程启用所有已注册的功能控制；为兼容和诊断保留 | `1`、`true`、`yes`、`on` |
+| `KIMI_CODE_EXPERIMENTAL_FLAG` | `ECHADRON_EXPERIMENTAL_FLAG` 的历史别名 | `1`、`true`、`yes`、`on` |
 | `ECHADRON_LEGACY_FLAG` | 退出默认的 agent-core-v2 引擎，改用旧版 v1 CLI/TUI/print/ACP 兼容路径 | `1`、`true`、`yes`、`on` |
 | `KIMI_CODE_LEGACY_FLAG` | `ECHADRON_LEGACY_FLAG` 的旧别名 | `1`、`true`、`yes`、`on` |
 | `KIMI_SHELL_PATH` | Windows 上覆盖 Git Bash 路径（自动探测失败时使用） | 绝对路径 |

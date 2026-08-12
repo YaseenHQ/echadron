@@ -26,7 +26,7 @@ const exampleFlag: FlagDefinitionInput = {
   id: 'example_flag',
   title: 'Example flag',
   description: 'Example experimental flag used to exercise the flag registry.',
-  env: 'KIMI_CODE_EXPERIMENTAL_EXAMPLE_FLAG',
+  env: 'ECHADRON_EXPERIMENTAL_EXAMPLE_FLAG',
   default: true,
   surface: 'core',
 };
@@ -36,7 +36,7 @@ describe('FlagRegistryService', () => {
     const reg = new FlagRegistryService();
     reg.register(exampleFlag);
     expect(reg.list().map((d) => d.id)).toEqual(['example_flag']);
-    expect(reg.get('example_flag')?.env).toBe('KIMI_CODE_EXPERIMENTAL_EXAMPLE_FLAG');
+    expect(reg.get('example_flag')?.env).toBe('ECHADRON_EXPERIMENTAL_EXAMPLE_FLAG');
   });
 
   it('returns undefined for an unknown id', () => {
@@ -128,12 +128,26 @@ describe('FlagService', () => {
     expect(state?.configValue).toBe(false);
   });
 
+  it('prefers the canonical Echadron env over its historical alias', () => {
+    const { flags } = makeFlags({
+      ECHADRON_EXPERIMENTAL_EXAMPLE_FLAG: 'false',
+      KIMI_CODE_EXPERIMENTAL_EXAMPLE_FLAG: 'true',
+    });
+    expect(flags.enabled('example_flag')).toBe(false);
+  });
+
   it('lets the master env switch force every flag on', async () => {
     const { config, flags } = makeFlags({ [MASTER_ENV]: '1' });
     await config.set(EXPERIMENTAL_SECTION, { example_flag: false });
     const state = flags.explain('example_flag');
     expect(state?.enabled).toBe(true);
     expect(state?.source).toBe('master-env');
+  });
+
+  it('accepts the historical master-switch alias', () => {
+    const { flags } = makeFlags({ KIMI_CODE_EXPERIMENTAL_FLAG: '1' });
+    expect(flags.enabled('example_flag')).toBe(true);
+    expect(flags.explain('example_flag')?.source).toBe('master-env');
   });
 
   it('refreshes overrides when the experimental config section changes', async () => {

@@ -192,7 +192,7 @@ describe('built-in slash command registry', () => {
     expect(resolveSlashCommandAvailability(reloadTui!, '')).toBe('always');
   });
 
-  it('gates secondary_model behind the secondary-model experiment, always available', () => {
+  it('gates secondary_model behind its rollback control while defaulting available', () => {
     const command = findBuiltInSlashCommand('secondary_model');
     expect(command).toBeDefined();
     expect((command as KimiSlashCommand).experimentalFlag).toBe('secondary-model');

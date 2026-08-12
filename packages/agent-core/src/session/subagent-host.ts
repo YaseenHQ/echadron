@@ -463,7 +463,7 @@ export class SessionSubagentHost {
 
   /**
    * The model a newly spawned subagent binds to: the configured secondary
-   * model by default (when the experiment is on), otherwise the parent's
+   * model by default (when the feature control is on), otherwise the parent's
    * model and effort, inherited as before. The bound alias is validated up
    * front so a dangling `[secondary_model]` pointer fails the spawn with a
    * wrapped, actionable error instead of a mid-turn provider failure.
@@ -479,10 +479,10 @@ export class SessionSubagentHost {
       { modelAlias: parent.config.modelAlias, thinkingEffort: parent.config.thinkingEffort },
       modelChoice ?? profile.modelPreference,
     );
-    // When the secondary-model experiment is off (the default), the binding
+    // When the secondary-model feature control is off, the binding
     // resolves to the parent's alias. Honor a concrete profile-level model pin
     // (Echadron PR #4) so a profile like `coder` can still bind its own model
-    // without enabling the experiment. Thinking effort inherits from the parent
+    // without enabling that feature. Thinking effort inherits from the parent
     // only when the effective alias matches the parent's.
     if (
       binding.modelAlias === parent.config.modelAlias &&
@@ -515,7 +515,7 @@ export class SessionSubagentHost {
   /**
    * Resume/retry re-syncs the child to the parent's current model so subagents
    * follow mid-session `/model` switches — but only while the secondary-model
-   * experiment is on. When the experiment is off (the default), a resumed
+   * feature control is on. When the feature is off, a resumed
    * subagent keeps the model it was bound to at spawn (Echadron PR #4: profile
    * pin + recorded child model both stick across resume/retry).
    */

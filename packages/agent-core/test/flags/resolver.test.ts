@@ -15,7 +15,7 @@ const DEFS = [
     id: 'a-on-default',
     title: 'A on default',
     description: 'Fake flag A.',
-    env: 'KIMI_CODE_EXPERIMENTAL_A',
+    env: 'ECHADRON_EXPERIMENTAL_A',
     default: true,
     surface: 'core',
   },
@@ -23,7 +23,7 @@ const DEFS = [
     id: 'b-off-default',
     title: 'B off default',
     description: 'Fake flag B.',
-    env: 'KIMI_CODE_EXPERIMENTAL_B',
+    env: 'ECHADRON_EXPERIMENTAL_B',
     default: false,
     surface: 'tui',
   },
@@ -56,6 +56,15 @@ describe('FlagResolver', () => {
     }
   });
 
+  it('prefers the canonical Echadron per-feature env over its legacy alias', () => {
+    expect(
+      make({
+        ECHADRON_EXPERIMENTAL_A: '0',
+        KIMI_CODE_EXPERIMENTAL_A: '1',
+      })('a-on-default'),
+    ).toBe(false);
+  });
+
   it('L2 unparseable value falls back to default', () => {
     expect(make({ KIMI_CODE_EXPERIMENTAL_B: 'maybe' })('b-off-default')).toBe(false);
     expect(make({ KIMI_CODE_EXPERIMENTAL_A: 'maybe' })('a-on-default')).toBe(true);
@@ -63,6 +72,12 @@ describe('FlagResolver', () => {
 
   it('L1 master switch: every flag is on when enabled (including default=false)', () => {
     const enabled = make({ [MASTER_ENV]: '1' });
+    expect(enabled('a-on-default')).toBe(true);
+    expect(enabled('b-off-default')).toBe(true);
+  });
+
+  it('accepts the historical master-switch alias', () => {
+    const enabled = make({ KIMI_CODE_EXPERIMENTAL_FLAG: '1' });
     expect(enabled('a-on-default')).toBe(true);
     expect(enabled('b-off-default')).toBe(true);
   });
@@ -86,7 +101,8 @@ describe('FlagResolver', () => {
     expect(resolver.enabledIds()).toEqual(['a-on-default', 'b-off-default']);
   });
 
-  it('reads the env name declared in the registry (the declared name works, others do not)', () => {
+  it('reads the canonical env declared in the registry and its historical alias', () => {
+    expect(make({ ECHADRON_EXPERIMENTAL_B: '1' })('b-off-default')).toBe(true);
     expect(make({ KIMI_CODE_EXPERIMENTAL_B: '1' })('b-off-default')).toBe(true);
     // The name mechanically derived from the id must not take effect (env is explicitly ..._B).
     expect(make({ KIMI_CODE_EXPERIMENTAL_B_OFF_DEFAULT: '1' })('b-off-default')).toBe(false);
@@ -190,7 +206,7 @@ describe('FLAG_DEFINITIONS invariants', () => {
     const seenId = new Set<string>();
     const defs: readonly FlagDefinitionInput[] = FLAG_DEFINITIONS;
     for (const def of defs) {
-      expect(def.env.startsWith('KIMI_CODE_EXPERIMENTAL_')).toBe(true);
+      expect(def.env.startsWith('ECHADRON_EXPERIMENTAL_')).toBe(true);
       expect(def.env).not.toBe(MASTER_ENV);
       expect(def.id).not.toBe('flag'); // reserved: would collide with the master switch
       expect(def.title.length).toBeGreaterThan(0);

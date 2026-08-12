@@ -74,7 +74,7 @@ export class ExperimentsSelectorComponent extends Container implements Focusable
 
     const lines: string[] = [
       currentTheme.fg('primary', '─'.repeat(width)),
-      currentTheme.boldFg('primary', ' Experimental features') + titleSuffix,
+      currentTheme.boldFg('primary', ' Feature controls') + titleSuffix,
       currentTheme.fg('textMuted', ` ${hintParts.join(' · ')}`),
       '',
     ];

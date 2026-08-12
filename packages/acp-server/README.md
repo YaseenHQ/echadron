@@ -1,15 +1,16 @@
 # `@moonshot-ai/acp-server`
 
-Experimental ACP protocol-v2 transport for Echadron.
+ACP protocol-v2 transport for Echadron.
 
-The package deliberately sits beside `@moonshot-ai/acp-adapter`: the stable
+The package deliberately sits beside `@moonshot-ai/acp-adapter`: the v1
 adapter continues to own ACP v1, while this package uses the official SDK's
 `@agentclientprotocol/sdk-v2/experimental/v2` entry point and reuses the existing
-Echadron `KimiHarness` session/event mapping. This lets clients opt into v2
-without changing the current provider, auth, or session stores.
+Echadron `KimiHarness` session/event mapping. The main `echadron acp` command
+selects between them from the client's initialize frame without changing the
+current provider, auth, or session stores.
 
-ACP v2 is a draft and this package must not be treated as a stable wire
-contract. It follows the active v2 RFDs for prompt acknowledgement and state
+ACP v2 remains an evolving wire contract even though Echadron supports it on
+the main ACP path. This package follows the active v2 RFDs for prompt acknowledgement and state
 updates, whole-message replay, tool-call upserts, structured permissions,
 agent-owned display-only terminals, item-based plans, and explicit additional
 workspace roots. See the [ACP v2 proposal](https://agentclientprotocol.com/rfds/v2/overview)

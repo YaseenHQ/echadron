@@ -39,7 +39,7 @@ import { fetchCatalogOrBuiltIn } from '#/utils/catalog-fetch';
 import { readFreshModelsDevCatalog } from '#/cli/models/catalog-cache';
 import { getDataDir } from '#/utils/paths';
 
-import { isKimiV2Enabled } from '../experimental-v2';
+import { isNativeEngineEnabled } from '../engine-routing';
 
 interface WritableLike {
   write(chunk: string): boolean;
@@ -574,7 +574,7 @@ function resolveDeps(overrides: Partial<ProviderDeps> = {}): ResolvedProviderDep
     getHarness:
       overrides.getHarness ??
       (() => {
-        harness ??= (isKimiV2Enabled() ? createKimiHarnessV2 : createKimiHarness)({
+        harness ??= (isNativeEngineEnabled() ? createKimiHarnessV2 : createKimiHarness)({
           homeDir: getDataDir(),
           identity,
         });

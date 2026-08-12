@@ -58,7 +58,7 @@ describe('resolveSlashCommandInput', () => {
     });
     expect(resolve('/experiments')).toMatchObject({
       kind: 'builtin',
-      name: 'experiments',
+      name: 'features',
       args: '',
     });
   });

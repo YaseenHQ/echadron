@@ -369,7 +369,7 @@ interface PromptJsonVersionMetaMessage {
   version: string;
 }
 
-export function writeExperimentalVersion(
+export function writeVersion(
   version: string,
   outputFormat: PromptOutputFormat,
   stdout: PromptOutput,

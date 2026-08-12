@@ -768,7 +768,7 @@ export async function showExperimentsPanel(host: SlashCommandHost): Promise<void
   try {
     features = await host.harness.getExperimentalFeatures();
   } catch (error) {
-    host.showError(`Failed to load experimental features: ${formatErrorMessage(error)}`);
+    host.showError(`Failed to load feature controls: ${formatErrorMessage(error)}`);
     return;
   }
   mountExperimentsPanel(host, features);
@@ -780,7 +780,7 @@ export async function applyExperimentalFeatureChanges(
 ): Promise<void> {
   if (changes.length === 0) {
     host.showStatus(
-      'No experimental feature changes to apply.',
+      'No feature-control changes to apply.',
       'textMuted',
     );
     return;
@@ -801,14 +801,14 @@ export async function applyExperimentalFeatureChanges(
       await host.session.reloadSession();
       await host.reloadCurrentSessionView(
         host.session,
-        'Experimental features updated. Session reloaded.',
+        'Feature controls updated. Session reloaded.',
       );
     } else {
-      host.showStatus('Experimental features updated.', 'success');
+      host.showStatus('Feature controls updated.', 'success');
     }
     host.track('experimental_features_apply', { changed: changes.length });
   } catch (error) {
-    host.showError(`Failed to update experimental features: ${formatErrorMessage(error)}`);
+    host.showError(`Failed to update feature controls: ${formatErrorMessage(error)}`);
   }
 }
 

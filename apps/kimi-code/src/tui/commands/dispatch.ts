@@ -291,7 +291,7 @@ async function handleBuiltInSlashCommand(
     case 'add-dir':
       await handleAddDirCommand(host, args);
       return;
-    case 'experiments':
+    case 'features':
       await showExperimentsPanel(host);
       return;
     case 'reload':

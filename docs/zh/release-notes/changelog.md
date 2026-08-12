@@ -6,6 +6,15 @@ outline: 2
 
 本页记录 Echadron 每个版本的变更内容。完整的软件包级记录也可在[仓库变更记录](https://github.com/YaseenHQ/kimi/blob/main/apps/kimi-code/CHANGELOG.md)中查看。
 
+## 未发布
+
+### Echadron
+
+- 将渐进式工具披露、次主力模型路由和 minidb 读取模型升级为默认开启的正式功能；原有配置仍保留在“设置 → 功能控制”中，作为明确的回退开关。
+- `echadron acp` 现在根据客户端的 `initialize` 请求自动选择 ACP v1 或 v2，同时保留 `acp-v2` 和旧引擎环境开关以保持兼容。
+- 使用规范的 `ECHADRON_EXPERIMENTAL_*` 环境控制，同时保留历史 `KIMI_CODE_EXPERIMENTAL_*` 别名。
+- 移除仅供开发调试的故障注入实验，以及正常 CLI 路径中残留的 v2 实验性命名。
+
 ## 0.30.0（2026-08-10）
 
 ### Echadron

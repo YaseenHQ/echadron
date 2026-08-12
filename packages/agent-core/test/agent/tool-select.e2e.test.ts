@@ -58,7 +58,7 @@ function toolSelectFlagOn(): FlagResolver {
 
 /** Empty env so an ambient KIMI_CODE_EXPERIMENTAL_FLAG cannot force flags on. */
 function toolSelectFlagOff(): FlagResolver {
-  return new FlagResolver({}, FLAG_DEFINITIONS, {});
+  return new FlagResolver({}, FLAG_DEFINITIONS, { 'tool-select': false });
 }
 
 function grafanaClient(callLog: Array<[string, unknown]> = []): MCPClient {
@@ -750,7 +750,7 @@ describe('disclosure mode — compaction', () => {
     expect(callLog).toEqual([['query_range', { query: 'errors' }]]);
 
     // Flip back off: inline again, select_tools gone from the wire.
-    resolver.setConfigOverrides({});
+    resolver.setConfigOverrides({ 'tool-select': false });
     ctx.mockNextResponse({ type: 'text', text: 'inline again' });
     await runTurn(ctx, 'back');
     const backCall = ctx.llmCalls.at(-1)!;

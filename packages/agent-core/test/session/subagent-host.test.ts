@@ -1323,6 +1323,7 @@ describe('SessionSubagentHost', () => {
 
     it('inherits the parent model when the experiment is off', async () => {
       const { parent, child } = await spawnChild({
+        experimentalFlags: new FlagResolver({ ECHADRON_EXPERIMENTAL_SECONDARY_MODEL: '0' }),
         config: { providers: {}, secondaryModel: { model: 'cheap-model' } },
       });
       expect(child.agent.config.modelAlias).toBe(parent.agent.config.modelAlias);

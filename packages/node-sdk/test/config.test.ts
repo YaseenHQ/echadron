@@ -328,7 +328,7 @@ describe('KimiHarness config API', () => {
   });
 
   it('returns experimental feature metadata through the harness', async () => {
-    vi.stubEnv('KIMI_CODE_EXPERIMENTAL_FLAG', '0');
+    vi.stubEnv('ECHADRON_EXPERIMENTAL_FLAG', '0');
     const homeDir = await makeTempDir();
     const harness = createKimiHarness({ homeDir, identity: TEST_IDENTITY });
 
@@ -340,9 +340,9 @@ describe('KimiHarness config API', () => {
         description:
           'Keep MCP tool schemas out of the immutable top-level tools[]; the model loads them on demand via the select_tools tool. Only takes effect on models whose capability catalog declares dynamically loaded tools.',
         surface: 'core',
-        env: 'KIMI_CODE_EXPERIMENTAL_TOOL_SELECT',
-        defaultEnabled: false,
-        enabled: false,
+        env: 'ECHADRON_EXPERIMENTAL_TOOL_SELECT',
+        defaultEnabled: true,
+        enabled: true,
         source: 'default',
       },
       {
@@ -351,9 +351,9 @@ describe('KimiHarness config API', () => {
         description:
           'Let newly spawned subagents use a separately configured secondary model by default, with an explicit primary-model override for quality-sensitive tasks.',
         surface: 'core',
-        env: 'KIMI_CODE_EXPERIMENTAL_SECONDARY_MODEL',
-        defaultEnabled: false,
-        enabled: false,
+        env: 'ECHADRON_EXPERIMENTAL_SECONDARY_MODEL',
+        defaultEnabled: true,
+        enabled: true,
         source: 'default',
       },
     ]);

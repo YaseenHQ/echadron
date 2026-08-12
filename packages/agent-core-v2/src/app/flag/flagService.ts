@@ -1,7 +1,7 @@
 /**
  * `flag` domain (L3) — `IFlagService` implementation.
  *
- * Resolves experimental flags from the environment (read through `bootstrap`),
+ * Resolves feature controls from the environment (read through `bootstrap`),
  * the `[experimental]` config section, and defaults; reads flag definitions
  * from `flagRegistry`, and reads/watches config through `config`. Bound at App
  * scope.
@@ -23,7 +23,12 @@ import {
 } from './flag';
 import { type FlagDefinitionInput, type FlagId, IFlagRegistry } from './flagRegistry';
 
-export const MASTER_ENV = 'KIMI_CODE_EXPERIMENTAL_FLAG';
+export const MASTER_ENV = 'ECHADRON_EXPERIMENTAL_FLAG';
+export const LEGACY_MASTER_ENV = 'KIMI_CODE_EXPERIMENTAL_FLAG';
+
+function legacyEnvName(name: string): string {
+  return name.replace(/^ECHADRON_EXPERIMENTAL_/, 'KIMI_CODE_EXPERIMENTAL_');
+}
 
 export class FlagService extends Disposable implements IFlagService {
   declare readonly _serviceBrand: undefined;
@@ -63,10 +68,15 @@ export class FlagService extends Disposable implements IFlagService {
     const def = this.registry.get(id);
     if (def === undefined) return undefined;
     const configValue = this.configOverrides[def.id];
-    if (parseBooleanEnv(this.bootstrap.getEnv(MASTER_ENV)) === true) {
+    if (
+      parseBooleanEnv(this.bootstrap.getEnv(MASTER_ENV)) === true ||
+      parseBooleanEnv(this.bootstrap.getEnv(LEGACY_MASTER_ENV)) === true
+    ) {
       return this.state(def, true, 'master-env', configValue);
     }
-    const override = parseBooleanEnv(this.bootstrap.getEnv(def.env));
+    const override =
+      parseBooleanEnv(this.bootstrap.getEnv(def.env)) ??
+      parseBooleanEnv(this.bootstrap.getEnv(legacyEnvName(def.env)));
     if (override !== undefined) return this.state(def, override, 'env', configValue);
     if (configValue !== undefined) return this.state(def, configValue, 'config', configValue);
     return this.state(def, def.default, 'default', undefined);

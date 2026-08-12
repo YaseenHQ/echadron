@@ -112,7 +112,7 @@ disallowedTools:
 
 子 Agent 启动时会固定模型绑定。恢复该子 Agent 时会保留其已记录的模型，即使 Profile 或父 Agent 后来发生变化也不会改绑。委派到其他模型不会修改父 Agent 的模型、系统提示词或工具列表，因此不会破坏父 Agent 的提示词缓存前缀。
 
-`model_preference` 仅在次主力模型实验功能启用时对新启动的子 Agent 生效——设置 `KIMI_CODE_EXPERIMENTAL_SECONDARY_MODEL=1`，或 master `KIMI_CODE_EXPERIMENTAL_FLAG=1`。它在包括交互式 TUI 在内的所有启动方式下生效。该字段不用于填写具体模型 alias，已恢复的子 Agent 也会保持原模型。主 Agent 会在 profile 描述中看到这项偏好，因此仍可在某项任务需要不同选择时显式传入 `model`。
+`model_preference` 对所有启动方式中新派生的子 Agent 生效，包括交互式 TUI。该字段不用于填写具体模型 alias，已恢复的子 Agent 也会保持原模型。主 Agent 会在 profile 描述中看到这项偏好，因此仍可在某项任务需要不同选择时显式传入 `model`。次主力模型功能默认开启；需要回退时，可在“设置”的“功能控制”中关闭。
 
 目录中发现的非法文件会被跳过并告警，不影响其他文件。通过 `--agent-file` 显式传入的文件必须合法 —— 否则 CLI 会报错并退出。
 

@@ -12,21 +12,23 @@ Once started, the command prints no banner and immediately waits for the ACP cli
 You typically do not need to run `echadron acp` manually — this command is the subprocess entry point for IDEs. For IDE-side configuration, see [Using in IDEs](../guides/ides.md).
 :::
 
-## Native ACP protocol v2
+## Automatic protocol selection
 
-`echadron acp` uses the native ACP v2 protocol by default. The older explicit spelling remains available for clients that already invoke it:
+`echadron acp` reads the client's first `initialize` frame and selects the matching implementation: protocol version `1` uses the v1 adapter, while version `2` and newer use the native v2 server. The frame is replayed intact to the selected implementation, so clients need no Echadron-specific negotiation setting.
+
+The older explicit spelling remains available for clients that already invoke it:
 
 ```sh
 echadron acp-v2
 ```
 
-Both entry points use the ACP TypeScript SDK's v2 transport (including JSON-RPC batches), required message IDs, unified tool-call upserts, agent-owned display-only terminals, structured plan/state updates, and the v2 `auth/login` / `auth/logout` surface. The existing Echadron session and provider configuration remain the source of truth, so switching entry points does not create a second login or model store.
+The explicit `acp-v2` command uses the ACP TypeScript SDK's v2 transport (including JSON-RPC batches), required message IDs, unified tool-call upserts, agent-owned display-only terminals, structured plan/state updates, and the v2 `auth/login` / `auth/logout` surface. The existing Echadron session and provider configuration remain the source of truth, so protocol selection does not create a second login or model store.
 
-ACP v2 is still an evolving protocol. Clients should launch `echadron acp` when they negotiate protocol version `2`; use `ECHADRON_LEGACY_FLAG=1 echadron acp` only for ACP clients that require the v1 adapter. See the [ACP v2 proposal](https://agentclientprotocol.com/rfds/v2/overview) for the breaking changes and migration status.
+ACP v2 is still an evolving protocol, but support is part of Echadron's normal ACP entry point rather than an experimental application flag. Use `ECHADRON_LEGACY_FLAG=1 echadron acp` only as a diagnostic override for clients that require the v1 adapter. See the [ACP v2 proposal](https://agentclientprotocol.com/rfds/v2/overview) for the breaking changes and migration status.
 
 ## ACP v1 capability matrix
 
-The table below lists the capabilities declared by the legacy ACP v1 adapter layer. It does not describe the default native ACP v2 path; v2 uses the unified `capabilities` field described below.
+The table below lists the capabilities declared by the ACP v1 adapter layer. It does not describe the native ACP v2 path; v2 uses the unified `capabilities` field described below.
 
 | Capability | Value | Description |
 | --- | --- | --- |
@@ -41,7 +43,7 @@ The table below lists the capabilities declared by the legacy ACP v1 adapter lay
 
 ## ACP v2 capability and lifecycle surface
 
-The experimental v2 server returns this session capability object from `initialize`:
+The v2 server returns this session capability object from `initialize`:
 
 ```json
 {
@@ -62,7 +64,8 @@ provided paths must be absolute. `session/resume` can request full replay with
 
 The server also advertises Echadron's terminal OAuth method through the preview
 terminal-auth shape and implements the required `auth/login` and `auth/logout`
-methods. The stable v1 `echadron acp` command remains unchanged.
+methods. The v1 adapter remains available through automatic selection and the
+legacy diagnostic override.
 
 ## ACP Method Coverage
 

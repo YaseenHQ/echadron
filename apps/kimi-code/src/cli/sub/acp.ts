@@ -39,16 +39,12 @@ import { createKimiCodeHostIdentity, getVersion } from '#/cli/version';
 import { buildSkillSlashCommands } from '#/tui/commands/skills';
 import { getDataDir } from '#/utils/paths';
 
-import { isLegacyEnabled } from '../experimental-v2';
-import { registerNativeAcpCommand } from './acp-v2';
+import { isLegacyEnabled } from '../engine-routing';
+import { detectAcpProtocol } from './acp-protocol';
+import { runNativeAcpServer } from './acp-v2';
 import { runLoginFlow } from './login-flow';
 
 export function registerAcpCommand(parent: Command): void {
-  if (!isLegacyEnabled()) {
-    registerNativeAcpCommand(parent);
-    return;
-  }
-
   parent
     .command('acp')
     .description('Run Echadron as an Agent Client Protocol (ACP) server over stdio.')
@@ -60,6 +56,25 @@ export function registerAcpCommand(parent: Command): void {
     .action(async (opts: { login?: boolean }) => {
       if (opts.login === true) {
         await runLoginFlow();
+        return;
+      }
+      const detected = await (isLegacyEnabled()
+        ? Promise.resolve({ protocol: 'v1' as const, input: process.stdin })
+        : detectAcpProtocol(process.stdin)
+      ).catch((error: unknown) => {
+        process.stderr.write(`acp server: fatal error: ${String(error)}\n`);
+        process.exit(1);
+        return undefined;
+      });
+      if (detected === undefined) return;
+      if (detected.protocol === 'v2') {
+        try {
+          await runNativeAcpServer(detected.input);
+          process.exit(0);
+        } catch (error) {
+          process.stderr.write(`acp server: fatal error: ${String(error)}\n`);
+          process.exit(1);
+        }
         return;
       }
       const identity = createKimiCodeHostIdentity();
@@ -136,6 +151,7 @@ export function registerAcpCommand(parent: Command): void {
       };
       try {
         await runAcpServer(harness, {
+          input: detected.input,
           agentInfo: { name: 'Echadron', version: getVersion() },
           slashCommands: resolveSlashCommands,
           ...(terminalAuthEnv ? { terminalAuthEnv } : {}),
@@ -144,8 +160,8 @@ export function registerAcpCommand(parent: Command): void {
             : {}),
         });
         process.exit(0);
-      } catch (err) {
-        process.stderr.write(`acp server: fatal error: ${String(err)}\n`);
+      } catch (error) {
+        process.stderr.write(`acp server: fatal error: ${String(error)}\n`);
         process.exit(1);
       }
     });

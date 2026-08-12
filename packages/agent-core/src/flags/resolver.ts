@@ -8,7 +8,12 @@ import type {
 } from './types';
 
 /** Master switch: when truthy, forces every flag on (highest priority). */
-export const MASTER_ENV = 'KIMI_CODE_EXPERIMENTAL_FLAG';
+export const MASTER_ENV = 'ECHADRON_EXPERIMENTAL_FLAG';
+export const LEGACY_MASTER_ENV = 'KIMI_CODE_EXPERIMENTAL_FLAG';
+
+function legacyEnvName(name: string): string {
+  return name.replace(/^ECHADRON_EXPERIMENTAL_/, 'KIMI_CODE_EXPERIMENTAL_');
+}
 
 /**
  * Pure, synchronous flag resolver. State comes entirely from (env, registry) and nothing is
@@ -44,10 +49,15 @@ export class FlagResolver {
     const def = this.byId.get(id);
     if (def === undefined) return undefined;
     const configValue = this.configOverrides[def.id as FlagId];
-    if (parseBooleanEnv(this.env[MASTER_ENV]) === true) {
+    if (
+      parseBooleanEnv(this.env[MASTER_ENV]) === true ||
+      parseBooleanEnv(this.env[LEGACY_MASTER_ENV]) === true
+    ) {
       return this.state(def, true, 'master-env', configValue);
     }
-    const override = parseBooleanEnv(this.env[def.env]); // L2 per-feature
+    const override =
+      parseBooleanEnv(this.env[def.env]) ??
+      parseBooleanEnv(this.env[legacyEnvName(def.env)]); // L2 per-feature
     if (override !== undefined) return this.state(def, override, 'env', configValue);
     if (configValue !== undefined) return this.state(def, configValue, 'config', configValue);
     return this.state(def, def.default, 'default', undefined);

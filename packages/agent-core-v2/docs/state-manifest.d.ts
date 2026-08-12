@@ -23,7 +23,7 @@
 // references become '(circular)', and class instances collapse to a '(ClassName)'
 // marker — the wire shape of an entry is the JSON projection of the type here.
 //
-// Index (Session: 28 keys · Agent: 69 keys)
+// Index (Session: 28 keys · Agent: 67 keys)
 //   Session
 //     cron.inFlight                             src/session/cron/sessionCronServiceImpl.ts
 //     cron.lastSeenAt                           src/session/cron/sessionCronServiceImpl.ts
@@ -63,8 +63,6 @@
 //     contextProjector.lastRepairSignature              src/agent/contextProjector/contextProjectorService.ts
 //     contextSize.lastEmittedTokens                     src/agent/contextSize/contextSizeService.ts
 //     externalHooks.stopHookContinuationUsed            src/agent/externalHooks/externalHooksService.ts
-//     faultInjection.armed                              src/agent/faultInjection/faultInjectionService.ts
-//     faultInjection.fired                              src/agent/faultInjection/faultInjectionService.ts
 //     fullCompaction.activeTurnId                       src/agent/fullCompaction/fullCompactionService.ts
 //     fullCompaction.compactionCountInTurn              src/agent/fullCompaction/fullCompactionService.ts
 //     fullCompaction.consecutiveOverflowCompactions     src/agent/fullCompaction/fullCompactionService.ts
@@ -993,9 +991,6 @@ export interface AgentStateSnapshot {
   'contextSize.lastEmittedTokens': number;
   // src/agent/externalHooks/externalHooksService.ts
   'externalHooks.stopHookContinuationUsed': boolean;
-  // src/agent/faultInjection/faultInjectionService.ts
-  'faultInjection.armed': 'request-too-large' | 'image-format' | undefined;
-  'faultInjection.fired': (/* FaultKind — packages/agent-core-v2/src/agent/faultInjection/faultInjection.ts */ 'request-too-large' | 'image-format')[];
   // src/agent/fullCompaction/fullCompactionService.ts
   'fullCompaction.activeTurnId': number | undefined;
   'fullCompaction.compactionCountInTurn': number;

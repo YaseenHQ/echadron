@@ -1494,7 +1494,7 @@ describe('subagent config section', () => {
     withFactPatch.disposables.dispose();
   });
 
-  it('inherits the caller binding when the secondary-model experiment is disabled', async () => {
+  it('inherits the caller binding when the secondary-model feature control is disabled', async () => {
     const own = { modelAlias: 'provider/main', thinkingLevel: 'medium' };
     const { config, disposables } = await createConfig(
       {},
