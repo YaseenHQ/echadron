@@ -2,8 +2,6 @@
 
 Echadron CLI runs as an interactive TUI (terminal user interface) built around three components: the input box, the conversation view, and the status bar. This page covers how to enter text, paste media, navigate the approval flow, and switch between modes.
 
-> `echadron` is the canonical executable; `chad` and `maker` are aliases. Echadron does not install a `echadron` executable.
-
 ## Input box basics
 
 The input box accepts free-form text. Press `Enter` to send, or `Shift-Enter` / `Ctrl-J` to insert a newline. When the input box is empty, press `↑` / `↓` to browse the input history for the current working directory, including previous shell commands.

@@ -2,8 +2,6 @@
 
 This page collects typical Echadron CLI scenarios along with ready-to-use prompt examples — copy them as-is or adapt them to your needs.
 
-> `echadron` is the canonical executable; `chad` and `maker` are aliases. Echadron does not install a `echadron` executable.
-
 ## Understanding an unfamiliar project
 
 When taking over an unfamiliar repository, a good first step is to use `echadron --plan` or press `Shift-Tab` to enter Plan mode, so the agent outputs a research plan before touching anything:

@@ -6,8 +6,6 @@ Echadron CLI persists every conversation as a "session" — storing message hist
 
 All sessions are saved under `$ECHADRON_HOME/sessions/` (default: `~/.echadron/sessions/`), grouped by working directory:
 
-> `ECHADRON_HOME` and `echadron` are the canonical data-root variable and executable. The legacy `IMPERIUM_HOME` / `ECHADRON_HOME` variables and `echadron` command remain supported as compatibility aliases.
-
 ```text
 ~/.echadron/
 ├── config.toml

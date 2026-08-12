@@ -6,7 +6,7 @@ entry point published by this fork. Only Echadron-owned executables are
 installed; upstream Kimi Code and its storage namespace remain independent.
 
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE) <br>
-[Documentation](https://github.com/YaseenHQ/kimi/tree/main/docs) · [Issues](https://github.com/YaseenHQ/kimi/issues) · [中文](README.zh-CN.md)
+[Documentation](https://github.com/YaseenHQ/echadron/tree/main/docs) · [Issues](https://github.com/YaseenHQ/echadron/issues) · [中文](README.zh-CN.md)
 
 ![Demo of using Echadron](./docs/media/intro.gif)
 
@@ -16,9 +16,19 @@ Echadron is an AI coding agent that runs in your terminal — it can read and ed
 
 ## Install
 
-The Echadron native installer/release channel is not published yet. Install the
-fork package or run it from this repository. After installing, run it with a
-new shell session:
+Install Echadron from npm with Node.js 22.19.0 or later:
+
+```sh
+npm install -g echadron
+```
+
+Or with pnpm:
+
+```sh
+pnpm add -g echadron
+```
+
+After installing, open a new shell session and verify the available commands:
 
 ```sh
 echadron --version
@@ -27,12 +37,12 @@ maker --version
 ```
 
 The npm package name is `echadron`; its CLI entries are `echadron`,
-`chad`, and `maker`. The first npm publication has not happened yet.
+`chad`, and `maker`.
 
 To install the current source checkout globally:
 
 ```sh
-git clone https://github.com/YaseenHQ/kimi.git echadron
+git clone https://github.com/YaseenHQ/echadron.git echadron
 cd echadron
 pnpm install
 pnpm --filter echadron build
@@ -72,7 +82,7 @@ channel; it never contacts or installs the upstream Kimi Code release.
 
 ## Key Features
 
-- **Isolated npm distribution.** Echadron installs beside Kimi Code with its own commands and data directory. A standalone native distribution is planned after the first public npm release.
+- **Isolated npm distribution.** Echadron installs beside Kimi Code with its own commands and data directory. A standalone native distribution is planned separately.
 - **Blazing-fast startup.** The TUI is ready in milliseconds, so starting a session never feels heavy.
 - **Purpose-built TUI.** A carefully tuned interface, optimized end to end for long, focused agent sessions.
 - **Video input.** Drop a screen recording or demo clip into the chat and let the agent watch what is hard to describe in words — turn a reference clip into a LUT, a long video into a short, a screen recording into working code, and more.
@@ -105,15 +115,15 @@ Then open a new conversation in Zed's Agent panel.
 
 ## Docs
 
-- [Documentation](https://github.com/YaseenHQ/kimi/tree/main/docs)
+- [Documentation](https://github.com/YaseenHQ/echadron/tree/main/docs)
 
 ## Develop
 
 Requirements: Node.js ≥ 24.15.0, pnpm 10.33.0.
 
 ```sh
-git clone https://github.com/YaseenHQ/kimi.git
-cd kimi
+git clone https://github.com/YaseenHQ/echadron.git
+cd echadron
 pnpm install
 ```
 
@@ -129,7 +139,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the full contribution guide.
 
 ## Community
 
-- [Issues](https://github.com/YaseenHQ/kimi/issues)
+- [Issues](https://github.com/YaseenHQ/echadron/issues)
 - For security vulnerabilities, see [SECURITY.md](SECURITY.md).
 
 ## Acknowledgements

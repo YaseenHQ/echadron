@@ -2,8 +2,6 @@
 
 Echadron CLI's TUI interactive mode supports a set of keyboard shortcuts. The shortcuts are organized into five groups by usage context: general input, mode switching, during streaming, tool output control, the approval panel, and popup navigation. Type `/help` in the TUI at any time to open the built-in shortcut reference.
 
-> `echadron` is the canonical executable; `chad` and `maker` are aliases. Echadron does not install a `echadron` executable.
-
 ## General Shortcuts
 
 The following keys are always available in the input box:

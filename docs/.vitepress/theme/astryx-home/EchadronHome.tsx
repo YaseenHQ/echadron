@@ -185,7 +185,7 @@ export function EchadronHome({
               label={copy.github}
               variant="secondary"
               size="lg"
-              href="https://github.com/YaseenHQ/kimi"
+              href="https://github.com/YaseenHQ/echadron"
               target="_blank"
               rel="noreferrer"
             />

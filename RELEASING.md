@@ -4,34 +4,19 @@ Echadron uses Changesets and `.github/workflows/release.yml`. Merging a user-fac
 change with a changeset updates the release pull request. Merging that generated
 pull request publishes `echadron`.
 
-## First npm publication
+## npm trusted publishing
 
-npm cannot register a trusted publisher before the package exists. `echadron` is
-an unscoped package, so it is public by definition and installs without an npm
-scope. Bootstrap the first publication with a short-lived granular access token:
-
-1. Confirm `npm whoami` returns `yaseenhq`, publishing 2FA is enabled, and
-   `npm view echadron` still reports that the package does not exist.
-2. Create a short-lived granular access token with read/write package permission
-   and bypass 2FA enabled. Because `echadron` does not exist yet, do not assume npm
-   can restrict this bootstrap token to that package.
-3. Add the token as the repository Actions secret `NPM_TOKEN`.
-4. Merge the generated `ci: release packages` pull request and verify
-   `echadron`, its provenance statement, the Git tag, and the GitHub release.
-5. Delete `NPM_TOKEN` immediately after the first successful publication.
-
-Then configure npm Trusted Publishing for:
+The public `echadron` package uses npm Trusted Publishing. Configure its trusted
+publisher with:
 
 - GitHub owner: `YaseenHQ`
-- Repository: `kimi`
+- Repository: `echadron`
 - Workflow filename: `release.yml`
 - Allowed action: `npm publish`
 
-The release job already grants `id-token: write`, uses a current npm CLI, and
-publishes with provenance. `NODE_AUTH_TOKEN` is empty after the bootstrap secret is
-removed, so npm uses the workflow's OIDC identity. Re-check the package name
-immediately before the first release because an unscoped npm name cannot be
-reserved in advance.
+The release job grants `id-token: write`, uses a current npm CLI, and publishes
+with provenance. Do not configure an `NPM_TOKEN` Actions secret: the workflow's
+OIDC identity is the only npm publishing credential.
 
 ## OAuth registrations
 

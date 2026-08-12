@@ -2,7 +2,7 @@
 
 Plugins package reusable Echadron CLI capabilities into installable units — they can add [Agent Skills](./skills.md), automatically load a specified Skill at session start, and declare MCP servers to provide real tool capabilities. They are ideal for sharing workflows with a team, connecting to external services, or installing extensions from the official marketplace.
 
-> `ECHADRON_HOME` is the canonical data root. The legacy `IMPERIUM_HOME` and `ECHADRON_HOME` aliases remain supported for existing plugin installations.
+> `ECHADRON_HOME` is the canonical data root. The legacy `IMPERIUM_HOME` and `KIMI_CODE_HOME` aliases remain supported for existing plugin installations.
 
 ## Installation and Management
 

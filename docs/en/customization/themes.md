@@ -47,7 +47,7 @@ Add a `.json` file to the themes directory:
 - `~/.echadron/themes/`
 - or `$ECHADRON_HOME/themes/` when the `ECHADRON_HOME` environment variable is set
 
-`ECHADRON_HOME` is the canonical data-root variable. The legacy `IMPERIUM_HOME` and `ECHADRON_HOME` aliases remain supported.
+`ECHADRON_HOME` is the canonical data-root variable. The legacy `IMPERIUM_HOME` and `KIMI_CODE_HOME` aliases remain supported.
 
 Create the directory if it does not exist. **The filename is the theme name**: `ember.json` appears in `/theme` as `Custom: ember`.
 

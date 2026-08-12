@@ -62,10 +62,6 @@ jobs:
           title: "ci: release packages"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # Trusted Publishing is preferred after the package exists. A granular
-          # automation token bootstraps the first publication, when npm has no
-          # package settings page on which to register this workflow yet.
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Resolve Echadron native release
         if: steps.changesets.outputs.published == 'true'

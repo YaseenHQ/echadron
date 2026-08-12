@@ -4,9 +4,9 @@ Echadron 是一个支持多模型的 Agent Harness，基于 Kimi Code CLI 架构
 推荐使用 `echadron`、`chad` 或 `maker` 命令；只安装 Echadron 自己的命令。
 它可以与上游 Kimi Code 并存，但不会安装或覆盖 `kimi` 命令。
 
-[![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE) [![Docs](https://img.shields.io/badge/docs-online-blue)](https://github.com/YaseenHQ/kimi/tree/main/docs/zh)
+[![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE) [![Docs](https://img.shields.io/badge/docs-online-blue)](https://github.com/YaseenHQ/echadron/tree/main/docs/zh)
 
-[Documentation](https://github.com/YaseenHQ/kimi/tree/main/docs/zh) · [Issues](https://github.com/YaseenHQ/kimi/issues) · [English](README.md)
+[Documentation](https://github.com/YaseenHQ/echadron/tree/main/docs/zh) · [Issues](https://github.com/YaseenHQ/echadron/issues) · [English](README.md)
 
 
 ![Echadron 的使用演示](./docs/media/intro.gif)
@@ -18,10 +18,22 @@ Echadron 是一个运行在终端里的多模型 AI 编程 agent，可以帮你�
 
 ## 安装
 
-Echadron 的独立 Native 安装器和首个公开 npm 包尚未发布；目前请使用 Node.js 24.15.0 或更高版本和 pnpm 10.33.0 从源码构建并安装：
+使用 Node.js 22.19.0 或更高版本从 npm 安装 Echadron：
 
 ```sh
-git clone https://github.com/YaseenHQ/kimi.git echadron
+npm install -g echadron
+```
+
+也可以使用 pnpm：
+
+```sh
+pnpm add -g echadron
+```
+
+如需从源码构建，请使用 Node.js 24.15.0 或更高版本和 pnpm 10.33.0：
+
+```sh
+git clone https://github.com/YaseenHQ/echadron.git echadron
 cd echadron
 pnpm install
 pnpm --filter echadron build
@@ -36,9 +48,7 @@ npm install -g ./apps/kimi-code
 echadron --version
 ```
 
-首个公开版本发布后，可直接运行 `npm install -g echadron`。
-
-详细安装方式，见[快速上手](https://github.com/YaseenHQ/kimi/tree/main/docs/zh/guides/getting-started)。
+详细安装方式，见[快速上手](https://github.com/YaseenHQ/echadron/tree/main/docs/zh/guides/getting-started)。
 
 ## 快速开始
 
@@ -57,7 +67,7 @@ echadron
 
 ## 核心特性
 
-- **独立 npm 发行** Echadron 使用自己的命令和数据目录，可与 Kimi Code 并存。首个公开 npm 版本之后再提供原生独立发行。
+- **独立 npm 发行** Echadron 使用自己的命令和数据目录，可与 Kimi Code 并存。原生独立发行将另行提供。
 - **极速启动** TUI 在毫秒级就绪，开一个新会话没有任何心智负担。
 - **精致的 TUI 体验** 端到端打磨的交互界面，专为长时间、专注的 Agent 会话优化。
 - **视频也能输入** 把屏幕录像、演示视频拖进对话，让 Agent 看那些难以用文字描述的东西——把参考片段做成 LUT、把长视频剪成短视频、把录屏变成代码，等等。
@@ -87,24 +97,24 @@ Echadron 支持 [Agent Client Protocol](https://agentclientprotocol.com/)，ACP 
 }
 ```
 
-随后在 Zed 的 Agent 面板新建对话即可。JetBrains 配置与排障见[在 IDE 中使用](https://github.com/YaseenHQ/kimi/tree/main/docs/zh/guides/ides)，完整能力矩阵见 [`echadron acp` 参考](https://github.com/YaseenHQ/kimi/tree/main/docs/zh/reference/kimi-acp)。
+随后在 Zed 的 Agent 面板新建对话即可。JetBrains 配置与排障见[在 IDE 中使用](https://github.com/YaseenHQ/echadron/tree/main/docs/zh/guides/ides)，完整能力矩阵见 [`echadron acp` 参考](https://github.com/YaseenHQ/echadron/tree/main/docs/zh/reference/kimi-acp)。
 
 ## 文档
 
-- [快速上手](https://github.com/YaseenHQ/kimi/tree/main/docs/zh/guides/getting-started)
-- [交互与审批](https://github.com/YaseenHQ/kimi/tree/main/docs/zh/guides/interaction)
-- [会话](https://github.com/YaseenHQ/kimi/tree/main/docs/zh/guides/sessions)
-- [在 IDE 中使用（ACP）](https://github.com/YaseenHQ/kimi/tree/main/docs/zh/guides/ides)
-- [配置](https://github.com/YaseenHQ/kimi/tree/main/docs/zh/configuration/config-files)
-- [命令参考](https://github.com/YaseenHQ/kimi/tree/main/docs/zh/reference/kimi-command)
+- [快速上手](https://github.com/YaseenHQ/echadron/tree/main/docs/zh/guides/getting-started)
+- [交互与审批](https://github.com/YaseenHQ/echadron/tree/main/docs/zh/guides/interaction)
+- [会话](https://github.com/YaseenHQ/echadron/tree/main/docs/zh/guides/sessions)
+- [在 IDE 中使用（ACP）](https://github.com/YaseenHQ/echadron/tree/main/docs/zh/guides/ides)
+- [配置](https://github.com/YaseenHQ/echadron/tree/main/docs/zh/configuration/config-files)
+- [命令参考](https://github.com/YaseenHQ/echadron/tree/main/docs/zh/reference/kimi-command)
 
 ## 本地开发
 
 环境要求：Node.js ≥ 24.15.0，pnpm 10.33.0。
 
 ```sh
-git clone https://github.com/YaseenHQ/kimi.git
-cd kimi
+git clone https://github.com/YaseenHQ/echadron.git
+cd echadron
 pnpm install
 ```
 
@@ -120,7 +130,7 @@ pnpm build      # 构建所有包
 
 ## 社区
 
-- [Issues](https://github.com/YaseenHQ/kimi/issues)
+- [Issues](https://github.com/YaseenHQ/echadron/issues)
 - 安全漏洞反馈，请见 [SECURITY.md](SECURITY.md)。
 
 ## 致谢

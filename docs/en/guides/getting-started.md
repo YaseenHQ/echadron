@@ -14,8 +14,9 @@ The CLI is written in TypeScript, distributed via npm, and runs on Node.js.
 
 ## Installation
 
-Until Echadron publishes its own native release channel, install it from the
-repository or as a global npm package.
+Install Echadron as a global npm package, or build it from the repository when
+you need the latest source checkout. The standalone native release channel is
+not enabled yet.
 
 ::: tip Before you install
 Echadron is a fully interactive TUI application. For the best visual experience, run it in a terminal with true-color and ligature support, such as [Kitty](https://sw.kovidgoyal.net/kitty/) or [Ghostty](https://ghostty.org/).
@@ -27,7 +28,7 @@ Echadron's independent release installer is not enabled yet. To run the fork
 from source, install Node.js 24.15.0 or later and pnpm 10.33.0, then build the CLI:
 
 ```sh
-git clone https://github.com/YaseenHQ/kimi.git echadron
+git clone https://github.com/YaseenHQ/echadron.git echadron
 cd echadron
 pnpm install
 pnpm --filter echadron build
@@ -38,7 +39,7 @@ On Windows, install [Git for Windows](https://gitforwindows.org/) before
 launching the CLI. The inherited shell path behavior remains available through
 the compatibility `KIMI_SHELL_PATH` variable.
 
-### npm installation (after the first public release)
+### npm installation
 
 Requires Node.js 22.19.0 or later:
 
@@ -61,9 +62,9 @@ After installation, verify that the executable is ready:
 echadron --version
 ```
 
-**Upgrade**: the Echadron release channel is not enabled yet, so `echadron upgrade`
-does not install an upstream Kimi release. Rebuild from source or update the
-package when an Echadron release is available:
+**Upgrade**: the standalone Echadron release channel is not enabled yet, so
+`echadron upgrade` does not install an upstream Kimi release. Update the npm
+package directly:
 
 ```sh
 npm install -g echadron@latest

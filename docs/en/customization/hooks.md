@@ -2,7 +2,7 @@
 
 Hooks are an automatic trigger mechanism: you tell Echadron CLI in advance "whenever X happens, run this script." The script runs on your local machine, and you can put any logic inside it. Typical use cases:
 
-> Hook configuration lives under the canonical Echadron data root (`ECHADRON_HOME`, default `~/.echadron`). The legacy `IMPERIUM_HOME` / `ECHADRON_HOME` variables remain supported as aliases.
+> Hook configuration lives under the canonical Echadron data root (`ECHADRON_HOME`, default `~/.echadron`). The legacy `IMPERIUM_HOME` and `KIMI_CODE_HOME` variables remain supported as aliases.
 
 - **Security interception**: Before the Agent executes a shell command, check whether it contains dangerous operations (such as `rm -rf`) and block execution if so
 - **Desktop notifications**: When a background task completes, pop up a system notification to bring you back to review the results

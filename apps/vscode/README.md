@@ -37,7 +37,7 @@ See [the changelog](CHANGELOG.md) for the full compatibility notes.
 
 ## Docs
 
-Echadron documentation is maintained in the [repository docs](https://github.com/YaseenHQ/kimi/tree/main/docs/en).
+Echadron documentation is maintained in the [repository docs](https://github.com/YaseenHQ/echadron/tree/main/docs/en).
 
 ## License
 
