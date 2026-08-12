@@ -18,7 +18,7 @@ export ECHADRON_HOME="$HOME/.config/echadron"
 
 Once set, **all** Echadron data — config, sessions, logs, OAuth credentials, Echadron-specific user Skills, global `AGENTS.md`, and more — lands under the new path. For the full reference on `ECHADRON_HOME`, see [Environment variables](./env-vars.md).
 
-The legacy `IMPERIUM_HOME` and `ECHADRON_HOME` variables remain supported as data-root compatibility aliases. Echadron does not install a `echadron` executable.
+The legacy `IMPERIUM_HOME` and `KIMI_CODE_HOME` variables remain supported as data-root compatibility aliases. Echadron does not install a `kimi` executable.
 
 ::: tip Note
 

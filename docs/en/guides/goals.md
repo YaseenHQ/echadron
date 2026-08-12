@@ -2,8 +2,6 @@
 
 Goals keep Echadron working toward a defined outcome across turns. Unlike a normal prompt that says what to do next, a goal says what must become true. Use `/goal` when the task has a clear finish line, but the next useful step depends on what the agent learns while it works — for example, fixing a batch of failing tests or tracking down the root cause of a broken build.
 
-> `echadron` is the canonical executable; `chad` and `maker` are aliases. Echadron does not install a `echadron` executable.
-
 ## Start a goal
 
 Write the objective after `/goal`:

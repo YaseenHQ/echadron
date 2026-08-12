@@ -1,5 +1,5 @@
 {
-  "changelog": ["@changesets/changelog-github", { "repo": "YaseenHQ/kimi" }],
+  "changelog": ["@changesets/changelog-github", { "repo": "YaseenHQ/echadron" }],
   "commit": false,
   "fixed": [],
   "linked": [],

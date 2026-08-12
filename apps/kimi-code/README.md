@@ -2,7 +2,7 @@
 
 > A multi-provider agent harness for your terminal
 
-[![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE) [![Docs](https://img.shields.io/badge/docs-online-blue)](https://github.com/YaseenHQ/kimi/tree/main/docs/en)
+[![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE) [![Docs](https://img.shields.io/badge/docs-online-blue)](https://github.com/YaseenHQ/echadron/tree/main/docs/en)
 
 ## What is Echadron CLI
 
@@ -37,7 +37,7 @@ pnpm add -g echadron
 
 The package is versioned independently from upstream Kimi Code. Its executable
 entries are `echadron`, `chad`, and `maker`; only Echadron-owned executables are
-installed. The first public npm publication has not happened yet.
+installed.
 
 ## Quick Start
 
@@ -70,7 +70,7 @@ has its own release channel.
 
 ## Key Features
 
-- **Isolated npm distribution.** Echadron uses its own commands and data directory, so it can be installed beside upstream Kimi Code. A native distribution is planned after the first public npm release.
+- **Isolated npm distribution.** Echadron uses its own commands and data directory, so it can be installed beside upstream Kimi Code. A native distribution is planned separately.
 - **Blazing-fast startup.** The TUI is ready in milliseconds, so opening a session never feels heavy.
 - **Polished TUI.** A carefully tuned interface designed for long, focused agent sessions.
 - **Video input.** Drop a screen recording or demo clip into the chat — let the agent watch instead of typing out what's hard to describe in words.
@@ -80,13 +80,13 @@ has its own release channel.
 
 ## Documentation
 
-- Full docs: https://github.com/YaseenHQ/kimi/tree/main/docs
-- Getting Started: https://github.com/YaseenHQ/kimi/tree/main/docs/en/guides
+- Full docs: https://github.com/YaseenHQ/echadron/tree/main/docs
+- Getting Started: https://github.com/YaseenHQ/echadron/tree/main/docs/en/guides
 
 ## Repository & Issues
 
-- Source: https://github.com/YaseenHQ/kimi
-- Issues: https://github.com/YaseenHQ/kimi/issues
+- Source: https://github.com/YaseenHQ/echadron
+- Issues: https://github.com/YaseenHQ/echadron/issues
 - Security: see SECURITY.md in the main repository
 
 ## License

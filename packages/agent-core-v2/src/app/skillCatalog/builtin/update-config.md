@@ -33,7 +33,7 @@ The "read → copy → Edit → validate → back up → overwrite" flow below a
 Before touching any config, use **FetchURL** to fetch the official config docs as the one authoritative reference for fields (key names, types, allowed values, owning section):
 
 ```
-https://yaseenhq.github.io/kimi/en/configuration/config-files.html
+https://yaseenhq.github.io/echadron/en/configuration/config-files.html
 ```
 
 - Use the **snake_case key names and sections exactly as documented** — don't invent them, don't guess camelCase.

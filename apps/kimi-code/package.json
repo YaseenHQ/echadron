@@ -4,14 +4,14 @@
   "description": "Echadron multi-provider agent harness for the terminal",
   "license": "MIT",
   "author": "YaseenHQ",
-  "homepage": "https://github.com/YaseenHQ/kimi/tree/main/apps/kimi-code#readme",
+  "homepage": "https://github.com/YaseenHQ/echadron/tree/main/apps/kimi-code#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/YaseenHQ/kimi.git",
+    "url": "git+https://github.com/YaseenHQ/echadron.git",
     "directory": "apps/kimi-code"
   },
   "bugs": {
-    "url": "https://github.com/YaseenHQ/kimi/issues"
+    "url": "https://github.com/YaseenHQ/echadron/issues"
   },
   "keywords": [
     "echadron",

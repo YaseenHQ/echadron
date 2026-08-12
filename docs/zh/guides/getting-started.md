@@ -14,7 +14,7 @@ Echadron 是一个运行在终端中的 AI Agent，帮助你完成软件开发�
 
 ## 安装
 
-Echadron 的独立原生发行渠道尚未发布。目前请从仓库构建，或在首个 npm 版本发布后通过 npm 全局安装。
+请通过 npm 全局安装 Echadron；如需使用最新源码，也可以从仓库构建。独立原生发行渠道尚未启用。
 
 ::: tip 安装之前
 Echadron 为全交互式 TUI 应用，推荐在支持真彩色与连字的现代终端中运行以获得最佳体验，例如 [Kitty](https://sw.kovidgoyal.net/kitty/) 或 [Ghostty](https://ghostty.org/)。
@@ -25,7 +25,7 @@ Echadron 为全交互式 TUI 应用，推荐在支持真彩色与连字的现代
 安装 Node.js 24.15.0 或更高版本和 pnpm 10.33.0，然后构建 CLI：
 
 ```sh
-git clone https://github.com/YaseenHQ/kimi.git echadron
+git clone https://github.com/YaseenHQ/echadron.git echadron
 cd echadron
 pnpm install
 pnpm --filter echadron build
@@ -34,7 +34,7 @@ npm install -g ./apps/kimi-code
 
 > Windows 用户首次启动前还需要安装 [Git for Windows](https://gitforwindows.org/)。如果 Git Bash 安装在非标准路径，请把兼容变量 `KIMI_SHELL_PATH` 设为 `bash.exe` 的绝对路径。
 
-### npm 安装（首个公开版本发布后）
+### npm 安装
 
 需要 Node.js 22.19.0 或更高版本：
 
@@ -57,7 +57,7 @@ pnpm add -g echadron
 echadron --version
 ```
 
-**升级**：Echadron 的发行渠道尚未启用，所以 `echadron upgrade` 不会安装上游 Kimi Code。首个 Echadron 版本发布后可用包管理器升级：
+**升级**：Echadron 的独立原生发行渠道尚未启用，所以 `echadron upgrade` 不会安装上游 Kimi Code。请直接通过包管理器升级：
 
 ```sh
 npm install -g echadron@latest

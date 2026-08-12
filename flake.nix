@@ -227,7 +227,7 @@
 
             meta = {
               description = "Echadron multi-provider agent harness";
-              homepage = "https://github.com/YaseenHQ/kimi";
+              homepage = "https://github.com/YaseenHQ/echadron";
               license = lib.licenses.mit;
               mainProgram = "echadron";
               platforms = systems;

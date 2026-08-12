@@ -308,7 +308,7 @@ const REQUEST_TOO_LARGE_MESSAGE_PATTERNS = [
 ] as const;
 
 const THINKING_EFFORT_CONFIG_DOCS_URL =
-  'https://yaseenhq.github.io/kimi/en/configuration/config-files.html#thinking';
+  'https://yaseenhq.github.io/echadron/en/configuration/config-files.html#thinking';
 
 const THINKING_EFFORT_STATUS_MESSAGE_PATTERNS = [
   /reasoning[_ .-]?effort/,
