@@ -109,7 +109,7 @@ The body is the agent's system prompt, and it is rendered as a template each tim
 
 Unknown fields are ignored, so newer files stay readable by older versions. Fields from other agent tools (such as Claude Code's `model` or OpenCode's `mode`) are ignored the same way, the comma-separated `tools` form keeps Claude Code-style agent files loadable, and a missing `name` falls back to the file name so OpenCode-style files load too — a minimal file with `description` and a body works across tools.
 
-`model_preference` applies only to newly spawned subagents when the secondary-model experiment is enabled — set `KIMI_CODE_EXPERIMENTAL_SECONDARY_MODEL=1`, or the master `KIMI_CODE_EXPERIMENTAL_FLAG=1`. It takes effect in every launch mode, including the interactive TUI. The field never names a concrete model alias, and resumed subagents keep their existing model. The selected preference is shown to the main agent alongside the profile description so it can still pass an explicit `model` when a task needs a different choice.
+`model_preference` applies to newly spawned subagents in every launch mode, including the interactive TUI. The field never names a concrete model alias, and resumed subagents keep their existing model. The selected preference is shown to the main agent alongside the profile description so it can still pass an explicit `model` when a task needs a different choice. The secondary-model feature is enabled by default; its retained rollback control is available in Settings under Feature controls.
 
 A file with invalid content discovered in a directory is skipped with a warning and does not affect other files. A file passed explicitly via `--agent-file` must be valid — otherwise the CLI reports the error and exits.
 

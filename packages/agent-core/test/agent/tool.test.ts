@@ -362,7 +362,6 @@ describe('Agent tools', () => {
 
     const ctx = testAgent({
       subagentHost,
-      experimentalFlags: new FlagResolver({}, FLAG_DEFINITIONS),
     });
     ctx.configure({ tools: ['AgentSwarm'] });
 
@@ -406,7 +405,7 @@ describe('Agent tools', () => {
     } as unknown as SessionSubagentHost;
     const ctx = testAgent({
       subagentHost,
-      experimentalFlags: new FlagResolver({}, FLAG_DEFINITIONS),
+      experimentalFlags: new FlagResolver({ ECHADRON_EXPERIMENTAL_SECONDARY_MODEL: '0' }),
     });
     ctx.configure({ tools: ['Agent'] });
 

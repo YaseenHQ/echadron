@@ -93,7 +93,7 @@ import {
   PromptJsonWriter,
   type PromptTurnWriter,
   PromptTranscriptWriter,
-  writeExperimentalVersion,
+  writeVersion,
   writeResumeHint,
 } from '../prompt-render';
 
@@ -119,7 +119,7 @@ export async function runV2Print(
   const outputFormat = resolveOutputFormat(opts);
   const workDir = process.cwd();
 
-  writeExperimentalVersion(version, outputFormat, stdout, stderr);
+  writeVersion(version, outputFormat, stdout, stderr);
 
   const homeDir = getDataDir();
   let firstLaunch = false;

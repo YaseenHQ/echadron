@@ -25,7 +25,7 @@ import {
 import { resolve } from 'pathe';
 
 import type { CLIOptions } from '#/cli/options';
-import { isKimiV2Enabled } from '#/cli/experimental-v2';
+import { isNativeEngineEnabled } from '#/cli/engine-routing';
 import { ECHADRON_TIPS_BANNER_URL_ENV } from '#/constant/app';
 import { MigrationScreenComponent, type MigrationScreenResult } from '#/migration/index';
 import { copyTextToClipboard } from '#/utils/clipboard/clipboard-text';
@@ -323,7 +323,7 @@ function appendSteerText(parts: PromptPart[], text: string): void {
 const DETACH_HINT_DISPLAY_MS = 4_000;
 
 export class KimiTUI {
-  readonly engineV2 = isKimiV2Enabled();
+  readonly engineV2 = isNativeEngineEnabled();
   readonly harness: KimiHarness;
   readonly options: KimiTUIOptions;
   session: Session | undefined;

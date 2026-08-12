@@ -31,7 +31,7 @@ import { detectInstallSource } from '#/cli/update/source';
 import { createKimiCodeHostIdentity } from '#/cli/version';
 import { detectShellEnvironment } from '#/utils/process/shell-env';
 
-import { isKimiV2Enabled } from '../experimental-v2';
+import { isNativeEngineEnabled } from '../engine-routing';
 
 interface WritableLike {
   write(chunk: string): boolean;
@@ -155,7 +155,7 @@ function createDefaultExportDeps(overrides: Partial<ExportDeps> = {}): ExportDep
   };
   const getHarness = (): KimiHarness => {
     const currentTelemetryBootstrap = getTelemetryBootstrap();
-    harness ??= (isKimiV2Enabled() ? createKimiHarnessV2 : createKimiHarness)({
+    harness ??= (isNativeEngineEnabled() ? createKimiHarnessV2 : createKimiHarness)({
       homeDir: currentTelemetryBootstrap.homeDir,
       identity,
       telemetry: telemetryClient,

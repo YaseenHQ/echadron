@@ -12,7 +12,7 @@ import { z } from 'zod';
 
 import { getTuiConfigPath, parseTuiConfig } from '#/tui/config';
 
-import { isKimiV2Enabled } from '../experimental-v2';
+import { isNativeEngineEnabled } from '../engine-routing';
 
 interface WritableLike {
   write(chunk: string): boolean;
@@ -134,7 +134,7 @@ function resolveDeps(deps: Partial<DoctorDeps> | DoctorDeps | undefined): Resolv
     validateConfigToml:
       deps?.validateConfigToml ??
       (async (text, filePath) => {
-        if (isKimiV2Enabled()) {
+        if (isNativeEngineEnabled()) {
           const { validateConfigTomlV2 } = await import('../v2/validate-config');
           return validateConfigTomlV2(text, filePath);
         }

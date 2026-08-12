@@ -90,14 +90,14 @@ describe('experimental feature command handlers', () => {
     expect(host.session.reloadSession).toHaveBeenCalledOnce();
     expect(host.reloadCurrentSessionView).toHaveBeenCalledWith(
       host.session,
-      'Experimental features updated. Session reloaded.',
+      'Feature controls updated. Session reloaded.',
     );
     expect(host.mountEditorReplacement).not.toHaveBeenCalled();
     expect(host.track).toHaveBeenCalledWith('experimental_features_apply', {
       changed: 1,
     });
     expect(host.showStatus).not.toHaveBeenCalledWith(
-      'Experimental features updated.',
+      'Feature controls updated.',
       darkColors.success,
     );
   });
@@ -109,7 +109,7 @@ describe('experimental feature command handlers', () => {
 
     expect(host.harness.setConfig).not.toHaveBeenCalled();
     expect(host.showStatus).toHaveBeenCalledWith(
-      'No experimental feature changes to apply.',
+      'No feature-control changes to apply.',
       'textMuted',
     );
   });

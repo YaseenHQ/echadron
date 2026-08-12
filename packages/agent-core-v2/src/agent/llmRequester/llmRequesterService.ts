@@ -39,10 +39,6 @@ import {
   type MediaStripSnapshot,
 } from '#/agent/contextProjector/contextProjector';
 import { IAgentContextSizeService } from '#/agent/contextSize/contextSize';
-import {
-  IFaultInjectionService,
-  type FaultKind,
-} from '#/agent/faultInjection/faultInjection';
 import { IAgentProfileService, type ProfileModelContext } from '#/agent/profile/profile';
 import { IAgentStateService } from '#/agent/state/agentState';
 import { IAgentToolRegistryService } from '#/agent/toolRegistry/toolRegistry';
@@ -187,7 +183,6 @@ export class AgentLLMRequesterService implements IAgentLLMRequesterService {
     @ILogService private readonly log: ILogService,
     @ITelemetryService private readonly telemetry: ITelemetryService,
     @IWireService private readonly wire: IWireService,
-    @IFaultInjectionService private readonly faultInjection: IFaultInjectionService,
     @IEventBus private readonly eventBus: IEventBus,
     @IAgentStateService private readonly states: IAgentStateService,
   ) {
@@ -406,11 +401,6 @@ export class AgentLLMRequesterService implements IAgentLLMRequesterService {
       };
       this.logRequest(logInput);
       this.recordRequest(logInput);
-
-      const fault = this.faultInjection.take();
-      if (fault !== undefined) {
-        throw faultToError(fault);
-      }
 
       let message: Message | undefined;
       let usage = emptyUsage();
@@ -824,12 +814,6 @@ function projectionField(
   return value === 'strict' || value === 'media-degraded' || value === 'media-stripped'
     ? value
     : undefined;
-}
-
-function faultToError(kind: FaultKind): Error {
-  return kind === 'request-too-large'
-    ? new APIRequestTooLargeError(413, 'Request Entity Too Large (fault injection)')
-    : new APIStatusError(400, 'unsupported image format: image/avif (fault injection)');
 }
 
 function fingerprint(content: string): string {

@@ -19,7 +19,7 @@ import { resolve } from 'pathe';
 import { CLI_SHUTDOWN_TIMEOUT_MS, PROMPT_CLEANUP_TIMEOUT_MS } from '#/constant/app';
 
 import { resolveAgentProfileSelection } from './agent-selection';
-import { isKimiV2Enabled } from './experimental-v2';
+import { isNativeEngineEnabled } from './engine-routing';
 import { resolveOutputFormat } from './options';
 import type { CLIOptions, PromptOutputFormat } from './options';
 import {
@@ -100,7 +100,7 @@ export async function runPrompt(
   version: string,
   io: PromptRunIO = {},
 ): Promise<void> {
-  if (isKimiV2Enabled()) {
+  if (isNativeEngineEnabled()) {
     // The native agent-core-v2 engine runs on its own DI service runtime (see
     // v2/run-v2-print.ts); it does not share the legacy PromptHarness path.
     // Keep it lazy so the legacy compatibility path does not load v2 eagerly.

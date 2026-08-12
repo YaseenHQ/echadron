@@ -6,6 +6,15 @@ outline: 2
 
 This page documents each Echadron release. The complete package-level record is also available in the [repository changelog](https://github.com/YaseenHQ/kimi/blob/main/apps/kimi-code/CHANGELOG.md).
 
+## Unreleased
+
+### Echadron
+
+- Graduate progressive tool disclosure, secondary-model routing, and the minidb read model to default-on features. Their existing config entries remain available under Settings → Feature controls as explicit rollback controls.
+- Make `echadron acp` select ACP v1 or v2 from the client's `initialize` request, while retaining `acp-v2` and the legacy-engine environment switch for compatibility.
+- Use canonical `ECHADRON_EXPERIMENTAL_*` environment controls while preserving historical `KIMI_CODE_EXPERIMENTAL_*` aliases.
+- Remove the developer-only fault-injection experiment and stale v2-experimental naming from normal CLI paths.
+
 ## 0.30.0 (2026-08-10)
 
 ### Echadron

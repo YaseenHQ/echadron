@@ -1,12 +1,9 @@
 /**
- * Experimental ACP protocol-v2 server.
+ * ACP protocol-v2 server.
  *
- * ACP v2 is deliberately isolated from the stable ACP adapter. The adapter
- * below reuses the well-tested Echadron SDK session/event mapping, while this
- * package owns the v2 transport, message IDs, upsert semantics, and state
- * updates. This keeps the current `echadron acp` command wire-compatible and
- * makes `echadron acp-v2` an explicit opt-in surface while the ACP v2 RFD is
- * still unstable.
+ * The v2 surface reuses Echadron's SDK session/event mapping while owning the
+ * v2 transport, message IDs, upsert semantics, and state updates. The CLI
+ * selects this or the v1 adapter per connection from the initialize request.
  */
 
 import { Readable, Writable } from 'node:stream';
@@ -797,7 +794,7 @@ export function createAcpV2Agent(
     info,
     capabilities: { session: { delete: {}, additionalDirectories: {} } },
     authMethods: [authMethod(options)],
-    _meta: { 'echadron:acp': { protocol: 'v2', experimental: true } },
+    _meta: { 'echadron:acp': { protocol: 'v2' } },
   }));
 
   app.onRequest(methods.agent.auth.login, async ({ params }) => {

@@ -32,7 +32,7 @@ import { restoreTerminalModes } from '#/utils/terminal-restore';
 
 import type { CLIOptions } from './options';
 import { resolveAgentProfileSelection } from './agent-selection';
-import { isKimiV2Enabled } from './experimental-v2';
+import { isNativeEngineEnabled } from './engine-routing';
 import { createCliTelemetryBootstrap, initializeCliTelemetry } from './telemetry';
 import { createKimiCodeHostIdentity } from './version';
 
@@ -81,7 +81,7 @@ export async function runShell(
     },
     sessionStartedProperties: { yolo: opts.yolo, auto: opts.auto, plan: opts.plan, afk: false },
   };
-  const harness = isKimiV2Enabled()
+  const harness = isNativeEngineEnabled()
     ? createKimiHarnessV2(harnessOptions)
     : createKimiHarness(harnessOptions);
   log.info('echadron starting', {

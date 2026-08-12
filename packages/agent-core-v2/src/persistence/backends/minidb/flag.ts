@@ -2,10 +2,8 @@
  * `minidb` persistence backend — flag contribution.
  *
  * Gates the minidb-backed derived read-model (`IQueryStore`) and the consumers
- * that read through it. Off by default; enable via
- * `KIMI_CODE_EXPERIMENTAL_PERSISTENCE_MINIDB_READMODEL` or the `[experimental]`
- * config section. Imported for its side effect (registers the definition) from
- * the backend barrel.
+ * that read through it. Released on by default, with the flag retained as a
+ * rollback control for the authoritative read path.
  */
 
 import { type FlagDefinitionInput, registerFlagDefinition } from '#/app/flag/flagRegistry';
@@ -15,8 +13,8 @@ export const persistenceMiniDbReadModelFlag: FlagDefinitionInput = {
   title: 'minidb read model',
   description:
     'Use the minidb-backed IQueryStore as a derived read model for session indexing and wire replay.',
-  env: 'KIMI_CODE_EXPERIMENTAL_PERSISTENCE_MINIDB_READMODEL',
-  default: false,
+  env: 'ECHADRON_EXPERIMENTAL_PERSISTENCE_MINIDB_READMODEL',
+  default: true,
   surface: 'core',
 };
 

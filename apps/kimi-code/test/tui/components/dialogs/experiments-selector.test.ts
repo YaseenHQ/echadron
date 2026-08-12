@@ -47,7 +47,7 @@ describe('ExperimentsSelectorComponent', () => {
 
     const out = text(selector);
 
-    expect(out).toContain(' Experimental features  (type to search)');
+    expect(out).toContain(' Feature controls  (type to search)');
     expect(out).toContain(' ↑↓ navigate · Space toggle · Enter apply · Esc cancel');
     expect(out).toContain('  ❯ Micro compaction  enabled');
     expect(out).toContain('    id micro_compaction · config · KIMI_CODE_EXPERIMENTAL_MICRO_COMPACTION');

@@ -12,9 +12,15 @@ echadron acp
 你通常不需要手动跑 `echadron acp`——这个命令是给 IDE 的子进程入口准备的。IDE 端的配置见[在 IDE 中使用](../guides/ides.md)。
 :::
 
-## 能力矩阵
+## 自动选择协议
 
-下表列出当前 ACP 适配层声明的能力。`agentCapabilities` 字段在 `initialize` 响应里完整返回，IDE 端可据此调整 UI。
+`echadron acp` 会读取客户端的第一条 `initialize` 消息并选择匹配的实现：协议版本 `1` 使用 v1 适配器，版本 `2` 及以上使用原生 v2 服务。读取的消息会原样转交给对应实现，因此客户端无需配置 Echadron 专用的协商选项。
+
+已配置旧入口的客户端仍可继续使用 `echadron acp-v2`。ACP v2 规范仍在演进，但 Echadron 已将其纳入正常 ACP 路径，而不是应用级实验开关。`ECHADRON_LEGACY_FLAG=1 echadron acp` 仅作为强制使用 v1 适配器的诊断回退。
+
+## ACP v1 能力矩阵
+
+下表列出 ACP v1 适配层声明的能力。`agentCapabilities` 字段在 `initialize` 响应里完整返回，IDE 端可据此调整 UI。
 
 | 能力 | 取值 | 说明 |
 | --- | --- | --- |

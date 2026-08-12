@@ -32,8 +32,8 @@ const SETTINGS_OPTIONS: readonly ChoiceOption[] = [
   },
   {
     value: 'experiments',
-    label: 'Experiments',
-    description: 'Turn experimental features on or off.',
+    label: 'Feature controls',
+    description: 'Manage released feature defaults and rollback controls.',
   },
   {
     value: 'upgrade',

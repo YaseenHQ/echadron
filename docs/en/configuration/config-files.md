@@ -195,7 +195,7 @@ You can also switch models temporarily without touching the config file — by s
 
 The secondary model is a second model pointer next to the primary `default_model` — typically a cheaper model that features can bind to when they do not need the main model. Its consumer today is subagent spawning: when set, newly spawned subagents (`Agent` / `AgentSwarm`) bind to it by default instead of inheriting the main agent's model, and the main agent is told it can pick per spawn between `"secondary"` (this model) and `"primary"` (the main model). When unset, subagents inherit the main agent's model.
 
-This feature is experimental and disabled by default. Enable it with `KIMI_CODE_EXPERIMENTAL_SECONDARY_MODEL=1`, or the master `KIMI_CODE_EXPERIMENTAL_FLAG=1`. It takes effect in every launch mode, including the interactive TUI.
+This feature is enabled by default in every launch mode, including the interactive TUI. It retains a rollback control under `[experimental]`: set `secondary-model = false`, or use `ECHADRON_EXPERIMENTAL_SECONDARY_MODEL=0`. The historical `KIMI_CODE_EXPERIMENTAL_SECONDARY_MODEL` spelling remains an alias.
 
 In the interactive TUI, the [`/secondary_model`](../reference/slash-commands.md) command opens a model picker that writes this section and live-applies it to the current session, so newly spawned subagents bind the new secondary model right away.
 
@@ -216,7 +216,20 @@ max_output_size = 8192
 
 `model` / `default_effort` can be overridden by the `KIMI_SECONDARY_MODEL` / `KIMI_SECONDARY_EFFORT` environment variables, which take higher priority than `config.toml`.
 
-When the experiment is enabled, the configuration is validated as the session starts: an unresolvable `model`, or a `default_effort` not listed by the (patched) model, produces a startup warning (also returned by the session-warnings API). The check is advisory — a broken secondary model still fails at spawn time, with the same source hint attached to the spawn error.
+The configuration is validated as the session starts: an unresolvable `model`, or a `default_effort` not listed by the (patched) model, produces a startup warning (also returned by the session-warnings API). The check is advisory — a broken secondary model still fails at spawn time, with the same source hint attached to the spawn error.
+
+## Feature controls
+
+Echadron's completed feature set ships enabled. The historical `[experimental]` table remains as a compatibility namespace for explicit rollback controls, and the same controls are available in **Settings → Feature controls**:
+
+```toml
+[experimental]
+"tool-select" = false
+"secondary-model" = false
+persistence_minidb_readmodel = false
+```
+
+These switches disable progressive MCP tool disclosure, secondary-model routing, and the minidb-derived session read model respectively. ACP v1/v2 and MCP protocol negotiation are normal transport behavior, so they are not feature toggles.
 
 ## `thinking`
 

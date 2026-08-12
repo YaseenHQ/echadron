@@ -90,7 +90,7 @@ describe('SessionSecondaryModelWarningService', () => {
     expect(published).toHaveLength(0);
   });
 
-  it('stays silent when the secondary-model experiment is disabled', () => {
+  it('stays silent when the secondary-model feature control is disabled', () => {
     setup({ [SECONDARY_MODEL_SECTION]: { model: 'provider/typo' } }, false);
     const svc = ix.get(ISessionSecondaryModelWarningService);
     createMain();

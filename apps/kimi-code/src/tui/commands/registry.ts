@@ -256,9 +256,9 @@ export const BUILTIN_SLASH_COMMANDS = [
     completeArgs: addDirArgumentCompletions,
   },
   {
-    name: 'experiments',
-    aliases: ['experimental'],
-    description: 'Manage experimental features',
+    name: 'features',
+    aliases: ['experiments', 'experimental'],
+    description: 'Manage feature defaults and rollback controls',
     priority: 60,
     availability: 'idle-only',
   },
