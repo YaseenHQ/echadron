@@ -90,21 +90,31 @@ function findVisualStudioDevCmd() {
 	return candidates.find((candidate) => existsSync(candidate));
 }
 
-function canUseMsvc(vsDevCmd) {
-	const probeDir = path.join(temporaryDir, "msvc-probe");
+/**
+ * Probe one target's MSVC environment. Every target must be probed before MSVC
+ * is selected: checking only x64 while the build covers x64 and arm64 picks
+ * MSVC on a machine that lacks the arm64 toolset, then fails partway through
+ * instead of falling back to MinGW.
+ */
+function canUseMsvcForTarget(vsDevCmd, target) {
+	const probeDir = path.join(temporaryDir, `msvc-probe-${target.arch}`);
 	mkdirSync(probeDir, { recursive: true });
 	const batchFile = path.join(probeDir, "probe.cmd");
 	writeFileSync(
 		batchFile,
 		[
 			"@echo off",
-			`call ${quoteBatch(vsDevCmd)} -no_logo -arch=x64 -host_arch=${msvcHostArch()} >nul`,
+			`call ${quoteBatch(vsDevCmd)} -no_logo -arch=${target.msvcArch} -host_arch=${msvcHostArch()} >nul`,
 			"if errorlevel 1 exit /b %errorlevel%",
 			"where cl.exe >nul 2>nul",
 		].join("\r\n"),
 	);
 	const result = spawnSync("cmd.exe", ["/d", "/s", "/c", batchFile], { cwd: probeDir, stdio: "ignore" });
 	return !result.error && result.status === 0;
+}
+
+function canUseMsvc(vsDevCmd) {
+	return targets.every((target) => canUseMsvcForTarget(vsDevCmd, target));
 }
 
 function resolveMingwCompiler(target) {

@@ -126,10 +126,14 @@ describe("TUI debug logging", () => {
 				tui.addChild(component);
 				component.lines = ["test"];
 				tui.start();
-				await terminal.waitForRender();
-
-				assert.match(readFileSync(join(logDir, "pi-debug.log"), "utf-8"), /fullRender: first render/);
-				tui.stop();
+				try {
+					await terminal.waitForRender();
+					assert.match(readFileSync(join(logDir, "pi-debug.log"), "utf-8"), /fullRender: first render/);
+				} finally {
+					// A failing assertion must not leave the screen started: it keeps
+					// terminal and input listeners registered for the rest of the run.
+					tui.stop();
+				}
 			});
 		} finally {
 			rmSync(logDir, { recursive: true, force: true });

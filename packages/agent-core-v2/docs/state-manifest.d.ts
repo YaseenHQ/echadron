@@ -23,7 +23,7 @@
 // references become '(circular)', and class instances collapse to a '(ClassName)'
 // marker — the wire shape of an entry is the JSON projection of the type here.
 //
-// Index (Session: 28 keys · Agent: 68 keys)
+// Index (Session: 28 keys · Agent: 69 keys)
 //   Session
 //     cron.inFlight                             src/session/cron/sessionCronServiceImpl.ts
 //     cron.lastSeenAt                           src/session/cron/sessionCronServiceImpl.ts
@@ -62,6 +62,7 @@
 //     contextInjector.isNewTurn                         src/agent/contextInjector/contextInjectorService.ts
 //     contextProjector.lastRepairSignature              src/agent/contextProjector/contextProjectorService.ts
 //     contextSize.lastEmittedTokens                     src/agent/contextSize/contextSizeService.ts
+//     dateChange.lastAnnounced                          src/agent/dateChange/dateChangeService.ts
 //     externalHooks.stopHookContinuationUsed            src/agent/externalHooks/externalHooksService.ts
 //     fullCompaction.activeTurnId                       src/agent/fullCompaction/fullCompactionService.ts
 //     fullCompaction.compactionCountInTurn              src/agent/fullCompaction/fullCompactionService.ts
@@ -994,6 +995,8 @@ export interface AgentStateSnapshot {
   'contextProjector.lastRepairSignature': string | null;
   // src/agent/contextSize/contextSizeService.ts
   'contextSize.lastEmittedTokens': number;
+  // src/agent/dateChange/dateChangeService.ts
+  'dateChange.lastAnnounced': string | undefined;
   // src/agent/externalHooks/externalHooksService.ts
   'externalHooks.stopHookContinuationUsed': boolean;
   // src/agent/fullCompaction/fullCompactionService.ts
