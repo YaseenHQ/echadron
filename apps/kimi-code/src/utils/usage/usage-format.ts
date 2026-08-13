@@ -6,15 +6,19 @@
  */
 
 /**
- * Format a token count in 1024-based units: context sizes are powers of
- * two, so 262144 reads as "256k", not "262.1k". k values at or above
- * 100 are rounded to whole numbers ("977k").
+ * Format a token count in 1000-based units.
+ *
+ * Tokens are not bytes, and model context windows are configured and
+ * advertised in decimal — 200000, 500000, 1000000. Dividing by 1024 showed a
+ * 1M window as "977k" and a 200k window as "195k", under-reporting every
+ * window by 2.4% against the number the provider states. k values at or above
+ * 100 are rounded to whole numbers.
  */
 export function formatTokenCount(n: number): string {
   if (!Number.isFinite(n) || n < 0) return '0';
-  if (n >= 1024 * 1024) return `${trimDecimal(n / (1024 * 1024))}M`;
-  if (n >= 1024) {
-    const k = n / 1024;
+  if (n >= 1_000_000) return `${trimDecimal(n / 1_000_000)}M`;
+  if (n >= 1_000) {
+    const k = n / 1_000;
     return `${k >= 100 ? Math.round(k) : trimDecimal(k)}k`;
   }
   return String(n);

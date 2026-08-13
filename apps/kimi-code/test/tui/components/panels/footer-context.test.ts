@@ -94,12 +94,12 @@ describe('FooterComponent — context NaN resilience', () => {
     expect(out).toMatch(/context: 1%/);
   });
 
-  it('valid tokens/maxTokens → percent from tokens, counts in 1024 units', () => {
+  it('valid tokens/maxTokens → percent from tokens, counts in decimal units', () => {
     const fc = new FooterComponent(
       baseState({
         contextUsage: 0.427,
-        contextTokens: 430_080,
-        maxContextTokens: 1_048_576,
+        contextTokens: 420_000,
+        maxContextTokens: 1_000_000,
       }),
     );
     const out = strip(fc.render(200).join(''));
