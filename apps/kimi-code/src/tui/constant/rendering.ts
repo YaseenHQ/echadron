@@ -45,3 +45,8 @@ export function animationFrames(name: UnicodeAnimationName = 'braille'): string[
 export function animationInterval(name: UnicodeAnimationName = 'braille'): number {
   return spinners[name].interval;
 }
+
+// Cap on the step-retry detail line under the waiting spinner, so huge
+// provider error bodies (occasionally whole HTML error pages) can't flood
+// the activity pane.
+export const RETRY_DETAIL_MAX_CHARS = 160;

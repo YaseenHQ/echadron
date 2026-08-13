@@ -4,7 +4,7 @@ import type {
   AutocompleteSuggestions,
   TUI,
 } from '@moonshot-ai/pi-tui';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { CustomEditor } from '#/tui/components/editor/custom-editor';
 import { FileMentionProvider } from '#/tui/components/editor/file-mention-provider';
@@ -62,6 +62,25 @@ describe('CustomEditor autocomplete Escape handling', () => {
 
     expect(editor.isShowingAutocomplete()).toBe(false);
     expect(onEscape).not.toHaveBeenCalled();
+  });
+
+  it('does not draw the input-box rail down the slash command menu', async () => {
+    const editor = makeEditor();
+    editor.setAutocompleteProvider(
+      providerReturning([{ value: 'help', label: 'help', description: 'Show help' }]),
+    );
+    editor.handleInput('/');
+    await flushAutocomplete();
+    expect(editor.isShowingAutocomplete()).toBe(true);
+
+    // oxlint-disable-next-line no-control-regex -- ESC (\u001B) is required to match ANSI SGR escape sequences
+    const stripAnsi = (s: string): string => s.replaceAll(/\u001B\[[0-9;]*m/g, '');
+    const lines = editor.render(90).map(stripAnsi);
+    const boxBottom = lines.findIndex((line) => line.includes('╰'));
+    expect(boxBottom).toBeGreaterThan(0);
+    const menu = lines.slice(boxBottom + 1).join('\n');
+    expect(menu).toContain('help');
+    expect(menu).not.toMatch(/│/);
   });
 
   it('escape cancels an in-flight slash command menu request', async () => {
@@ -398,7 +417,7 @@ describe('CustomEditor slash argument hint', () => {
       editor.handleInput(char);
     }
 
-    const contentLine = editor.render(90)[1] ?? '';
+    const contentLine = editor.render(90).find((line) => line.includes('/add-dir')) ?? '';
     const tokenIdx = contentLine.indexOf('/add-dir');
     expect(tokenIdx).toBeGreaterThan(-1);
     // Prompt mode wraps `/add-dir` in a primary-colour ANSI sequence; in bash
@@ -651,31 +670,43 @@ describe('CustomEditor shortcut telemetry hooks', () => {
   });
 });
 
-describe('CustomEditor bash mode border label', () => {
+describe('CustomEditor boxed prompt', () => {
   // oxlint-disable-next-line no-control-regex -- ESC (\u001B) is required to match ANSI SGR escape sequences
   const stripAnsi = (s: string): string => s.replaceAll(/\u001B\[[0-9;]*m/g, '');
 
-  it('shows "! shell mode" on the top border in bash mode', () => {
+  it('draws a rounded box with a > prompt and no fill', () => {
+    const editor = makeEditor();
+    const lines = editor.render(90);
+    const plain = stripAnsi(lines.join('\n'));
+    const content = stripAnsi(lines.find((line) => line.includes('>')) ?? '');
+    expect(lines.length).toBeGreaterThanOrEqual(3);
+    expect(plain).toContain('╭');
+    expect(plain).toContain('╰');
+    expect(plain).toContain('│');
+    expect(content).toContain('>');
+    expect(content).toContain('Ask, edit, or run anything');
+    for (const line of lines) {
+      expect(line).not.toContain('\u001B[48;');
+    }
+  });
+
+  it('uses a ! prompt in bash mode', () => {
     const editor = makeEditor();
     editor.inputMode = 'bash';
-    const top = stripAnsi(editor.render(90)[0] ?? '');
-    expect(top.startsWith('╭')).toBe(true);
-    expect(top).toContain('! shell mode');
-    expect(top.endsWith('╮')).toBe(true);
+    const lines = editor.render(90).map(stripAnsi);
+    const content = lines.find((line) => line.includes('run a shell command')) ?? '';
+    expect(content).toContain('!');
+    expect(content).toContain('run a shell command');
+    expect(content).not.toContain('Ask, edit, or run anything');
   });
 
-  it('does not show the shell mode label in prompt mode', () => {
-    const editor = makeEditor();
-    const top = stripAnsi(editor.render(90)[0] ?? '');
-    expect(top).not.toContain('! shell mode');
-  });
-
-  it('keeps the top border at full width when the label is present', () => {
+  it('keeps every editor row at the requested width', () => {
     const editor = makeEditor();
     editor.inputMode = 'bash';
     const width = 90;
-    const top = stripAnsi(editor.render(width)[0] ?? '');
-    expect(top).toHaveLength(width);
+    for (const line of editor.render(width)) {
+      expect(stripAnsi(line).length).toBe(width);
+    }
   });
 });
 

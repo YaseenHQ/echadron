@@ -19,6 +19,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ApprovalPanelComponent } from '#/tui/components/dialogs/approval-panel';
 import { EffortSelectorComponent } from '#/tui/components/dialogs/effort-selector';
 import { KIMI_CODE_PLUGIN_MARKETPLACE_URL } from '#/constant/app';
+import { activityFaceAnimation } from '#/tui/utils/activity-face';
 import { BRAILLE_SPINNER_FRAMES } from '#/tui/constant/rendering';
 import {
   AgentSwarmProgressComponent,
@@ -137,6 +138,7 @@ function makeStartupInput(): KimiTUIStartupInput {
       auto: false,
       plan: false,
       model: undefined,
+      thinking: undefined,
       outputFormat: undefined,
       prompt: undefined,
       skillsDirs: [],
@@ -538,7 +540,9 @@ command = "vim"
     expect(harness.track).toHaveBeenCalledWith('input_command', { command: 'reload' });
     const transcript = stripSgr(renderTranscript(driver));
     expect(transcript).toContain('hello before reload');
-    expect(transcript).toContain('Session reloaded.');
+    expect(
+      stripSgr(driver.state.activityContainer.render(80).join('\n')),
+    ).toContain('Session reloaded.');
   });
 
   it('tracks successful feedback submissions only after the request succeeds', async () => {
@@ -2691,13 +2695,13 @@ command = "vim"
     const editorTopBorder = stripSgr(driver.state.editor.render(80)[0] ?? '');
     expect(panel).toContain('BTW ─ Esc close');
     expect(panel).not.toContain('ctrl+o expand');
-    expect(editorTopBorder.startsWith('├')).toBe(true);
-    expect(editorTopBorder.endsWith('┤')).toBe(true);
+    expect(editorTopBorder).toContain('├');
+    expect(editorTopBorder).not.toContain('╭');
 
     driver.state.editor.handleInput('/');
     const highlightedEditorTopBorder = stripSgr(driver.state.editor.render(80)[0] ?? '');
-    expect(highlightedEditorTopBorder.startsWith('╭')).toBe(true);
-    expect(highlightedEditorTopBorder.endsWith('╮')).toBe(true);
+    expect(highlightedEditorTopBorder).toContain('├');
+    expect(highlightedEditorTopBorder).not.toContain('╭');
     expect(panel).not.toContain('BTW done');
     expect(panel).not.toContain('BTW running');
     expect(panel).not.toContain('BTW failed');
@@ -2938,8 +2942,8 @@ command = "vim"
     expect(driver.state.btwPanelContainer.children).toHaveLength(0);
     expect(requestRender.mock.calls.at(-1)).toEqual([true]);
     const editorTopBorder = stripSgr(driver.state.editor.render(80)[0] ?? '');
-    expect(editorTopBorder.startsWith('╭')).toBe(true);
-    expect(editorTopBorder.endsWith('╮')).toBe(true);
+    expect(editorTopBorder).toContain('╭');
+    expect(editorTopBorder).toContain('╮');
     expect(driver.state.editor.focused).toBe(true);
   });
 
@@ -4063,7 +4067,7 @@ command = "vim"
     const transcript = stripSgr(
       driver.state.transcriptContainer.render(terminalColumns).join('\n'),
     );
-    expect(transcript).toContain('Using Read (src/after.ts)');
+    expect(transcript).toMatch(/Using Read.*src\/after\.ts/);
   });
 
   it('shows AgentSwarm as completed when only some subagents fail', async () => {
@@ -5375,7 +5379,7 @@ command = "vim"
     expect(refreshProviderModels).not.toHaveBeenCalled();
   });
 
-  it('opens /model picker after 2s when OAuth refresh is still pending', async () => {
+  it('opens /model picker after 5s when OAuth refresh is still pending', async () => {
     const { driver } = await makeDriver(makeSession(), {
       getConfig: vi.fn(async () => ({
         models: {
@@ -5405,7 +5409,7 @@ command = "vim"
       expect(refreshOAuthProviderModels).toHaveBeenCalledOnce();
       expect(driver.state.editorContainer.children[0]).not.toBeInstanceOf(TabbedModelSelectorComponent);
 
-      await vi.advanceTimersByTimeAsync(1_999);
+      await vi.advanceTimersByTimeAsync(4_999);
       expect(driver.state.editorContainer.children[0]).not.toBeInstanceOf(TabbedModelSelectorComponent);
 
       await vi.advanceTimersByTimeAsync(1);
@@ -5522,7 +5526,9 @@ command = "vim"
       expect(source.close).toHaveBeenCalledOnce();
       expect(forked.onEvent).toHaveBeenCalledOnce();
       expect(harness.resumeSession).not.toHaveBeenCalled();
-      expect(driver.state.transcriptContainer.render(120).join('\n')).toContain(
+      expect(
+        driver.state.activityContainer.render(120).join('\n'),
+      ).toContain(
         'Session forked (ses-fork). To return to the original session: echadron -r ses-source',
       );
     } finally {
@@ -5662,7 +5668,11 @@ command = "vim"
     expect(driver.state.livePane.mode).toBe('waiting');
     expect(driver.streamingUI.hasActiveThinkingComponent()).toBe(false);
     const activity = stripSgr(renderActivity(driver));
-    expect(BRAILLE_SPINNER_FRAMES.some((frame) => activity.includes(frame))).toBe(true);
+    // The waiting indicator is the cube's face, not a braille spinner: the
+    // header logo scrolls away with the transcript, so this is where the
+    // character stays visible while work happens.
+    const waitingFace = activityFaceAnimation('waiting').frames;
+    expect(waitingFace.some((frame) => activity.includes(frame))).toBe(true);
 
     // Real thinking text finally arrives -> transition into thinking mode.
     driver.sessionEventHandler.handleEvent(

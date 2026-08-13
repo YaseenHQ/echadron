@@ -191,6 +191,10 @@ const DOMAIN_LAYER = new Map([
   ['contextInjector', 4],
   ['agentPlugin', 4],
   ['systemReminder', 4],
+  // `interruptionReminder` projects user-cancelled turns from `wire` into a
+  // model-visible `systemReminder` and reconciles pending reminders through
+  // `contextMemory`; its highest dependencies are the L4 agent domains.
+  ['interruptionReminder', 4],
   ['contextProjector', 4],
   ['contextSize', 4],
   ['fullCompaction', 4],
@@ -221,6 +225,13 @@ const DOMAIN_LAYER = new Map([
   ['btw', 5],
   // L6 — coordination
   ['agentLifecycle', 6],
+  // `goalCompletionReview` creates a fresh verifier through `agentLifecycle`,
+  // drives it through `subagent`, and resolves the Session profile catalog;
+  // it is the Session-scope coordinator behind the L7 UpdateGoal boundary.
+  ['goalCompletionReview', 6],
+  // `goalCompletionGate` runs configured workspace commands after the LLM
+  // reviewer approves a complete request; Session-scope, next to the reviewer.
+  ['goalCompletionGate', 6],
   // `subagent` drives turns on other agents (`run`) and hosts the
   // requester-side run hook/event surface (`SubagentStart`/`SubagentStop`).
   // Its highest real dependency is `agentLifecycle` (target lookup), so it

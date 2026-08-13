@@ -25,7 +25,7 @@ export interface RenderTabStripOptions {
 function styleTab(label: string, isActive: boolean, colors: ColorPalette): string {
   const cell = ` ${label} `;
   return isActive
-    ? chalk.bgHex(colors.primary).hex(colors.text).bold(cell)
+    ? chalk.bgHex(colors.primary).hex(colors.onPrimary).bold(cell)
     : chalk.hex(colors.textMuted)(cell);
 }
 

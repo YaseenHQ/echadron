@@ -79,7 +79,7 @@ name: reviewer
 description: Strict code reviewer that reports severity-ranked findings
 whenToUse: Code reviews and PR checks
 override: false
-model_preference: primary
+model: inherit
 tools:
   - Read
   - Grep
@@ -98,7 +98,8 @@ You are a strict code reviewer. Read the diff, then report findings grouped by s
 | `description` | yes | What the agent does. Shown to the main Agent when it picks a sub-agent, so write it to guide delegation decisions |
 | `whenToUse` | no | Extra hint describing when the agent should be used |
 | `override` | no | Whether this file may replace a same-name built-in Agent. Defaults to `false`; `--agent-file` is already explicit and does not require this field |
-| `model_preference` | no | Symbolic default used when `Agent` or `AgentSwarm` spawns this profile: `primary` selects the caller's main model, while `secondary` selects `[secondary_model] model`. An explicit tool-call `model` wins; without either setting, the configured secondary model remains the default. If no secondary model is configured, the subagent inherits the caller's model |
+| `model` | no | Model this profile runs on: the id of any configured `[models]` entry, `primary` / `secondary` for the same roles `model_preference` names, or `inherit` to use the caller's model. Supersedes `model_preference`; an explicit tool-call `model` still wins over both |
+| `model_preference` | no | Superseded by `model`, which accepts the same `primary` / `secondary` roles — prefer `model` in new files. Still honoured for existing ones: `primary` selects the caller's main model, `secondary` selects `[secondary_model] model`. An explicit tool-call `model` wins; without any of these, the configured secondary model remains the default. If no secondary model is configured, the subagent inherits the caller's model |
 | `tools` | no | Allowlist of tool names such as `Read` or `Bash`; MCP tools are matched with globs such as `mcp__github__*`. Accepts a YAML list or a comma-separated string (`tools: Read, Grep`). Omit to allow all tools; a lone `*` also allows all tools; an empty list (`tools: []`) disables all tools |
 | `disallowedTools` | no | Denylist with the same syntax and matching rules, applied after `tools` |
 | `subagents` | no | Allowlist of sub-agent names this agent may delegate to, with the same syntax as `tools` (YAML list or comma-separated string). Omit to allow every type; a lone `*` also allows all types |
@@ -107,9 +108,9 @@ Built-in and user tools match by exact, case-sensitive name; entries starting wi
 
 The body is the agent's system prompt, and it is rendered as a template each time the prompt is built: `${var}` placeholders substitute live context values — unknown variables stay verbatim, a bare `$` is never special, and a variable with no context value renders as an empty string. `${base_prompt}` embeds the effective default system prompt (the built-in default, or your `SYSTEM.md` override when present), so a file can wrap the default behavior instead of replacing it. The available variables are listed in the SYSTEM.md section below.
 
-Unknown fields are ignored, so newer files stay readable by older versions. Fields from other agent tools (such as Claude Code's `model` or OpenCode's `mode`) are ignored the same way, the comma-separated `tools` form keeps Claude Code-style agent files loadable, and a missing `name` falls back to the file name so OpenCode-style files load too — a minimal file with `description` and a body works across tools.
+Unknown fields are ignored, so newer files stay readable by older versions. Fields from other agent tools (such as OpenCode's `mode`) are ignored the same way, Claude Code's `model` field is read as the `model` field documented above, the comma-separated `tools` form keeps Claude Code-style agent files loadable, and a missing `name` falls back to the file name so OpenCode-style files load too — a minimal file with `description` and a body works across tools.
 
-`model_preference` applies to newly spawned subagents in every launch mode, including the interactive TUI. The field never names a concrete model alias, and resumed subagents keep their existing model. The selected preference is shown to the main agent alongside the profile description so it can still pass an explicit `model` when a task needs a different choice. The secondary-model feature is enabled by default; its retained rollback control is available in Settings under Feature controls.
+`model` and `model_preference` apply to newly spawned subagents in every launch mode, including the interactive TUI. `model_preference` never names a concrete model alias — use `model` for that — and resumed subagents keep their existing model regardless of either field. The selected preference is shown to the main agent alongside the profile description so it can still pass an explicit `model` when a task needs a different choice. The secondary-model feature is enabled by default; its retained rollback control is available in Settings under Feature controls.
 
 A file with invalid content discovered in a directory is skipped with a warning and does not affect other files. A file passed explicitly via `--agent-file` must be valid — otherwise the CLI reports the error and exits.
 

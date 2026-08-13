@@ -8,25 +8,31 @@ Echadron 可以使用内置配色，也可以使用自定义 JSON 主题文件�
 
 | Token | `dark` | `light` | 控制什么 |
 | --- | --- | --- | --- |
-| `primary` | `#E4E4E4` | `#202020` | 最常用身份色。链接、行内代码、几乎所有对话框的选中项、编辑器聚焦边框、Plan/运行中徽章、spinner |
-| `accent` | `#B8B8B8` | `#4B4B4B` | 次级身份色。审批 `▶` 前缀、设备码框、图片占位、BTW/队列面板、注册表导入 |
-| `text` | `#E4E4E4` | `#1A1A1A` | 正文。对话框正文、todo 标题、footer 模型名、Markdown 标题、助手/工具消息子弹头、列表符号 |
-| `textStrong` | `#F4F4F4` | `#0A0A0A` | 加粗强调文字。输入类对话框、状态消息 |
-| `textDim` | `#A0A0A0` | `#4A4A4A` | 次级、变暗文字。思考、提示、描述、已完成 todo、Markdown 引用、footer 状态栏 |
-| `textMuted` | `#858585` | `#5F5F5F` | 最浅文字。计数、滚动信息、描述、Markdown 链接 URL、代码块边框 |
-| `border` | `#646464` | `#737373` | 面板与编辑器的普通边框、Markdown 分隔线 |
-| `borderFocus` | `#D0D0D0` | `#303030` | 聚焦/注意边框，目前仅审批面板使用 |
-| `success` | `#3FA266` | `#0E7A38` | 成功态。`✓`、已启用、完成 |
-| `warning` | `#D6A55D` | `#92660A` | 警告态。auto/yolo 徽章、过期标记、Plan 模式提示 |
-| `error` | `#D74A6A` | `#B91C1C` | 错误态。错误信息、失败的工具输出 |
-| `diffAdded` | `#3FA266` | `#0E7A38` | diff 新增行 |
-| `diffRemoved` | `#D74A6A` | `#B91C1C` | diff 删除行 |
-| `diffAddedStrong` | `#70B489` | `#0E7A38` | diff 行内改动的新增词（加粗高亮） |
-| `diffRemovedStrong` | `#ED7890` | `#B91C1C` | diff 行内改动的删除词（加粗高亮） |
-| `diffGutter` | `#858585` | `#737373` | diff 行号槽 |
-| `diffMeta` | `#A0A0A0` | `#5F5F5F` | diff 元信息 / hunk 头 |
-| `roleUser` | `#D0D0D0` | `#363636` | 用户消息的子弹头与文字、技能激活名 |
-| `shellMode` | `#B0B0B0` | `#565656` | Shell 模式（`!`）的提示符、编辑器边框，以及回显的 `$ 命令` 行 |
+| `primary` | `#E1E1E1` | `#262626` | 界面身份色。选中项、聚焦编辑器文字、链接、行内代码 |
+| `accent` | `#1ABC9C` | `#0A7A62` | 次级高亮。审批前缀、队列、设备码框 |
+| `running` | `#BB9AF7` | `#7D4BC6` | 进行中点缀。思考 spinner、运行中徽章、进行中的工具图标 |
+| `text` | `#E1E1E1` | `#262626` | 正文。对话框正文、todo 标题、Markdown 标题、助手/工具消息子弹头 |
+| `textStrong` | `#F3F3F3` | `#141414` | 加粗强调文字。输入类对话框、状态消息 |
+| `textDim` | `#C8C8C8` | `#444444` | 次级、变暗文字。思考正文、提示、描述、已完成 todo、Markdown 引用、footer 状态栏 |
+| `textMuted` | `#6C6C6C` | `#767676` | 最浅文字。计数、滚动信息、描述、Markdown 链接 URL、代码块边框 |
+| `border` | `#505058` | `#626262` | 面板与编辑器的普通边框、Markdown 分隔线 |
+| `borderFocus` | `#505058` | `#626262` | 聚焦/注意边框，目前仅审批面板使用 |
+| `surfaceTool` | `#1C1C1C` | `#E4E4E4` | 工具执行面板背景 — 将每个工具调用分组的中性表面 |
+| `surfaceToolSuccess` | `#141A14` | `#DAF2DC` | 成功时的工具面板背景 — 轻微成功色调 |
+| `surfaceToolError` | `#1C1215` | `#F5DADE` | 错误时的工具面板背景 — 轻微错误色调 |
+| `surfaceUser` | `#242424` | `#DEDEDE` | 用户消息背景 — 区分用户输入与助手输出 |
+| `success` | `#9ECE6A` | `#0E7A38` | 成功态。`✓`、已启用、完成 |
+| `warning` | `#E0AF68` | `#8A5808` | 警告态。auto/yolo 徽章、过期标记、Plan 模式提示 |
+| `error` | `#F7768E` | `#CD3048` | 错误态。错误信息、失败的工具输出 |
+| `diffAdded` | `#9ECE6A` | `#0E7A38` | diff 新增行 |
+| `diffRemoved` | `#F7768E` | `#CD3048` | diff 删除行 |
+| `diffAddedStrong` | `#B4E07F` | `#0E7A38` | diff 行内改动的新增词（加粗高亮） |
+| `diffRemovedStrong` | `#FF9AAD` | `#CD3048` | diff 行内改动的删除词（加粗高亮） |
+| `diffGutter` | `#6C6C6C` | `#626262` | diff 行号槽 |
+| `diffMeta` | `#C8C8C8` | `#767676` | diff 元信息 / hunk 头 |
+| `roleUser` | `#C8C8C8` | `#444444` | 用户消息的子弹头与文字、技能激活名 |
+| `shellMode` | `#E0AF68` | `#8A5808` | Shell 模式（`!`）的提示符、编辑器边框，以及回显的 `$ 命令` 行 |
+| `onPrimary` | `#141414` | `#FFFFFF` | 铺在 `primary` 底色上的文字（选中的 tab） |
 
 ## 使用 custom-theme skill
 

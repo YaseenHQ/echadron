@@ -27,9 +27,12 @@
  * Self-registered at module load via `registerConfigOverlay`; `src/index.ts`
  * imports it for side effects AFTER `envOverlay`, so a `secondary.model`
  * pointing at the env-synthesized entry sees the already-applied env view.
+ * `secondaryModelDisplayAlias` reverses the reserved derived id back to the
+ * configured base alias for status/task UI, flag-independent so restored
+ * sessions keep a stable display name after the control is disabled.
  */
 
-import type { ConfigEffectiveOverlay } from '#/app/config/config';
+import type { ConfigEffectiveOverlay, IConfigService } from '#/app/config/config';
 import { registerConfigOverlay } from '#/app/config/configOverlayContributions';
 import { isPlainObject } from '#/app/config/toml';
 import type { ModelOverride } from '#/kosong/model/model';
@@ -59,6 +62,16 @@ export function secondaryModelPatch(
   if (secondary === undefined) return undefined;
   const { model: _model, ...patch } = secondary;
   return Object.keys(patch).length > 0 ? patch : undefined;
+}
+
+export function secondaryModelDisplayAlias(
+  config: IConfigService,
+  boundAlias: string,
+): string {
+  if (boundAlias !== SECONDARY_DERIVED_MODEL_ID) return boundAlias;
+  return (
+    config.get<SecondaryModelConfig | undefined>(SECONDARY_MODEL_SECTION)?.model ?? boundAlias
+  );
 }
 
 function asRecord(value: unknown): Record<string, unknown> {

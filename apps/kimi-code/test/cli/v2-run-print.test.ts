@@ -113,6 +113,7 @@ function opts(overrides: Record<string, unknown> = {}) {
     auto: false,
     plan: false,
     model: undefined,
+    thinking: undefined,
     outputFormat: undefined,
     prompt: 'say hello',
     skillsDirs: [],
@@ -135,6 +136,7 @@ function makeFakeHarness() {
       {
         bind: vi.fn(async () => {}),
         setModel: vi.fn(async () => ({ model: 'k2' })),
+        setThinking: vi.fn(),
         getModel: () => 'k2',
         data: () => ({ profileName: profileState.profileName }),
       },
@@ -328,7 +330,12 @@ describe('runV2Print', () => {
     expect(lifecycle.create).toHaveBeenCalledWith({
       workDir: process.cwd(),
       additionalDirs: undefined,
-      mainAgentBinding: { profile: 'reviewer', model: 'k2' },
+      mainAgentBinding: {
+        profile: 'reviewer',
+        model: 'k2',
+        thinking: undefined,
+        strictThinking: false,
+      },
     });
     const profile = agentServices.get(IAgentProfileService) as { bind: ReturnType<typeof vi.fn> };
     expect(profile.bind).not.toHaveBeenCalled();
@@ -363,7 +370,12 @@ describe('runV2Print', () => {
     expect(lifecycle.create).toHaveBeenCalledWith({
       workDir: process.cwd(),
       additionalDirs: undefined,
-      mainAgentBinding: { profile: 'file-reviewer', model: 'k2' },
+      mainAgentBinding: {
+        profile: 'file-reviewer',
+        model: 'k2',
+        thinking: undefined,
+        strictThinking: false,
+      },
     });
     const profile = agentServices.get(IAgentProfileService) as { bind: ReturnType<typeof vi.fn> };
     expect(profile.bind).not.toHaveBeenCalled();
@@ -419,6 +431,31 @@ describe('runV2Print', () => {
 
     const seeds = mocks.bootstrap.mock.calls[0]?.[1] as ScopeSeed;
     expect(seeds.some(([id]) => id === IAgentCatalogRuntimeOptions)).toBe(false);
+  });
+
+  it('binds an explicit thinking effort strictly on a fresh session', async () => {
+    const stdout = writer();
+    const stderr = writer();
+    const { app, agent, appServices } = makeFakeHarness();
+
+    mocks.bootstrap.mockReturnValue({ app });
+    mocks.ensureMainAgent.mockResolvedValue(agent);
+
+    await runV2Print(opts({ thinking: 'max' }) as never, '1.2.3-test', { stdout, stderr });
+
+    const lifecycle = appServices.get(ISessionLifecycleService) as {
+      create: ReturnType<typeof vi.fn>;
+    };
+    expect(lifecycle.create).toHaveBeenCalledWith({
+      workDir: process.cwd(),
+      additionalDirs: undefined,
+      mainAgentBinding: {
+        profile: 'agent',
+        model: 'k2',
+        thinking: 'max',
+        strictThinking: true,
+      },
+    });
   });
 
   it('passes --agent-file paths through unresolved so the engine can expand ~', async () => {
@@ -489,5 +526,54 @@ describe('runV2Print', () => {
     };
     expect(profile.bind).not.toHaveBeenCalled();
     expect(profile.setModel).toHaveBeenCalledWith('new-model');
+  });
+
+  it('switches thinking effort when resuming with an explicit override', async () => {
+    const stdout = writer();
+    const stderr = writer();
+    const { app, agent, agentServices, appServices } = makeFakeHarness();
+
+    const index = appServices.get(ISessionIndex) as { list: ReturnType<typeof vi.fn> };
+    index.list.mockResolvedValue({ items: [{ id: 'ses_1', cwd: process.cwd() }] });
+
+    mocks.bootstrap.mockReturnValue({ app });
+    mocks.ensureMainAgent.mockResolvedValue(agent);
+
+    await runV2Print(opts({ session: 'ses_1', thinking: 'max' }) as never, '1.2.3-test', {
+      stdout,
+      stderr,
+    });
+
+    const profile = agentServices.get(IAgentProfileService) as {
+      setThinking: ReturnType<typeof vi.fn>;
+    };
+    expect(profile.setThinking).toHaveBeenCalledWith('max');
+  });
+
+  it('surfaces an unsupported thinking effort when resuming a native session', async () => {
+    const stdout = writer();
+    const stderr = writer();
+    const { app, agent, agentServices, appServices } = makeFakeHarness();
+
+    const index = appServices.get(ISessionIndex) as { list: ReturnType<typeof vi.fn> };
+    index.list.mockResolvedValue({ items: [{ id: 'ses_1', cwd: process.cwd() }] });
+    const profile = agentServices.get(IAgentProfileService) as {
+      setThinking: ReturnType<typeof vi.fn>;
+    };
+    profile.setThinking.mockImplementationOnce(() => {
+      throw new Error('Unsupported thinking effort');
+    });
+
+    mocks.bootstrap.mockReturnValue({ app });
+    mocks.ensureMainAgent.mockResolvedValue(agent);
+
+    await expect(
+      runV2Print(opts({ session: 'ses_1', thinking: 'bogus' }) as never, '1.2.3-test', {
+        stdout,
+        stderr,
+      }),
+    ).rejects.toThrow('Unsupported thinking effort');
+
+    expect(app.dispose).toHaveBeenCalled();
   });
 });

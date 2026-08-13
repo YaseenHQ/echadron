@@ -97,7 +97,7 @@ disallowedTools:
 | `name` | 否 | kebab-case 唯一标识。缺省时取文件名（去掉扩展名，如 `review.md` → `review`）；解析后名字缺失或不是 kebab-case 的文件会被跳过并告警 |
 | `description` | 是 | Agent 的用途。主 Agent 挑选子 Agent 时会看到，请围绕委派决策来写 |
 | `whenToUse` | 否 | 补充说明何时应使用该 Agent |
-| `model` | 否 | 此 Profile 作为子 Agent 启动时使用的具体已配置模型别名。省略或写 `inherit` 时继续使用常规的主模型/次主力模型选择逻辑 |
+| `model` | 否 | 此 Profile 作为子 Agent 启动时使用的模型：任意已配置 `[models]` 条目的 id，或 `primary` / `secondary` 这两个与 `model_preference` 相同的角色，或 `inherit` 表示沿用调用方模型。已取代 `model_preference` |
 | `override` | 否 | 是否允许覆盖同名内置 Agent，默认 `false`。`--agent-file` 属于显式启动意图，无需设置此字段 |
 | `model_preference` | 否 | `Agent` 或 `AgentSwarm` 启动该 profile 时的符号默认值：`primary` 选择调用方的主模型，`secondary` 选择 `[secondary_model] model`。优先级依次为工具调用显式传入的 `model`、Profile 的具体 `model`、`model_preference`；三者均未设置时，已配置的次主力模型仍为默认值。未配置次主力模型时，子 Agent 继承调用方模型 |
 | `tools` | 否 | 工具名允许列表，如 `Read`、`Bash`；MCP 工具用 glob 匹配，如 `mcp__github__*`。支持 YAML 列表或逗号分隔字符串（`tools: Read, Grep`）两种写法。缺省表示允许全部工具；单独的 `*` 同样表示允许全部工具；空列表（`tools: []`）表示禁用全部工具 |

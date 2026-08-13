@@ -61,8 +61,9 @@ Only set tokens from this set — unknown keys are silently ignored at load. If 
 
 | Token | Controls |
 | --- | --- |
-| `primary` | The most-used color: links, inline code, the selected item in nearly every dialog, the focused editor border, plan/"running" badges, spinners |
-| `accent` | Secondary highlight: approval `▶` prefix, device-code box, image placeholder, BTW / queue panes, registry import |
+| `primary` | Chrome identity: links, inline code, the selected item in nearly every dialog, the focused editor border |
+| `accent` | Model / highlight pop: welcome + footer model name, approval `▶` prefix, device-code box, BTW / queue panes, registry import |
+| `running` | Live-agent pop: thinking spinner, running badges, in-flight tool icons |
 | `text` | Body text: dialog bodies, todo titles, footer model label, Markdown headings, assistant/tool message bullets, list bullets |
 | `textStrong` | Emphasized / bold text: input dialogs, status messages |
 | `textDim` | Secondary, dimmed text (the most widely used dim shade): thinking, hints, descriptions, completed todos, Markdown quotes, footer status bar |
@@ -80,6 +81,7 @@ Only set tokens from this set — unknown keys are silently ignored at load. If 
 | `diffMeta` | Diff meta / hunk headers |
 | `roleUser` | User message bullet and text, skill-activation name |
 | `shellMode` | Shell mode (`!`) prompt, editor border, and the echoed `$ command` line |
+| `onPrimary` | Text that sits on a `primary` fill (selected tabs) |
 
 ## Workflow
 
@@ -98,7 +100,7 @@ Only set tokens from this set — unknown keys are silently ignored at load. If 
 3. **Pick a starting point and choose colors deliberately.**
    - Every value is a 6-digit hex `#RRGGBB` (not 3-digit, not a named color).
    - Keep contrast usable against the user's terminal background: don't let `text` / `textDim` sit too close to the background, and keep `success` / `warning` / `error` clearly distinguishable from each other.
-   - `primary` is the most-seen color (links, selection, focus) — make it readable and distinct from `text`.
+   - `primary` is chrome (links, selection, focus) — keep it readable and distinct from `text`. `accent` is the model name; `running` is live work.
    - `roleUser` may use a distinct hue, but a tonal contrast also works for monochrome themes.
 
 4. **Create a candidate file; never edit the live theme in place.**

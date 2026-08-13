@@ -288,6 +288,23 @@ In print mode (`echadron -p "<prompt>"`), Echadron stays alive after the main ag
 | `timeout_ms` | `integer` | `7200000` (2 hours) | Maximum wall-clock time (milliseconds) a single subagent (`Agent` / `AgentSwarm`) is allowed to run before it is settled as `timed_out`. `0` means no timeout — the subagent runs until it finishes or the model stops it. This is the background-task manager's per-task timeout for each subagent task, so it applies to both foreground and background subagents. In print mode (`echadron -p`) the default is `0` unless explicitly set. Note: any value above `2147483647` (about 24.8 days) is clamped to roughly 24.8 days by the runtime |
 `timeout_ms` can be overridden by the `KIMI_SUBAGENT_TIMEOUT_MS` environment variable, which takes higher priority than `config.toml`.
 
+## `goal_completion_gates`
+
+Commands that must exit 0 after the independent completion review approves a `/goal` complete request. An empty list is a no-op.
+
+| Field | Type | Default | Description |
+| --- | --- | --- | --- |
+| `commands` | `array<string>` | `[]` | Shell commands run in the session workspace, in order. The first non-zero exit, timeout, or spawn error rejects completion and leaves the goal active |
+| `timeout_ms` | `integer` | `300000` (5 minutes) | Per-command wall-clock timeout in milliseconds |
+
+```toml
+[goal_completion_gates]
+commands = ["npm test"]
+timeout_ms = 300000
+```
+
+`commands` can be overridden by `KIMI_GOAL_GATE_COMMANDS` (a semicolon- or newline-separated list, or a JSON string array), and `timeout_ms` by `KIMI_GOAL_GATE_TIMEOUT_MS`. Both take higher priority than `config.toml`.
+
 ## `mcp`
 
 | Field | Type | Default | Description |

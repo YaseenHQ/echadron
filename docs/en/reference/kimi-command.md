@@ -18,6 +18,7 @@ All flags are optional — run `echadron` directly to enter an interactive sessi
 | `--session [id]` | `-S` | Resume a session. With an ID, opens that session directly; without an ID, enters an interactive selector |
 | `--continue` | `-c` | Continue the most recent session in the current working directory, without specifying an ID manually |
 | `--model <model>` | `-m` | Specify a model alias for this launch. When omitted, new sessions use `default_model` from the config file |
+| `--thinking <effort>` | | Override the thinking effort for this session, for example `off`, `high`, or `max`. Creating or resuming the session records the effort in that session without changing the `config.toml` default |
 | `--prompt <prompt>` | `-p` | Run a single prompt non-interactively and stream the Assistant output to stdout. This mode does not open the TUI |
 | `--output-format <format>` | | Set the non-interactive output format; supports `text` and `stream-json`. Can only be used with `--prompt`; defaults to `text` |
 | `--yolo` | `-y` | Auto-approve regular tool calls, skipping approval requests |
@@ -121,6 +122,12 @@ Temporarily switch the model:
 
 ```sh
 echadron -m kimi-code/kimi-for-coding -p "Explain the latest diff"
+```
+
+Select the maximum thinking effort for a session without changing `config.toml`:
+
+```sh
+echadron --thinking max -p "Fix the failing tests"
 ```
 
 When you need to parse output programmatically, use the `stream-json` format — each line on stdout is a JSON object:

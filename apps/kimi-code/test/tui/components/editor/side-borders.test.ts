@@ -43,7 +43,7 @@ describe('wrapWithSideBorders', () => {
     expect(out[2]).toContain('↓ 3 more');
   });
 
-  it('handles autocomplete rows that come after the bottom border (still wrap with │)', () => {
+  it('leaves autocomplete rows after the bottom border unboxed', () => {
     const lines = [
       '──────────',
       '   q      ',
@@ -53,10 +53,10 @@ describe('wrapWithSideBorders', () => {
     ];
     const out = wrapWithSideBorders(lines, id);
     expect(out[0]?.startsWith('╭')).toBe(true);
+    expect(out[1]).toBe('│  q     │');
     expect(out[2]?.startsWith('╰')).toBe(true);
-    // '   item1  ' → first/last spaces become │
-    expect(out[3]).toBe('│  item1 │');
-    expect(out[4]).toBe('│  item2 │');
+    expect(out[3]).toBe('   item1  ');
+    expect(out[4]).toBe('   item2  ');
   });
 
   it('paints corners and side borders through the provided borderColor', () => {

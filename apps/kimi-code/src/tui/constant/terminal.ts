@@ -17,6 +17,11 @@ export const TERMINAL_FOCUS_OUT = `${ESC}[O`;
 export const ENABLE_TERMINAL_FOCUS_REPORTING = `${ESC}[?1004h`;
 export const DISABLE_TERMINAL_FOCUS_REPORTING = `${ESC}[?1004l`;
 
+// SGR mouse (click + SGR coords). Shift+drag still uses the terminal's native
+// selection. Wheel and motion are left off to keep the stream quiet.
+export const ENABLE_TERMINAL_MOUSE_TRACKING = `${ESC}[?1000h${ESC}[?1006h`;
+export const DISABLE_TERMINAL_MOUSE_TRACKING = `${ESC}[?1000l${ESC}[?1006l`;
+
 // Standard OSC 11 background-color query. The response regex intentionally
 // allows a missing leading ESC because terminals can echo replies alongside
 // other raw input, but it requires an OSC terminator so fragmented color

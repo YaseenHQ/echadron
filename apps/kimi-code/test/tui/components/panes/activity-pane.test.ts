@@ -27,6 +27,21 @@ function createMockSpinner(initialText = 'working') {
 }
 
 describe('ActivityPaneComponent', () => {
+  it('right-aligns live elapsed on the activity row', () => {
+    const { spinner } = createMockSpinner('working');
+    const component = new ActivityPaneComponent({
+      mode: 'composing',
+      spinner,
+      startedAt: 1_000,
+      now: () => 3_400,
+    });
+
+    const lines = component.render(80).map((line) => line.trimEnd());
+    expect(lines[0]).toBe('');
+    expect(lines[1]).toMatch(/^working +2\.4s$/);
+    expect(visibleWidth(component.render(80)[1] ?? '')).toBe(80);
+  });
+
   it('renders waiting loader after a spacer', () => {
     const component = new ActivityPaneComponent({
       mode: 'waiting',
@@ -78,6 +93,7 @@ describe('ActivityPaneComponent', () => {
   it('renders nothing for hidden and thinking modes', () => {
     expect(new ActivityPaneComponent({ mode: 'hidden' }).render(80)).toEqual([]);
     expect(new ActivityPaneComponent({ mode: 'thinking' }).render(80)).toEqual([]);
+    expect(new ActivityPaneComponent({ mode: 'awaiting' }).render(80)).toEqual([]);
   });
 
   it.each(['waiting', 'tool', 'composing'] as const)(

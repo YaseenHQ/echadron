@@ -90,6 +90,16 @@ describe('UserMessageComponent', () => {
     expect(imageLine).toContain('\u001B\\'); // intact Kitty terminator
   });
 
+  it('keeps a leading spacer so the turn is not a tight one-line strip', () => {
+    setCapabilities({ images: null, trueColor: true, hyperlinks: true });
+    const lines = new UserMessageComponent('hello there', []).render(80);
+    expect(lines.length).toBeGreaterThanOrEqual(2);
+    expect(stripAnsi(lines[0] ?? '').trim()).toBe('');
+    expect(stripAnsi(lines[1] ?? '')).toContain('hello there');
+    // oxlint-disable-next-line no-control-regex -- ESC is required to match the background SGR
+    expect(lines[1]).not.toContain('\u001B[48;');
+  });
+
   it('omits the user-turn marker when an empty bullet is provided', () => {
     setCapabilities({ images: null, trueColor: true, hyperlinks: true });
 
@@ -101,7 +111,6 @@ describe('UserMessageComponent', () => {
     const contentLine = lines.find((l) => l.includes('$ ls'));
     expect(contentLine).toBeDefined();
     expect(stripAnsi(lines.join('\n'))).not.toContain('›');
-    // The `$` sits at the leading column where the bullet used to be.
     expect(contentLine?.startsWith('$ ls')).toBe(true);
   });
 });

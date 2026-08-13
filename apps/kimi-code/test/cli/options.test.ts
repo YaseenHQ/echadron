@@ -45,6 +45,7 @@ describe('CLI options parsing', () => {
       expect(opts.continue).toBe(false);
       expect(opts.session).toBeUndefined();
       expect(opts.model).toBeUndefined();
+      expect(opts.thinking).toBeUndefined();
       expect(opts.outputFormat).toBeUndefined();
       expect(opts.prompt).toBeUndefined();
       expect(opts.skillsDirs).toEqual([]);
@@ -238,6 +239,22 @@ describe('CLI options parsing', () => {
       const opts = parse(['--model', '   ']);
       expect(() => validateOptions(opts)).toThrow(OptionConflictError);
       expect(() => validateOptions(opts)).toThrow('Model cannot be empty.');
+    });
+  });
+
+  describe('--thinking', () => {
+    it('parses a session-scoped thinking effort', () => {
+      expect(parse(['--thinking', 'max']).thinking).toBe('max');
+    });
+
+    it('accepts custom provider effort names', () => {
+      expect(parse(['--thinking=ultra']).thinking).toBe('ultra');
+    });
+
+    it('rejects empty thinking effort values', () => {
+      const opts = parse(['--thinking', '   ']);
+      expect(() => validateOptions(opts)).toThrow(OptionConflictError);
+      expect(() => validateOptions(opts)).toThrow('Thinking effort cannot be empty.');
     });
   });
 

@@ -1321,7 +1321,7 @@ function statusBarPhase(phase: AgentSwarmPhase): StatusBarPhase {
 function statusBarColor(phase: StatusBarPhase, colors: ColorPalette): string {
   const map: Record<StatusBarPhase, string> = {
     queued: colors.textMuted,
-    working: colors.primary,
+    working: colors.running,
     suspended: colors.textMuted,
     completed: colors.success,
     failed: colors.error,
@@ -1375,7 +1375,7 @@ function totalStatusLabelColor(
   colors: ColorPalette,
 ): string {
   if (status === 'working' && !members.some((member) => member.phase === 'completed')) {
-    return colors.primary;
+    return colors.running;
   }
   return totalStatusColor(status, colors);
 }

@@ -4,6 +4,8 @@ import type { ToolCall } from '#/kosong/contract/message';
 import { IAgentContextInjectorService } from '#/agent/contextInjector/contextInjector';
 import { IAgentContextMemoryService } from '#/agent/contextMemory/contextMemory';
 import { IAgentGoalService } from '#/agent/goal/goal';
+import { IGoalCompletionGateService } from '#/agent/goal/completionGate';
+import { IGoalCompletionReviewService } from '#/agent/goal/completionReview';
 import { type AgentGoalService } from '#/agent/goal/goalService';
 import { IAgentProfileService } from '#/agent/profile/profile';
 import { IAgentSwarmService } from '#/agent/swarm/swarm';
@@ -11,10 +13,11 @@ import {
   InMemoryWireRecordPersistence,
   agentService,
   createTestAgent,
+  sessionService,
   wireRecordPersistenceServices,
   type TestAgentContext,
 } from '../../../harness';
-import { stubAgentSwarm } from '../stubs';
+import { stubAgentSwarm, stubGoalCompletionGate, stubGoalCompletionReview } from '../stubs';
 
 type GoalServiceTestManager = IAgentGoalService & AgentGoalService;
 type InjectableContextInjector = IAgentContextInjectorService & { inject(): Promise<void> };
@@ -58,7 +61,11 @@ describe('GoalInjection content', () => {
   let injector: InjectableContextInjector;
 
   beforeEach(() => {
-    ctx = createTestAgent(agentService(IAgentSwarmService, stubAgentSwarm()));
+    ctx = createTestAgent(
+      agentService(IAgentSwarmService, stubAgentSwarm()),
+      sessionService(IGoalCompletionReviewService, stubGoalCompletionReview()),
+      sessionService(IGoalCompletionGateService, stubGoalCompletionGate()),
+    );
     goals = ctx.get(IAgentGoalService) as GoalServiceTestManager;
     context = ctx.get(IAgentContextMemoryService);
     injector = ctx.get(IAgentContextInjectorService) as InjectableContextInjector;
@@ -338,15 +345,17 @@ describe('GoalInjection integration', () => {
       // Goal reminders persist asynchronously and the relative order of the
       // async injection providers is not contractual, so wait for the
       // continuation turn's reminder to land instead of asserting at a fixed,
-      // ordering-sensitive flush point.
+      // ordering-sensitive flush point. The async completion-review gate on
+      // `UpdateGoal complete` adds one turn boundary (the review resolves in a
+      // separate microtask), so the expected count is three, not two.
       await vi.waitFor(async () => {
-        expect(await flushedGoalReminderRecords(ctx, persistence)).toHaveLength(2);
+        expect(await flushedGoalReminderRecords(ctx, persistence)).toHaveLength(3);
       });
 
-      // One reminder per turn boundary (two boundaries here), not per step:
-      // the count settles at exactly two even though the turns ran multiple
-      // steps.
-      expect(await flushedGoalReminderRecords(ctx, persistence)).toHaveLength(2);
+      // One reminder per turn boundary, not per step: the count settles at
+      // exactly three (two prompt turns plus the review-gated completion
+      // boundary) even though the turns ran multiple steps.
+      expect(await flushedGoalReminderRecords(ctx, persistence)).toHaveLength(3);
     });
 
     it('requests a final model response when a continuation completes the goal', async () => {

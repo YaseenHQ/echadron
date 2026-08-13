@@ -17,10 +17,12 @@
  * same on-disk shape the v1 loop writes — and `contextAppendLoopEvent` folds
  * them into assistant / tool messages (see `loopEventFold.ts`) both at live
  * dispatch time and on replay, so v1- and v2-written sessions reduce
- * identically. The swarm-mode exit reminder removal is a cross-model fold:
- * `ContextModel` registers a reducer on `swarm_mode.exit` (see
- * `popSwarmModeReminder`) so the pop replays from the `swarm_mode.exit` record
- * itself, exactly like v1's restore-time `popMatchedMessage`.
+ * identically. Swarm-mode announcements are owned by the `swarm` domain's
+ * context-injection provider; `swarm_mode.exit` additionally pops a trailing
+ * enter reminder as a cross-model fold: `ContextModel` registers a reducer on
+ * `swarm_mode.exit` (see `popSwarmModeReminder`) so the pop replays from the
+ * `swarm_mode.exit` record itself, exactly like v1's restore-time
+ * `popMatchedMessage`.
  *
  * `context.undo` counts conversation ticks with the single `isUndoAnchor`
  * predicate (`./conversationTime`) — the same definition the checkpoint

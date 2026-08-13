@@ -17,9 +17,15 @@ import { registerAgentToolService } from '#/agent/toolRegistry/toolContribution'
 
 import { IAgentGoalService } from '#/agent/goal/goal';
 import {
+  buildGoalCompletionGateFeedback,
+  IGoalCompletionGateService,
+} from '#/agent/goal/completionGate';
+import { IGoalCompletionReviewService } from '#/agent/goal/completionReview';
+import {
   buildGoalBlockedReasonPrompt,
   buildGoalCompletionSummaryPrompt,
 } from '#/agent/goal/tools/outcome-prompts';
+
 
 import DESCRIPTION from './update-goal.md?raw';
 import {
@@ -34,7 +40,13 @@ export class UpdateGoalTool implements IUpdateGoalTool {
   readonly description: string = DESCRIPTION;
   readonly parameters: Record<string, unknown> = toInputJsonSchema(UpdateGoalToolInputSchema);
 
-  constructor(@IAgentGoalService private readonly goal: IAgentGoalService) {}
+  constructor(
+    @IAgentGoalService private readonly goal: IAgentGoalService,
+    @IGoalCompletionReviewService
+    private readonly completionReview: IGoalCompletionReviewService,
+    @IGoalCompletionGateService
+    private readonly completionGates: IGoalCompletionGateService,
+  ) {}
 
   resolveExecution(args: UpdateGoalToolInput): ToolExecution {
     if (!isUpdateGoalStatus(args.status)) {
@@ -52,7 +64,7 @@ export class UpdateGoalTool implements IUpdateGoalTool {
       description: `Setting goal status: ${status}`,
       stopBatchAfterThis: status !== 'active' && goalIsActive,
       approvalRule: this.name,
-      execute: async ({ turnId }) => {
+      execute: async ({ turnId, signal }) => {
         const goalAtExecution = this.goal.getGoal().goal;
         if (goalAtExecution === null || (currentGoal === null && status === 'active')) {
           return { output: missingGoalOutput(status) };
@@ -68,6 +80,25 @@ export class UpdateGoalTool implements IUpdateGoalTool {
           return { output: 'Goal resumed.' };
         }
         if (status === 'complete') {
+          const review = await this.completionReview.review({
+            goal: goalAtExecution,
+            signal,
+          });
+          const goalAfterReview = this.goal.getGoal().goal;
+          if (goalAfterReview?.goalId !== goalAtExecution.goalId) {
+            return { output: changedGoalOutput(status) };
+          }
+          if (!review.achieved) {
+            return { output: buildCompletionReviewFeedback(review.gaps, review.evidence) };
+          }
+          const gate = await this.completionGates.run({ signal });
+          const goalAfterGate = this.goal.getGoal().goal;
+          if (goalAfterGate?.goalId !== goalAtExecution.goalId) {
+            return { output: changedGoalOutput(status) };
+          }
+          if (!gate.passed) {
+            return { output: buildGoalCompletionGateFeedback(gate) };
+          }
           const completed = await this.goal.markComplete({}, 'model');
           if (completed === null) {
             return { output: 'Goal not completed: no active goal.' };
@@ -88,6 +119,23 @@ export class UpdateGoalTool implements IUpdateGoalTool {
       },
     };
   }
+}
+
+function buildCompletionReviewFeedback(
+  gaps: readonly string[],
+  evidence: string | undefined,
+): string {
+  return [
+    'Independent completion review found remaining work. The goal remains active.',
+    'Address these concrete gaps before requesting completion again:',
+    ...gaps.map((gap) => `- ${gap}`),
+    ...(evidence === undefined ? [] : ['Verifier evidence:', evidence]),
+    'Repair the defect locally, then rerun the narrowest failing probe or check yourself to '
+    + 'confirm it is fixed. Do not launch an Agent or another verifier — verify the actual '
+    + 'result directly. Once the narrowest check passes, call UpdateGoal with status `complete` '
+    + 'so the gate rechecks it.',
+    'Do not merely restate the claim.',
+  ].join('\n');
 }
 
 function isUpdateGoalStatus(status: unknown): status is UpdateGoalToolInput['status'] {

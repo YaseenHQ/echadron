@@ -13,6 +13,8 @@ import type { IDisposable } from '#/_base/di/lifecycle';
 import { IAgentContextMemoryService } from '#/agent/contextMemory/contextMemory';
 import { USER_PROMPT_ORIGIN } from '#/agent/contextMemory/types';
 import { IAgentGoalService } from '#/agent/goal/goal';
+import { IGoalCompletionGateService } from '#/agent/goal/completionGate';
+import { IGoalCompletionReviewService } from '#/agent/goal/completionReview';
 import { IGoalDeadlineScheduler } from '#/agent/goal/goalDeadlineScheduler';
 import { type AgentGoalService } from '#/agent/goal/goalService';
 import { UpdateGoalToolInputSchema } from '#/agent/tools/goal/update-goal/update-goal';
@@ -53,6 +55,7 @@ import {
   agentService,
   createTestAgent as createHarnessTestAgent,
   permissionModeServices,
+  sessionService,
   telemetryServices,
   wireRecordPersistenceServices,
   type TestAgentContext,
@@ -62,7 +65,7 @@ import {
 import { recordingTelemetry, type TelemetryRecord } from '../../app/telemetry/stubs';
 import { stubLoopWithHooks, type StubLoop } from '../loop/stubs';
 import { stubToolExecutorEvents, type ToolExecutorEventStubs } from '../toolExecutor/stubs';
-import { stubAgentSwarm } from './stubs';
+import { stubAgentSwarm, stubGoalCompletionGate, stubGoalCompletionReview } from './stubs';
 
 // The real AgentSwarmService self-wires executor listeners and pulls in the
 // swarm runtime; goal tests never exercise swarm behavior, so every test
@@ -70,7 +73,12 @@ import { stubAgentSwarm } from './stubs';
 function createTestAgent(
   ...inputs: readonly (TestAgentServiceOverride | TestAgentOptions)[]
 ): TestAgentContext {
-  return createHarnessTestAgent(agentService(IAgentSwarmService, stubAgentSwarm()), ...inputs);
+  return createHarnessTestAgent(
+    agentService(IAgentSwarmService, stubAgentSwarm()),
+    sessionService(IGoalCompletionReviewService, stubGoalCompletionReview()),
+    sessionService(IGoalCompletionGateService, stubGoalCompletionGate()),
+    ...inputs,
+  );
 }
 
 const testAgent = createTestAgent;
@@ -507,7 +515,11 @@ describe('AgentGoalService', () => {
 
     it('forbids model-driven goal pauses', async () => {
       await goals.createGoal({ objective: 'work' });
-      const tool = new UpdateGoalTool(goals);
+      const tool = new UpdateGoalTool(
+        goals,
+        stubGoalCompletionReview(),
+        stubGoalCompletionGate(),
+      );
 
       for (const status of ['active', 'complete', 'blocked']) {
         expect(UpdateGoalToolInputSchema.safeParse({ status }).success).toBe(true);

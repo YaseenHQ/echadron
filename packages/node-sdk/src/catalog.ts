@@ -13,6 +13,7 @@ import {
   type ModelCapability,
   type ProviderType,
 } from '@moonshot-ai/kosong';
+import { XAI_PROVIDER_NAME, xaiWireTypeForModel } from '@moonshot-ai/kimi-code-oauth';
 
 export { catalogBaseUrl, catalogProviderModels, inferWireType, resolveCatalogImport };
 export type { CatalogImportInvalidReason, CatalogImportResolution };
@@ -66,6 +67,29 @@ function capabilityToStrings(capability: ModelCapability): string[] | undefined 
   if (capability.tool_use) caps.push('tool_use');
   if (capability.dynamically_loaded_tools === true) caps.push('dynamically_loaded_tools');
   return caps.length > 0 ? caps : undefined;
+}
+
+/** Merge the latest xAI models.dev entries into an existing alias table. */
+export function mergeXaiCatalogModels(
+  models: Record<string, ModelAlias>,
+  catalog: Catalog,
+): Record<string, ModelAlias> {
+  const entry = catalog[XAI_PROVIDER_NAME];
+  if (entry === undefined) return models;
+  const next = { ...models };
+  for (const model of catalogProviderModels(entry)) {
+    const alias = catalogModelToAlias(XAI_PROVIDER_NAME, model);
+    if (xaiWireTypeForModel(model.id) === 'openai_responses') {
+      alias.wire = 'openai_responses';
+    }
+    next[`${XAI_PROVIDER_NAME}/${model.id}`] = alias;
+  }
+  return next;
+}
+
+export function xaiCatalogModelCount(catalog: Catalog): number {
+  const entry = catalog[XAI_PROVIDER_NAME];
+  return entry === undefined ? 0 : catalogProviderModels(entry).length;
 }
 
 /** Builds a kimi-code model alias from a normalized catalog model. */

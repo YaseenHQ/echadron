@@ -12,6 +12,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 import chalk, { Chalk } from 'chalk';
+
+import { paintLogoRun } from '#/tui/utils/logo-eyes';
 import { Command } from 'commander';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -208,7 +210,20 @@ describe('`echadron web` ready banner', () => {
 
     const out = readStdout();
     const color = new Chalk({ level: 3 });
-    expect(out).toContain(color.hex(darkColors.primary)('▐█▛█▛█▌'));
+    // The logo's solid cells are background-filled so stacked rows join with
+    // no seam. `paintLogoRun` styles through the module-level chalk, whose
+    // level the `finally` above has already restored — raise it just long
+    // enough to build the expected run.
+    const expectedLogo = ((): string => {
+      const restore = chalk.level;
+      chalk.level = 3;
+      try {
+        return paintLogoRun('▐█▛█▛█▌', darkColors.primary);
+      } finally {
+        chalk.level = restore;
+      }
+    })();
+    expect(out).toContain(expectedLogo);
     expect(out).toContain(color.bold.hex(darkColors.primary)('Echadron server ready'));
     expect(out).toContain(color.hex(darkColors.accent)('http://127.0.0.1:58627/'));
     expect(out).toContain(color.bold.hex(darkColors.textDim)('Local:    '));

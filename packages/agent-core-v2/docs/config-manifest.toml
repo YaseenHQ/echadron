@@ -8,7 +8,7 @@
 # commented "# field: type" lines describe the remaining schema fields.
 # Values resolve as: default -> config.toml -> env overlay -> memory.
 
-# Index (22 sections · 3 overlay(s))
+# Index (23 sections · 3 overlay(s))
 #   background               src/agent/task/configSection.ts
 #   cron                     src/app/cron/configSection.ts
 #   defaultPermissionMode    src/agent/permissionMode/configSection.ts
@@ -16,6 +16,7 @@
 #   experimental             src/app/flag/flag.ts
 #   extraAgentDirs           src/app/agentFileCatalog/configSection.ts
 #   extraSkillDirs           src/app/skillCatalog/configSection.ts
+#   goalCompletionGates      src/session/goalCompletionGate/configSection.ts
 #   hooks                    src/agent/externalHooks/configSection.ts
 #   image                    src/agent/media/configSection.ts
 #   loopControl              src/agent/loop/configSection.ts
@@ -119,6 +120,20 @@ extra_agent_dirs = []
 # ##########################################################################
 
 extra_skill_dirs = []
+
+# ##########################################################################
+# goalCompletionGates (config.toml: goal_completion_gates)
+#   owner: src/session/goalCompletionGate/configSection.ts
+#   scope: core
+#   hooks: stripEnv
+#   env:
+#     commands <- KIMI_GOAL_GATE_COMMANDS (custom parse)
+#     timeout_ms <- KIMI_GOAL_GATE_TIMEOUT_MS (custom parse)
+# ##########################################################################
+
+[goal_completion_gates]
+commands = []
+timeout_ms = 300000
 
 # ##########################################################################
 # hooks
@@ -299,7 +314,7 @@ merge_all_available_skills = true
 # secondaryModel (config.toml: secondary_model)
 #   owner: src/app/kosongConfig/configSection.ts
 #   scope: core
-#   hooks: stripEnv
+#   hooks: custom merge · stripEnv
 #   env:
 #     model <- KIMI_SECONDARY_MODEL (custom parse)
 #     default_effort <- KIMI_SECONDARY_EFFORT (custom parse)

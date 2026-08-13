@@ -16,13 +16,14 @@
 // dialogs/messages rather than in one specific place.
 export interface ColorPalette {
   // ── Brand ──
-  /** Dominant interactive/identity tone: links & inline code, the selected item
-   *  in nearly every dialog, the focused editor border, plan/"running" badges,
-   *  spinners. The most widely used token. */
+  /** Chrome identity: selected items, focused editor text, links, inline code,
+   *  tab fills. Built-in Dark/Light keep this gray so the pop stays on
+   *  {@link accent} / {@link running}. */
   primary: string;
-  /** Secondary identity tone: approval "▶" prefix, device-code box, image
-   *  placeholder, BTW / queue panes, custom-registry import. */
+  /** Secondary highlight: approval prefix, device-code box, queue. */
   accent: string;
+  /** Live-agent pop: thinking spinner, running badges, in-flight tool icons. */
+  running: string;
 
   // ── Text ──
   /** Default body text: dialog bodies, todo titles, footer model label,
@@ -44,6 +45,19 @@ export interface ColorPalette {
   border: string;
   /** Focus / attention border — currently only the approval panel. */
   borderFocus: string;
+  /** Subtle background surface for tool execution panels — a near-black
+   *  neutral tone that visually groups each tool call as one unit. */
+  surfaceTool: string;
+  /** Surface for tool panels that completed successfully — very slight
+   *  success-tinted variant of {@link surfaceTool}. */
+  surfaceToolSuccess: string;
+  /** Surface for tool panels that errored — very slight error-tinted
+   *  variant of {@link surfaceTool}. */
+  surfaceToolError: string;
+  /** Subtle background surface for user messages — distinguishes user input
+   *  from assistant output at a glance. Slightly lighter than the tool
+   *  panel surface to create visual hierarchy. */
+  surfaceUser: string;
 
   // ── State ──
   /** Success: ✓ marks, "enabled", completed states. */
@@ -69,70 +83,90 @@ export interface ColorPalette {
 
   // ── Roles ──
   /** User message: bullet & text, skill-activation name. Built-in themes keep
-   *  this monochrome; custom themes may use a distinct hue. */
+   *  this a readable secondary gray so the brand accent stays on chrome. */
   roleUser: string;
 
   // ── Shell mode ──
   /** Shell mode (`!`): the `!` prompt symbol, bash-mode editor border, and the
-   *  echoed `$ command` line. Built-in themes distinguish it tonally from
-   *  plan mode and the user role rather than assigning another brand hue. */
+   *  echoed `$ command` line. */
   shellMode: string;
+
+  /** Text that sits on a `primary` fill (selected tabs, selected question
+   *  chips). Must contrast with `primary` at ≥ 4.5:1. */
+  onPrimary: string;
 }
 
+/** Dark default. Neutral gray chrome; magenta on live work. */
 export const darkColors: ColorPalette = {
-  // Echadron's identity is monochrome. Keep colour for operational meaning
-  // (status and diffs), not navigation, roles, or modes.
-  primary: '#E4E4E4',
-  accent: '#B8B8B8',
+  primary: '#E1E1E1',
+  accent: '#1ABC9C',
+  running: '#BB9AF7',
 
-  text: '#E4E4E4',
-  textStrong: '#F4F4F4',
-  textDim: '#A0A0A0',
-  textMuted: '#858585',
+  text: '#E1E1E1',
+  textStrong: '#F3F3F3',
+  textDim: '#C8C8C8',
+  textMuted: '#6C6C6C',
 
-  border: '#646464',
-  borderFocus: '#D0D0D0',
+  border: '#505058',
+  borderFocus: '#505058',
 
-  success: '#3FA266',
-  warning: '#D6A55D',
-  error: '#D74A6A',
+  surfaceTool: '#1C1C1C',
+  surfaceToolSuccess: '#141A14',
+  surfaceToolError: '#1C1215',
+  surfaceUser: '#242424',
 
-  diffAdded: '#3FA266',
-  diffRemoved: '#D74A6A',
-  diffAddedStrong: '#70B489',
-  diffRemovedStrong: '#ED7890',
-  diffGutter: '#858585',
-  diffMeta: '#A0A0A0',
+  success: '#9ECE6A',
+  warning: '#E0AF68',
+  error: '#F7768E',
 
-  roleUser: '#D0D0D0',
-  shellMode: '#B0B0B0',
+  diffAdded: '#9ECE6A',
+  diffRemoved: '#F7768E',
+  diffAddedStrong: '#B4E07F',
+  diffRemovedStrong: '#FF9AAD',
+  diffGutter: '#6C6C6C',
+  diffMeta: '#C8C8C8',
+
+  roleUser: '#C8C8C8',
+  shellMode: '#E0AF68',
+  onPrimary: '#141414',
 };
 
+/** Light default. Same allocation as Dark, accents deepened for contrast on white. */
 export const lightColors: ColorPalette = {
-  primary: '#202020',
-  accent: '#4B4B4B',
+  primary: '#262626',
+  // Source teal #0A8E70 is ~4.0:1 on white; deepen for small text (model name).
+  accent: '#0A7A62',
+  running: '#7D4BC6',
 
-  text: '#1A1A1A',
-  textStrong: '#0A0A0A',
-  textDim: '#4A4A4A',
-  textMuted: '#5F5F5F',
+  text: '#262626',
+  textStrong: '#141414',
+  textDim: '#444444',
+  textMuted: '#767676',
 
-  border: '#737373',
-  borderFocus: '#303030',
+  // Source prompt border is too light on a white terminal; DARK5 clears 3:1.
+  border: '#626262',
+  borderFocus: '#626262',
 
+  surfaceTool: '#E4E4E4',
+  surfaceToolSuccess: '#DAF2DC',
+  surfaceToolError: '#F5DADE',
+  surfaceUser: '#DEDEDE',
+
+  // Source green/gold sit at ~4.0:1; deepen for badge text.
   success: '#0E7A38',
-  warning: '#92660A',
-  error: '#B91C1C',
+  warning: '#8A5808',
+  error: '#CD3048',
 
   diffAdded: '#0E7A38',
-  diffRemoved: '#B91C1C',
+  diffRemoved: '#CD3048',
   diffAddedStrong: '#0E7A38',
-  diffRemovedStrong: '#B91C1C',
-  diffGutter: '#737373',
-  diffMeta: '#5F5F5F',
+  diffRemovedStrong: '#CD3048',
+  diffGutter: '#626262',
+  diffMeta: '#767676',
 
-  roleUser: '#363636',
-  shellMode: '#565656',
+  roleUser: '#444444',
+  shellMode: '#8A5808',
+  onPrimary: '#FFFFFF',
 };
 
 export type ResolvedTheme = 'dark' | 'light';

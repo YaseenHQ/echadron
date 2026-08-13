@@ -22,8 +22,10 @@
  * bound to the default profile's prompt when a `basePrompt` is given,
  * resolved lazily and only when the template actually references it. Also
  * shared: `skillActiveFor` (whether the Skill tool survives a profile's tool
- * list — drives skills injection) and the `subagents`-allowlist helpers
- * (`subagentAllowlistFor`, `subagentTypeNotAllowedMessage`).
+ * list — drives skills injection), the `subagents`-allowlist helpers
+ * (`subagentAllowlistFor`, `subagentTypeNotAllowedMessage`), and
+ * `isDelegatableProfile` (the ordinary Agent tool hides and rejects
+ * `internal: true` profiles, which remain catalog-resolvable by their owner).
  */
 
 import { renderPrompt } from '#/_base/utils/render-prompt';
@@ -60,6 +62,10 @@ export function subagentTypeNotAllowedMessage(
 ): string {
   const allowed = allowlist.length === 0 ? 'none' : allowlist.join(', ');
   return `Subagent type "${name}" is not allowed for this agent. Allowed subagent types: ${allowed}.`;
+}
+
+export function isDelegatableProfile(profile: Pick<AgentProfile, 'internal'>): boolean {
+  return profile.internal !== true;
 }
 
 export function agentProfileModelAlias(

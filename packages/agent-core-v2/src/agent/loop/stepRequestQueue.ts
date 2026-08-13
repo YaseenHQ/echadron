@@ -35,6 +35,14 @@ export class StepRequestQueue {
     return this.items.some((item) => !item.aborted);
   }
 
+  peekNextDriver(): StepRequest | undefined {
+    this.discardAborted();
+    if (this.items.length === 0) return undefined;
+    let driverIndex = this.items.findIndex((item) => !item.mergeable);
+    if (driverIndex < 0) driverIndex = 0;
+    return this.items[driverIndex];
+  }
+
   takeNextBatch(): StepRequestBatch | undefined {
     this.discardAborted();
     if (this.items.length === 0) return undefined;

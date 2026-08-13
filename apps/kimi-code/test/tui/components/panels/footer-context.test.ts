@@ -103,7 +103,8 @@ describe('FooterComponent — context NaN resilience', () => {
       }),
     );
     const out = strip(fc.render(200).join(''));
-    expect(out).toMatch(/context: 42% \(420k\/1M\)/);
+    expect(out).toMatch(/context: 42%/);
+    expect(out).toContain('420k/1M');
   });
 
   it('tokens provided but max=0 → falls back to percent-only, no division-by-zero artefact', () => {
@@ -122,7 +123,9 @@ describe('FooterComponent — context NaN resilience', () => {
 
     footer.setState(baseState({ model: 'kimi-k2-5', contextUsage: 0.5 }));
 
-    const out = strip(footer.render(200).join(''));
+    const lines = footer.render(200);
+    expect(lines).toHaveLength(1);
+    const out = strip(lines.join(''));
     expect(out).toContain('kimi-k2-5');
     expect(out).not.toContain(' k2 ');
     expect(out).toMatch(/context: 50%/);
@@ -141,9 +144,9 @@ describe('FooterComponent — context NaN resilience', () => {
 
     footer.setTransientHint('Press Ctrl-C again to exit');
 
-    const [, line2] = footer.render(120);
-    expect(strip(line2 ?? '')).toContain('Press Ctrl-C again to exit');
-    expect(strip(line2 ?? '')).toContain('context: 0%');
+    const [line] = footer.render(120);
+    expect(strip(line ?? '')).toContain('Press Ctrl-C again to exit');
+    expect(strip(line ?? '')).toContain('context: 0%');
   });
 
   it('highlights the pull request badge separately from git status text', () => {

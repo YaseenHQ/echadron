@@ -12,6 +12,8 @@ import { join } from 'node:path';
 
 import { createServerLogger, startServer, type ServerLogger } from '@moonshot-ai/kap-server';
 import chalk from 'chalk';
+
+import { paintLogoRun } from '#/tui/utils/logo-eyes';
 import { type Command } from 'commander';
 
 import { WEB_USER_AGENT_SUFFIX } from '#/constant/app';
@@ -338,7 +340,8 @@ export function formatReadyBanner(
   host: string,
   opts: FormatReadyBannerOptions = {},
 ): string {
-  const primary = (text: string): string => chalk.hex(darkColors.primary)(text);
+  // Background-filled solid cells so the two logo rows join with no seam.
+  const paintLogo = (row: string): string => paintLogoRun(row, darkColors.primary);
   const title = (text: string): string => chalk.bold.hex(darkColors.primary)(text);
   const dim = (text: string): string => chalk.hex(darkColors.textDim)(text);
   const muted = (text: string): string => chalk.hex(darkColors.textMuted)(text);
@@ -357,8 +360,8 @@ export function formatReadyBanner(
   const logo = ['▐█▛█▛█▌', '▐█████▌'] as const;
   const lines: string[] = [
     '',
-    `  ${primary(logo[0])}  ${title('Echadron server ready')}  ${dim(getVersion())}`,
-    `  ${primary(logo[1])}  ${dim('Local web UI is available from this machine.')}`,
+    `  ${paintLogo(logo[0])}  ${title('Echadron server ready')}  ${dim(getVersion())}`,
+    `  ${paintLogo(logo[1])}  ${dim('Local web UI is available from this machine.')}`,
     '',
   ];
 

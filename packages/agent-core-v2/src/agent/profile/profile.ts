@@ -62,6 +62,7 @@ export interface ProfileData extends AgentConfigData {
   readonly activeToolNames?: readonly string[];
   readonly disallowedTools?: readonly string[];
   readonly subagents?: readonly string[];
+  readonly maxStepsPerTurn?: number;
 }
 
 export type ProfileUpdateData = Partial<{

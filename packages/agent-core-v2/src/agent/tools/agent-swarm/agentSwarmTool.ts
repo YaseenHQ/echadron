@@ -38,6 +38,7 @@ import { ISessionAgentProfileCatalog } from '#/session/sessionAgentProfileCatalo
 import { IAgentProfileService } from '#/agent/profile/profile';
 import {
   agentProfileModelAlias,
+  isDelegatableProfile,
   subagentAllowlistFor,
   subagentTypeNotAllowedMessage,
 } from '#/app/agentProfileCatalog/profile-shared';
@@ -45,6 +46,7 @@ import { IAgentScopeContext } from '#/agent/scopeContext/scopeContext';
 import { IAgentSwarmService } from '#/agent/swarm/swarm';
 import {
   buildSubagentModelDescriptions,
+  isSubagentModelRole,
   resolveSubagentBinding,
   resolveSubagentTimeoutMs,
 } from '#/session/subagent/configSection';
@@ -168,8 +170,21 @@ export class AgentSwarmTool implements IAgentSwarmTool {
       if (targetProfile === undefined) {
         throw new Error(`Unknown agent type: "${profileName}"`);
       }
+      if (!isDelegatableProfile(targetProfile)) {
+        throw new Error(
+          `Agent type "${profileName}" is internal and cannot be launched through the AgentSwarm tool.`,
+        );
+      }
       if (own.modelAlias !== undefined) {
-        if (args.model === undefined && targetProfile.model !== undefined) {
+        // `profile.model` takes role keywords or a concrete alias; roles fall
+        // through to `resolveSubagentBinding`, which knows how to resolve them.
+        const profileModel =
+          targetProfile.model === 'inherit' ? undefined : targetProfile.model;
+        if (
+          args.model === undefined &&
+          profileModel !== undefined &&
+          !isSubagentModelRole(profileModel)
+        ) {
           const modelAlias = agentProfileModelAlias(targetProfile, own.modelAlias);
           binding = {
             model: modelAlias,
@@ -180,7 +195,9 @@ export class AgentSwarmTool implements IAgentSwarmTool {
             this.config,
             this.flags,
             { modelAlias: own.modelAlias, thinkingLevel: own.thinkingLevel },
-            args.model ?? targetProfile.modelPreference,
+            // `model_preference` is superseded by `model`; honoured last so
+            // existing agent files keep working unchanged.
+            args.model ?? profileModel ?? targetProfile.modelPreference,
           );
         }
       }

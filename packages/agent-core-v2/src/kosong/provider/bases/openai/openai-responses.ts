@@ -1448,6 +1448,11 @@ export class OpenAIResponsesChatProvider implements ChatProvider {
     const clientOpts: Record<string, unknown> = {
       apiKey,
       baseURL: auth?.baseUrl ?? this._baseUrl,
+      // The SDK's internal backoff sleep never observes the turn's AbortSignal,
+      // so its hidden retries make Ctrl+C unresponsive during a 429/5xx/connection
+      // retry and double-count the engine's retry budget. Retry belongs to the
+      // engine's step-retry layer: observable (turn.step.retrying) and cancellable.
+      maxRetries: 0,
     };
     const defaultHeaders = mergeRequestHeaders(this._defaultHeaders, auth?.headers);
     if (defaultHeaders !== undefined) {

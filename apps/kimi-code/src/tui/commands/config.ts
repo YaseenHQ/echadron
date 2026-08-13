@@ -35,7 +35,7 @@ import type { SlashCommandHost } from './dispatch';
 // Plan / Config commands
 // ---------------------------------------------------------------------------
 
-const MODEL_PICKER_REFRESH_TIMEOUT_MS = 2_000;
+const MODEL_PICKER_REFRESH_TIMEOUT_MS = 5_000;
 
 const MODEL_SWITCH_CACHE_WARNING =
   'Note: Switching models invalidates the existing prompt cache. Use /new to avoid extra token costs.';
@@ -588,6 +588,18 @@ async function persistModelSelection(
 // Secondary model (`/secondary_model`)
 // ---------------------------------------------------------------------------
 
+const INHERIT_SECONDARY_MODEL_ALIAS = '__inherit__';
+
+function inheritSecondaryModelAlias(): ModelAlias {
+  return {
+    provider: 'primary',
+    model: '',
+    displayName: 'Inherit primary model',
+    maxContextSize: 0,
+    capabilities: [],
+  } as ModelAlias;
+}
+
 function showSecondaryModelPicker(
   host: SlashCommandHost,
   models: Record<string, ModelAlias>,
@@ -595,13 +607,19 @@ function showSecondaryModelPicker(
   currentEffort: string | undefined,
   selectedValue?: string,
 ): void {
+  const inheritSelected = currentValue.length === 0;
   host.mountEditorReplacement(
     new TabbedModelSelectorComponent({
-      models,
-      currentValue,
-      selectedValue,
+      models: {
+        [INHERIT_SECONDARY_MODEL_ALIAS]: inheritSecondaryModelAlias(),
+        ...models,
+      },
+      currentValue: inheritSelected ? INHERIT_SECONDARY_MODEL_ALIAS : currentValue,
+      selectedValue:
+        selectedValue ?? (inheritSelected ? INHERIT_SECONDARY_MODEL_ALIAS : currentValue),
       currentThinkingEffort: currentEffort ?? 'off',
       title: ' Select a secondary model (subagents)',
+      warning: 'Inherit uses the primary model and its thinking effort. ←/→ change effort on a concrete model.',
       onSelect: ({ alias, thinking }) => {
         host.restoreEditor();
         void performSecondaryModelSwitch(host, alias, thinking);
@@ -624,6 +642,36 @@ async function performSecondaryModelSwitch(
   alias: string,
   effort: ThinkingEffort,
 ): Promise<void> {
+  if (alias === INHERIT_SECONDARY_MODEL_ALIAS) {
+    let updatedConfig: KimiConfig;
+    try {
+      updatedConfig = await host.harness.setConfig({
+        secondaryModel: { model: '' },
+      });
+    } catch (error) {
+      host.showError(`Failed to clear secondary model: ${formatErrorMessage(error)}`);
+      return;
+    }
+    if (host.session !== undefined) {
+      try {
+        await host.session.applyPersistedSecondaryModel();
+      } catch (error) {
+        host.showError(
+          `Cleared the secondary model, but failed to apply it to this session: ${formatErrorMessage(error)}`,
+        );
+        return;
+      }
+    }
+    host.setAppState({ availableModels: updatedConfig.models ?? {} });
+    host.showStatus(
+      host.session === undefined
+        ? 'Secondary model set to inherit the primary model; applies to new sessions.'
+        : 'Secondary model set to inherit the primary model.',
+      'success',
+    );
+    return;
+  }
+
   const displayName = modelDisplayName(alias, host.state.appState.availableModels[alias]);
   let updatedConfig: KimiConfig;
   try {
@@ -904,6 +952,7 @@ function handleSettingsSelection(host: SlashCommandHost, value: SettingsSelectio
   host.restoreEditor();
   switch (value) {
     case 'model': showModelPicker(host); return;
+    case 'secondaryModel': void handleSecondaryModelCommand(host, ''); return;
     case 'permission': showPermissionPicker(host); return;
     case 'theme': showThemePicker(host); return;
     case 'editor': showEditorPicker(host); return;

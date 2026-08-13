@@ -57,10 +57,12 @@ export const SubagentToolInputSchema = z.preprocess(
         'If true, return immediately without waiting for completion. Prefer false unless the task can run independently and there is a clear benefit to not waiting.',
       ),
     model: z
-      .enum(['secondary', 'primary'])
+      .string()
+      .trim()
+      .min(1)
       .optional()
       .describe(
-        'Which model to run the subagent on: "secondary" = the configured secondary model; "primary" = the main model you are running on (for hard, quality-sensitive tasks). This explicit choice overrides the selected agent type\'s model_preference; without either, secondary is the default when configured. Only effective when a secondary model is configured; otherwise the subagent inherits your model. Ignored when resuming — resumed subagents keep their own model.',
+        'Which model to run the subagent on. Either a role — "secondary" = the configured secondary model, "primary" = the main model you are running on (for hard, quality-sensitive tasks) — or the id of any configured model, which is how you route a task to a model with specific capabilities. See the model list in this tool\'s description for what is available. This explicit choice overrides the selected agent type\'s model_preference; without either, secondary is the default when configured, otherwise the subagent inherits your model. Ignored when resuming — resumed subagents keep their own model.',
       ),
   }),
 );

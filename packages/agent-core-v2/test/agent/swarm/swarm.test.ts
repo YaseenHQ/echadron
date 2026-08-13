@@ -39,6 +39,13 @@ import { AGENT_WIRE_RECORD_KEY, type WireRecord } from '#/wire/record';
 import { type DomainEvent, IEventBus } from '#/app/event/eventBus';
 import { EventBusService } from '#/app/event/eventBusService';
 
+import { AgentStateService } from '#/agent/state/agentStateService';
+import { IAgentStateService } from '#/agent/state/agentState';
+import {
+  IAgentContextInjectorService,
+  type ContextInjectionProvider,
+} from '#/agent/contextInjector/contextInjector';
+
 import { stubContextMemory } from '../contextMemory/stubs';
 import { executeTool } from '../../tools/fixtures/execute-tool';
 import { registerTestAgentWire, restoreTestAgentWire, testWireScope } from '../../wire/stubs';
@@ -149,6 +156,7 @@ function stubCallerProfile(
 describe('AgentSwarmService', () => {
   let disposables: DisposableStore;
   let ix: TestInstantiationService;
+  let injectedVariants: { variant: string; provider: ContextInjectionProvider }[];
   let executorEvents: ToolExecutorEventStubs;
   let permissionGateRan: boolean;
   let formatDenyMessage: Mock<(message: string) => string>;
@@ -180,6 +188,15 @@ describe('AgentSwarmService', () => {
       eventBus: ix.get(IEventBus),
     });
     ix.set(IAgentSystemReminderService, new SyncDescriptor(AgentSystemReminderService));
+    ix.stub(IAgentStateService, new AgentStateService());
+    injectedVariants = [];
+    ix.stub(IAgentContextInjectorService, {
+      register: (variant, provider) => {
+        injectedVariants.push({ variant, provider });
+        return { dispose: () => {} };
+      },
+      injectAfterCompaction: async () => {},
+    });
     ix.set(IAgentSwarmService, new SyncDescriptor(AgentSwarmService));
   });
   afterEach(() => disposables.dispose());
@@ -206,11 +223,60 @@ describe('AgentSwarmService', () => {
     swarm.exit();
     expect(swarm.isActive).toBe(false);
 
+    // Enter/exit only move the Op. Announcing the mode to the model belongs to
+    // the `swarm_mode` injection provider, so no context mutation is published
+    // here — the previous implementation emitted a synthetic `context.spliced`
+    // to account for popping the enter reminder off the tail.
     expect(events).toEqual([
       { type: 'agent.status.updated', swarmMode: true },
       { type: 'agent.status.updated', swarmMode: false },
-      { type: 'context.spliced', start: 0, deleteCount: 1, messages: [] },
     ]);
+  });
+
+  it('announces enter and exit exactly once through the swarm_mode injection', async () => {
+    const swarm = ix.get(IAgentSwarmService);
+    const provider = injectedVariants.find((entry) => entry.variant === 'swarm_mode')?.provider;
+    expect(provider).toBeDefined();
+    const inject = async (injectedPositions: readonly number[] = []): Promise<unknown> =>
+      provider!({ injectedPositions, lastInjectedAt: null, isNewTurn: true });
+
+    // Idle: nothing to say.
+    expect(await inject()).toBeUndefined();
+
+    swarm.enter('manual');
+    const entered = await inject();
+    expect(entered).toContain('Swarm Mode');
+    // Already announced and still rendered — stay quiet.
+    expect(await inject([0])).toBeUndefined();
+
+    swarm.exit();
+    const exited = await inject([0]);
+    expect(exited).toContain('Swarm Mode Ended');
+    expect(await inject([0])).toBeUndefined();
+  });
+
+  it('re-announces swarm mode when compaction folds the reminder away', async () => {
+    const swarm = ix.get(IAgentSwarmService);
+    const provider = injectedVariants.find((entry) => entry.variant === 'swarm_mode')!.provider;
+    swarm.enter('manual');
+    expect(await provider({ injectedPositions: [], lastInjectedAt: null, isNewTurn: true })).toContain(
+      'Swarm Mode',
+    );
+    // No live positions left for this variant: the reminder was compacted out
+    // while the mode is still on, so the model needs telling again.
+    expect(await provider({ injectedPositions: [], lastInjectedAt: null, isNewTurn: true })).toContain(
+      'Swarm Mode',
+    );
+  });
+
+  it('stays silent for a tool-triggered swarm', async () => {
+    const swarm = ix.get(IAgentSwarmService);
+    const provider = injectedVariants.find((entry) => entry.variant === 'swarm_mode')!.provider;
+    swarm.enter('tool');
+    expect(swarm.isActive).toBe(true);
+    expect(
+      await provider({ injectedPositions: [], lastInjectedAt: null, isNewTurn: true }),
+    ).toBeUndefined();
   });
 
   it('dispatch persists enter/exit records and replay rebuilds the trigger (silent)', async () => {
@@ -547,6 +613,33 @@ describe('AgentSwarmTool', () => {
       expect(result.isError).toBe(true);
       expect(host.swarmService.run).not.toHaveBeenCalled();
     }
+  });
+
+  it('rejects an internal profile requested through the AgentSwarm tool', async () => {
+    const host = mockSwarmHost();
+    const internalProfile: AgentProfile = {
+      name: 'verifier',
+      description: 'internal verifier',
+      internal: true,
+      systemPrompt: () => 'verifier',
+    };
+    const tool = new AgentSwarmTool(host.swarmService, makeAgentScopeContext({ agentId: host.callerAgentId, agentScope: '' }), mockSwarmMode(), stubConfig(), stubFlag(true), stubSwarmCatalog(DEFAULT_CALLER_PROFILE, [internalProfile]), stubCallerProfile());
+
+    const result = await executeTool(
+      tool,
+      context({
+        description: 'Run verifiers',
+        prompt_template: 'Verify {{item}}',
+        items: ['src/a.ts', 'src/b.ts'],
+        subagent_type: 'verifier',
+      }),
+    );
+
+    expect(result.isError).toBe(true);
+    expect(result.output).toContain(
+      'Agent type "verifier" is internal and cannot be launched through the AgentSwarm tool.',
+    );
+    expect(host.swarmService.run).not.toHaveBeenCalled();
   });
 
   it('resumes mapped agents before spawning item subagents', async () => {

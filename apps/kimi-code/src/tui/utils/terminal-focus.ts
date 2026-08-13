@@ -14,11 +14,16 @@ export {
   TERMINAL_FOCUS_OUT,
 } from '#/tui/constant/terminal';
 
-export function installTerminalFocusTracking(state: TUIState): () => void {
+export function installTerminalFocusTracking(
+  state: TUIState,
+  onChange?: () => void,
+): () => void {
   state.terminalState.focused = true;
-  const disposeInputListener = state.ui.addInputListener((data) =>
-    handleTerminalFocusInput(state.terminalState, data),
-  );
+  const disposeInputListener = state.ui.addInputListener((data) => {
+    const result = handleTerminalFocusInput(state.terminalState, data);
+    if (result !== undefined) onChange?.();
+    return result;
+  });
   state.terminal.write(ENABLE_TERMINAL_FOCUS_REPORTING);
 
   return () => {

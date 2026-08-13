@@ -34,6 +34,7 @@ import { IConfigService } from '#/app/config/config';
 import { ISessionAgentProfileCatalog } from '#/session/sessionAgentProfileCatalog/sessionAgentProfileCatalog';
 import { applyProfilePromptPrefix } from '#/app/agentProfileCatalog/promptPrefix';
 import { agentProfileModelAlias } from '#/app/agentProfileCatalog/profile-shared';
+import { secondaryModelDisplayAlias } from '#/app/kosongConfig/secondaryModelOverlay';
 import { IAgentLifecycleService } from '#/session/agentLifecycle/agentLifecycle';
 import {
   isSubagentMeta,
@@ -43,10 +44,7 @@ import {
 } from '#/session/agentLifecycle/subagentMetadata';
 import { emitAgentRunSpawned, mirrorAgentRun } from '#/session/subagent/mirrorAgentRun';
 import { ISessionSubagentService } from '#/session/subagent/subagent';
-import {
-  subagentDisplayModel,
-  wrapSubagentModelError,
-} from '#/session/subagent/configSection';
+import { wrapSubagentModelError } from '#/session/subagent/configSection';
 import { ISessionContext } from '#/session/sessionContext/sessionContext';
 import { ISessionMetadata, type AgentMeta } from '#/session/sessionMetadata/sessionMetadata';
 import { ISessionProcessRunner } from '#/session/process/processRunner';
@@ -194,7 +192,7 @@ export class SessionSwarmService implements ISessionSwarmService {
       description: options.description,
       swarmIndex: options.swarmIndex,
       runInBackground: options.runInBackground,
-      model: subagentDisplayModel(this.config, binding.model),
+      model: secondaryModelDisplayAlias(this.config, binding.model),
     });
     const promptText = await applyProfilePromptPrefix(profile, options.prompt, {
       cwd: this.sessionContext.cwd,
@@ -232,7 +230,7 @@ export class SessionSwarmService implements ISessionSwarmService {
         model:
           resumedModel === undefined
             ? undefined
-            : subagentDisplayModel(this.config, resumedModel),
+            : secondaryModelDisplayAlias(this.config, resumedModel),
       });
     }
     const request = retryTurn

@@ -1,3 +1,4 @@
+import { SETTINGS_SELECTION_VALUES } from '#/tui/components/dialogs/settings-selector';
 import {
   BUILTIN_SLASH_COMMANDS,
   findBuiltInSlashCommand,
@@ -190,6 +191,43 @@ describe('built-in slash command registry', () => {
     expect(reloadTui).toBeDefined();
     expect(resolveSlashCommandAvailability(reload!, '')).toBe('idle-only');
     expect(resolveSlashCommandAvailability(reloadTui!, '')).toBe('always');
+  });
+
+  it('keeps hidden settings commands dispatchable when typed', () => {
+    // `hidden` is display-only: it trims the browsable palette without
+    // breaking muscle memory or anything scripted against these names.
+    for (const name of ['theme', 'editor', 'features', 'secondary_model', 'reload-tui']) {
+      const command = findBuiltInSlashCommand(name);
+      expect(command, name).toBeDefined();
+      expect((command as KimiSlashCommand).hidden, name).toBe(true);
+      expect(resolveSlashCommandAvailability(command!, '')).toBeDefined();
+    }
+  });
+
+  it('routes every hidden settings command to a /settings entry', () => {
+    // Hiding a command is only acceptable while /settings can still reach it,
+    // otherwise the option becomes undiscoverable.
+    const reachableFromSettings = new Set<string>(SETTINGS_SELECTION_VALUES);
+    const hiddenToSettings: Record<string, string> = {
+      theme: 'theme',
+      editor: 'editor',
+      features: 'experiments',
+      secondary_model: 'secondaryModel',
+    };
+    for (const [command, selection] of Object.entries(hiddenToSettings)) {
+      expect(findBuiltInSlashCommand(command), command).toBeDefined();
+      expect(reachableFromSettings.has(selection), `${command} -> ${selection}`).toBe(true);
+    }
+  });
+
+  it('keeps session-level toggles in the browsable palette', () => {
+    // These change per task rather than being configured once, so they must
+    // stay discoverable rather than hiding behind /settings.
+    for (const name of ['model', 'permission', 'effort', 'usage', 'plan', 'swarm']) {
+      const command = findBuiltInSlashCommand(name);
+      expect(command, name).toBeDefined();
+      expect((command as KimiSlashCommand).hidden ?? false, name).toBe(false);
+    }
   });
 
   it('gates secondary_model behind its rollback control while defaulting available', () => {

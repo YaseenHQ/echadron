@@ -22,6 +22,15 @@
  * an allowlist of subagent profile names the agent may delegate to
  * (`undefined` = any type).
  *
+ * `maxStepsPerTurn` is an optional per-profile turn step ceiling. The loop
+ * takes the smaller of it and the global `loop_control.max_steps_per_turn`
+ * when both are positive; zero/undefined means no profile ceiling. It is a
+ * runtime property resolved from the bound profile, not persisted state.
+ *
+ * `internal` marks a profile that the ordinary Agent tool must neither list
+ * nor delegate to; it is still resolvable through the catalog by the service
+ * that owns it. Existing profiles default to delegatable.
+ *
  * Profiles are contributed at module load via `registerAgentProfile(...)`, the
  * same "import = register" pattern used by `registerAgentToolService` and
  * `registerConfigSection`. `AgentProfileCatalogService` consumes the accumulated
@@ -79,6 +88,8 @@ export interface AgentProfile {
   readonly disallowedTools?: readonly string[];
   readonly subagents?: readonly string[];
   readonly modelPreference?: AgentModelPreference;
+  readonly maxStepsPerTurn?: number;
+  readonly internal?: boolean;
   systemPrompt(context: AgentProfileContext): string;
   readonly promptPrefix?: (ctx: AgentProfilePromptPrefixContext) => Promise<string>;
   readonly summaryPolicy?: AgentProfileSummaryPolicy;

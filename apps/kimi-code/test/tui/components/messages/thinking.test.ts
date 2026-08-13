@@ -2,7 +2,8 @@ import { visibleWidth, type TUI } from '@moonshot-ai/pi-tui';
 import { describe, expect, it, vi } from 'vitest';
 
 import { ThinkingComponent } from '#/tui/components/messages/thinking';
-import { STATUS_BULLET } from '#/tui/constant/symbols';
+import { ACCENT_BAR, STATUS_BULLET } from '#/tui/constant/symbols';
+import { pulseBrightness } from '#/tui/utils/accent-pulse';
 
 function strip(text: string): string {
   return text.replaceAll(/\u001B\[[0-9;]*m/g, '');
@@ -16,9 +17,15 @@ describe('ThinkingComponent', () => {
     const out = strip(component.render(80).join('\n'));
 
     expect(out).toContain('⠋ thinking...');
+    expect(out).toContain(`${ACCENT_BAR} ⠋ thinking...`);
     expect(out).not.toContain('  ⠋ thinking...');
     expect(out).not.toContain(`${STATUS_BULLET}⠋`);
-    expect(out).toContain('  working it out');
+    expect(out).toContain(`${ACCENT_BAR} working it out`);
+  });
+
+  it('pulses from dark to bright over a cycle', () => {
+    expect(pulseBrightness(0)).toBe(0);
+    expect(pulseBrightness(1.31 / 2)).toBeGreaterThan(0.9);
   });
 
   it('keeps live thinking height-limited to the tail', () => {
@@ -59,6 +66,7 @@ describe('ThinkingComponent', () => {
     component.finalize();
 
     const out = strip(component.render(80).join('\n'));
+    expect(out).toContain('Thought for');
     expect(out).toContain('line1');
     expect(out).toContain('line2');
     expect(out).not.toContain('line3');

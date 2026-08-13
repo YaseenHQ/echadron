@@ -373,7 +373,27 @@ export const secondaryModelEnvBindings = envBindings(SecondaryModelConfigSchema,
   defaultEffort: { env: SECONDARY_MODEL_EFFORT_ENV, parse: parseNonEmptyEnv },
 });
 
+function mergeSecondaryModel(
+  base: SecondaryModelConfig | undefined,
+  patch: unknown,
+): SecondaryModelConfig {
+  if (!isPlainObject(patch)) {
+    return (patch ?? base ?? {}) as SecondaryModelConfig;
+  }
+  const merged = {
+    ...base,
+    ...patch,
+  } as SecondaryModelConfig & { model?: string };
+  // Empty string is the picker "inherit primary" sentinel: drop the pointer
+  // so subagents bind the live primary model again.
+  if (patch['model'] === '') {
+    delete merged.model;
+  }
+  return merged;
+}
+
 registerConfigSection(SECONDARY_MODEL_SECTION, SecondaryModelConfigSchema, {
+  merge: mergeSecondaryModel,
   env: secondaryModelEnvBindings,
   stripEnv: stripEnvBoundFields(secondaryModelEnvBindings),
 });

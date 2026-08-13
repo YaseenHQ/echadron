@@ -180,14 +180,23 @@ describe('built-in palette identity', () => {
     return red !== undefined && red === green && green === blue;
   };
 
-  it.each([darkColors, lightColors])('keeps identity and mode tokens monochrome', (palette) => {
-    for (const token of ['primary', 'accent', 'roleUser', 'shellMode'] as const) {
-      expect(isGrayscale(palette[token]), token).toBe(true);
-    }
+  it.each([darkColors, lightColors])('keeps chrome gray and puts color on accent/running/status', (palette) => {
+    expect(isGrayscale(palette.primary), 'primary').toBe(true);
+    expect(isGrayscale(palette.roleUser), 'roleUser').toBe(true);
+    expect(isGrayscale(palette.accent), 'accent').toBe(false);
+    expect(isGrayscale(palette.running), 'running').toBe(false);
+    expect(isGrayscale(palette.shellMode), 'shellMode').toBe(false);
+    expect(palette.running).not.toBe(palette.accent);
   });
 
   it.each([darkColors, lightColors])('reserves color for operational semantics', (palette) => {
     expect(new Set([palette.success, palette.warning, palette.error]).size).toBe(3);
     expect(palette.diffAdded).not.toBe(palette.diffRemoved);
+  });
+
+  it('names the built-in palettes Dark and Light, with magenta live work', () => {
+    expect(darkColors.running).toBe('#BB9AF7');
+    expect(lightColors.running).toBe('#7D4BC6');
+    expect(darkColors.borderFocus).toBe(darkColors.border);
   });
 });

@@ -17,7 +17,7 @@ export class BackgroundAgentStatusComponent implements Component {
 
     const tone: keyof ColorPalette =
       this.data.phase === 'started'
-        ? 'primary'
+        ? 'running'
         : this.data.phase === 'completed'
           ? 'success'
           : 'error';

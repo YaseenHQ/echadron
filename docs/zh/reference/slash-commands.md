@@ -5,6 +5,10 @@
 输入完整命令名后按 `Enter` 执行。如果输入的 `/` 开头内容不匹配任何内置或 Skill 命令，则按普通消息发送给 Agent。
 
 ::: tip 提示
+一次性配置类命令——`/theme`、`/editor`、`/features`、`/secondary_model`——不再出现在 `/` 补全列表和 `/help` 中，改为统一收纳在 `/settings` 下，使可浏览列表保持简洁。直接输入这些命令仍与此前完全一致，下文也仍逐条列出。
+:::
+
+::: tip 提示
 部分命令仅在空闲（idle）状态下可用。会话正在流式输出或压缩上下文时执行这些命令会被拦截，需先按 `Esc` 或 `Ctrl-C` 中断。下表「随时可用」列标注了流式输出期间也可用的命令。
 :::
 
@@ -15,12 +19,12 @@
 | `/login` | — | 选择账号或平台并登录：Kimi Code 走 OAuth 验证码流程，Kimi Platform 通过 API 密钥登录 | 否 |
 | `/logout` | — | 清除单个或组合凭据，或删除已保存的供应商配置 | 否 |
 | `/model` | — | 切换当前会话使用的 LLM 模型 | 是 |
-| `/secondary_model` | — | 配置子 Agent 使用的第二模型（写入 [`[secondary_model]`](../configuration/config-files.md#secondary_model) 配置并在当前会话立即生效） | 是 |
-| `/settings` | `/config` | 打开 TUI 内的设置面板 | 是 |
-| `/features` | `/experiments`、`/experimental` | 打开正式功能默认值和回退开关的“功能控制”面板 | 是 |
+| `/secondary_model` | — | 配置子 Agent 使用的第二模型（写入 [`[secondary_model]`](../configuration/config-files.md#secondary_model) 配置并在当前会话立即生效）。不在补全列表中显示；也可从 `/settings` 进入 | 是 |
+| `/settings` | `/config` | 打开 TUI 内的设置面板：模型、次主力模型、权限、主题、编辑器、功能控制、自动更新、用量 | 是 |
+| `/features` | `/experiments`、`/experimental` | 打开正式功能默认值和回退开关的“功能控制”面板。不在补全列表中显示；也可从 `/settings` 进入 | 是 |
 | `/permission` | — | 选择权限模式 | 是 |
-| `/editor` | — | 配置 `Ctrl-G` 调起的外部编辑器 | 是 |
-| `/theme` | — | 切换终端 UI 配色主题 | 是 |
+| `/editor` | — | 配置 `Ctrl-G` 调起的外部编辑器。不在补全列表中显示；也可从 `/settings` 进入 | 是 |
+| `/theme` | — | 切换终端 UI 配色主题。不在补全列表中显示；也可从 `/settings` 进入 | 是 |
 
 ## 会话管理
 

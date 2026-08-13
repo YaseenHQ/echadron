@@ -59,6 +59,7 @@ Echadron 有三个地方可以影响运行参数：配置文件、命令行选�
 | `--auto` | 以 auto 权限模式启动：完全自主，Agent 不会向用户提问 |
 | `--plan` | 以 Plan 模式启动 |
 | `-m, --model <model>` | 指定本次使用的模型别名 |
+| `--thinking <effort>` | 为当前会话指定 thinking effort，恢复该会话时同样生效，但不会修改 `config.toml` 默认值 |
 | `-p, --prompt <prompt>` | 非交互模式：执行单条提示词后退出 |
 | `--output-format <format>` | `-p` 模式的输出格式：`text` 或 `stream-json` |
 | `--skills-dir <dir>` | 替换自动发现的 Skills 目录（可重复，仅本次生效） |
@@ -99,6 +100,12 @@ echadron --yolo -p "批量重命名以下文件..."
 
 ```sh
 echadron --plan
+```
+
+**为当前会话使用最高 thinking effort，而不修改 `config.toml` 默认值**：
+
+```sh
+echadron --thinking max -p "调查并修复这个回归"
 ```
 
 ## 下一步

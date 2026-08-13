@@ -10,6 +10,8 @@ This page documents each Echadron release. The complete package-level record is 
 
 ### Echadron
 
+- Add `--thinking <effort>` as a session-scoped override for interactive and non-interactive launches, including resumed sessions.
+- Gate autonomous goal completion through a bounded, fresh-context verifier that inherits the active model and thinking effort, exercises shipped behavior with adversarial property probes, rechecks the last concrete rejection first, and allows only one tool-free verdict-format recovery before failing closed.
 - Graduate progressive tool disclosure, secondary-model routing, and the minidb read model to default-on features. Their existing config entries remain available under Settings → Feature controls as explicit rollback controls.
 - Make `echadron acp` select ACP v1 or v2 from the client's `initialize` request, while retaining `acp-v2` and the legacy-engine environment switch for compatibility.
 - Use canonical `ECHADRON_EXPERIMENTAL_*` environment controls while preserving historical `KIMI_CODE_EXPERIMENTAL_*` aliases.

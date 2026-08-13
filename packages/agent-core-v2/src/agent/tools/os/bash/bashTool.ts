@@ -230,7 +230,7 @@ export class BashTool implements IBashTool {
         : normalizeTimeoutMs(args.timeout, true)
       : foregroundTimeoutMs;
 
-    const builder = new ToolResultBuilder();
+    const builder = new ToolResultBuilder({ keep: 'tail' });
     let proc: IProcess;
     try {
       proc = await this.spawn(effectiveCwd, command);
