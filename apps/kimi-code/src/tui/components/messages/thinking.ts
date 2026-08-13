@@ -6,6 +6,7 @@
  */
 
 import { Text, truncateToWidth, type Component, type TUI } from '@moonshot-ai/pi-tui';
+import chalk from 'chalk';
 
 import {
   BRAILLE_SPINNER_FRAMES,
@@ -13,8 +14,9 @@ import {
   MESSAGE_INDENT,
   THINKING_PREVIEW_LINES,
 } from '#/tui/constant/rendering';
-import { STATUS_BULLET } from '#/tui/constant/symbols';
+import { ACCENT_BAR } from '#/tui/constant/symbols';
 import { currentTheme } from '#/tui/theme';
+import { pulseHex, waveHex } from '#/tui/utils/accent-pulse';
 import { isRenderCacheEnabled } from '#/tui/utils/render-cache';
 
 export type ThinkingRenderMode = 'live' | 'finalized';
@@ -27,6 +29,8 @@ export class ThinkingComponent implements Component {
   private readonly ui: TUI | undefined;
   private spinnerFrame = 0;
   private spinnerInterval: ReturnType<typeof setInterval> | undefined;
+  private readonly startedAt: number | undefined = undefined;
+  private elapsedMs: number | undefined;
   // Hold a single Text instance so pi-tui's (text, width) → lines cache
   // actually survives across renders. Re-constructing per render destroys
   // the cache and forces full re-wrap on every frame, which dominates CPU
@@ -47,6 +51,7 @@ export class ThinkingComponent implements Component {
     this.ui = ui;
     this.textComponent = new Text(this.styled(text), 0, 0);
     if (mode === 'live') {
+      this.startedAt = Date.now();
       this.startSpinner();
     }
   }
@@ -73,6 +78,9 @@ export class ThinkingComponent implements Component {
 
   finalize(): void {
     this.mode = 'finalized';
+    if (this.startedAt !== undefined && this.elapsedMs === undefined) {
+      this.elapsedMs = Math.max(0, Date.now() - this.startedAt);
+    }
     this.markRenderDirty();
     this.stopSpinner();
   }
@@ -105,27 +113,38 @@ export class ThinkingComponent implements Component {
         contentLines.length > THINKING_PREVIEW_LINES
           ? contentLines.slice(contentLines.length - THINKING_PREVIEW_LINES)
           : contentLines;
-      const spinner = currentTheme.fg(
-        'textDim',
+      const palette = currentTheme.palette;
+      const secs = this.spinnerFrame * (BRAILLE_SPINNER_INTERVAL_MS / 1000);
+      const pop = pulseHex(palette.textMuted, palette.running, secs);
+      const rail = chalk.hex(pop)(ACCENT_BAR) + ' ';
+      const spinner = chalk.hex(pop)(
         `${BRAILLE_SPINNER_FRAMES[this.spinnerFrame] ?? BRAILLE_SPINNER_FRAMES[0]} `,
       );
       rendered = [
         '',
-        spinner + currentTheme.fg('textDim', 'thinking...'),
-        ...visibleLines.map((line) => MESSAGE_INDENT + line),
+        rail + spinner + chalk.hex(pop)('thinking...'),
+        ...visibleLines.map((line, row) => {
+          const bar = waveHex(palette.textMuted, palette.running, this.spinnerFrame, row + 1);
+          return chalk.hex(bar)(ACCENT_BAR) + ' ' + line;
+        }),
       ];
     } else {
       const lines: string[] = [''];
+      const rail = currentTheme.fg('textMuted', ACCENT_BAR) + ' ';
+      if (this.showMarker) {
+        lines.push(rail + currentTheme.italicFg('textDim', formatThoughtElapsed(this.elapsedMs)));
+      }
       for (let i = 0; i < contentLines.length; i++) {
-        const p = i === 0 && this.showMarker ? currentTheme.fg('textDim', STATUS_BULLET) : MESSAGE_INDENT;
-        lines.push(p + contentLines[i]);
+        const prefix = this.showMarker ? rail : MESSAGE_INDENT;
+        lines.push(prefix + contentLines[i]);
       }
 
       if (this.expanded || contentLines.length <= THINKING_PREVIEW_LINES) {
         rendered = lines;
       } else {
-        // Leading blank + first PREVIEW_LINES content lines + hint line.
-        const truncated = lines.slice(0, 1 + THINKING_PREVIEW_LINES);
+        // Leading blank + optional header + first PREVIEW_LINES content lines.
+        const headerLines = this.showMarker ? 1 : 0;
+        const truncated = lines.slice(0, 1 + headerLines + THINKING_PREVIEW_LINES);
         const remaining = contentLines.length - THINKING_PREVIEW_LINES;
         const hint = `... (${String(remaining)} more lines, ctrl+o to expand)`;
         const indentWidth = Math.min(MESSAGE_INDENT.length, Math.max(0, width));
@@ -157,4 +176,13 @@ export class ThinkingComponent implements Component {
     clearInterval(this.spinnerInterval);
     this.spinnerInterval = undefined;
   }
+}
+
+function formatThoughtElapsed(ms: number | undefined): string {
+  if (ms === undefined) return 'Thought';
+  const secs = Math.max(0, ms) / 1000;
+  if (secs < 60) return `Thought for ${secs.toFixed(1)}s`;
+  const mins = Math.floor(secs / 60);
+  const rem = Math.round(secs - mins * 60);
+  return `Thought for ${String(mins)}m${String(rem)}s`;
 }

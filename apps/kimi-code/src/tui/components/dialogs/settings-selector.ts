@@ -2,6 +2,7 @@ import { ChoicePickerComponent, type ChoiceOption } from './choice-picker';
 
 export type SettingsSelection =
   | 'model'
+  | 'secondaryModel'
   | 'theme'
   | 'editor'
   | 'permission'
@@ -9,11 +10,29 @@ export type SettingsSelection =
   | 'upgrade'
   | 'usage';
 
+/** Every selection `/settings` can route to. Exported so tests can assert that
+ * no command is hidden from the palette without a settings entry to reach it. */
+export const SETTINGS_SELECTION_VALUES = [
+  'model',
+  'secondaryModel',
+  'permission',
+  'theme',
+  'editor',
+  'experiments',
+  'upgrade',
+  'usage',
+] as const satisfies readonly SettingsSelection[];
+
 const SETTINGS_OPTIONS: readonly ChoiceOption[] = [
   {
     value: 'model',
     label: 'Model',
     description: 'Switch the active model and thinking mode.',
+  },
+  {
+    value: 'secondaryModel',
+    label: 'Secondary model',
+    description: 'Pick the model newly spawned subagents use by default.',
   },
   {
     value: 'permission',

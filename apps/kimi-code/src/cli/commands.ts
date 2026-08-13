@@ -63,6 +63,12 @@ export function createProgram(
     )
     .addOption(
       new Option(
+        '--thinking <effort>',
+        'Thinking effort for this invocation or session (for example: off, high, max).',
+      ),
+    )
+    .addOption(
+      new Option(
         '-p, --prompt <prompt>',
         'Run one prompt non-interactively and print the response.',
       ),
@@ -166,6 +172,7 @@ export function createProgram(
       auto: autoValue,
       plan: raw['plan'] as boolean,
       model: raw['model'] as string | undefined,
+      thinking: raw['thinking'] as string | undefined,
       outputFormat: raw['outputFormat'] as CLIOptions['outputFormat'],
       prompt: raw['prompt'] as string | undefined,
       skillsDirs: raw['skillsDir'] as string[],

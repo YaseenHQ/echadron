@@ -145,4 +145,56 @@ describe('ToolResultBuilder', () => {
 
     expect(result.output).toBe('ok\n');
   });
+
+  it('keeps the tail of a long stream when keep is tail', () => {
+    const builder = new ToolResultBuilder({ maxChars: 40, keep: 'tail', maxLineLength: null });
+
+    builder.write('installing packages...\n');
+    builder.write('this prefix should be dropped\n');
+    builder.write('FAIL src/foo.test.ts\n');
+
+    const result = builder.error('Command failed with exit code: 1.');
+    expect(result.truncated).toBe(true);
+    expect(result.output.startsWith('[...truncated]\n')).toBe(true);
+    expect(result.output).toContain('FAIL src/foo.test.ts');
+    expect(result.output).not.toContain('installing packages');
+    expect(result.output).toContain('Command failed with exit code: 1.');
+  });
+  it('bounds tail output at maxChars regardless of when compaction runs', () => {
+    // Compaction is deferred past a slack threshold, so the emitted result —
+    // not just the post-write buffer — has to respect the cap. A build that
+    // only compacted on write would leak up to the slack factor here.
+    for (const chunks of [3, 5, 40]) {
+      const builder = new ToolResultBuilder({ maxChars: 200, keep: 'tail', maxLineLength: null });
+      for (let i = 0; i < chunks; i += 1) builder.write(`${'x'.repeat(90)}\n`);
+      const result = builder.ok('');
+      expect(result.truncated, `chunks=${chunks}`).toBe(true);
+      expect(result.output.startsWith('[...truncated]\n'), `chunks=${chunks}`).toBe(true);
+      // Output is the capped buffer plus the appended truncation notice.
+      const buffered = result.output.split('\nOutput is truncated')[0]!;
+      expect(buffered.length, `chunks=${chunks}`).toBeLessThanOrEqual(200);
+    }
+  });
+
+  it('reports truncation on the error path when compaction happens at emit time', () => {
+    const builder = new ToolResultBuilder({ maxChars: 200, keep: 'tail', maxLineLength: null });
+    // Enough to exceed maxChars but stay under the deferred-compaction slack,
+    // so the only compaction happens inside error().
+    builder.write(`${'y'.repeat(260)}\n`);
+    const result = builder.error('Command failed with exit code: 1.');
+    expect(result.truncated).toBe(true);
+    expect(result.output).toContain('Output is truncated');
+    expect(result.output.startsWith('[...truncated]\n')).toBe(true);
+  });
+
+  it('keeps tail writes cheap for chatty commands', () => {
+    // Regression guard for O(chunks x maxChars): compacting on every write made
+    // a long stream quadratic, which is exactly the case tail mode is for.
+    const builder = new ToolResultBuilder({ maxChars: 50_000, keep: 'tail', maxLineLength: null });
+    const started = process.hrtime.bigint();
+    for (let i = 0; i < 20_000; i += 1) builder.write(`line ${String(i)} of streaming output\n`);
+    const elapsedMs = Number(process.hrtime.bigint() - started) / 1e6;
+    expect(builder.ok('').output.length).toBeLessThanOrEqual(50_000 + 64);
+    expect(elapsedMs).toBeLessThan(2_000);
+  });
 });

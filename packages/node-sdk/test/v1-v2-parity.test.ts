@@ -244,6 +244,16 @@ const KNOWN_DIFFS = {
     projectResumedSession(resumed, home),
   reloadSession: (resumed: ResumedSessionSummary, home: HomePair): unknown =>
     projectResumedSession(resumed, home),
+  // Swarm-mode reminder PLACEMENT (not content) differs by design. v1 pushes
+  // the enter reminder into history the moment swarm mode is entered and pops
+  // it again on exit. v2 owns the announcement in the `swarm_mode`
+  // context-injection provider, so the reminder lands at the next injection
+  // point (step begin) instead of at toggle time. Same bytes reach the model;
+  // a mode toggled on and off without an intervening turn simply never
+  // mutates v2's context at all. Asserted explicitly at the call site rather
+  // than projected away, so a regression in either direction is visible —
+  // there is deliberately no projector entry for it here.
+  //
   // Agent context: v1 reports the running token ESTIMATE (an import adopts
   // it wholesale); v2 reports the provider-MEASURED prefix, which an
   // in-memory append never touches — post-import counts diverge by design
@@ -2384,28 +2394,26 @@ describe('v1↔v2 agent interaction parity', () => {
     }
   });
 
-  it('steer on an idle session: v1 launches a turn, v2 rejects prompt.not_found (pinned)', async () => {
+  it('steer on an idle session: both engines launch a turn and update metadata', async () => {
     const restoreEnv = scrubConfigEnv();
     const pair = await makeSessionParityPair();
     try {
       await createOnBoth(pair, { id: 'session_parity_agent_steer' });
       const input = { sessionId: 'session_parity_agent_steer' } as const;
-      // Pinned divergence: v1 treats an idle steer like a prompt — it
-      // launches a fresh turn and updates title/lastPrompt. v2's steer RPC
-      // enqueues first (which itself launches the turn), so the follow-up
-      // steer step finds no pending prompt and rejects with prompt.not_found;
-      // the v2 path never touches the metadata.
+      // v1 treats an idle steer like a prompt — it launches a fresh turn and
+      // updates title/lastPrompt. v2's steer RPC enqueues first (which itself
+      // launches the turn) and converges on the same end state: the launched
+      // turn is returned instead of rejecting, and the metadata is updated.
       await pair.v1.steer({ ...input, input: [{ type: 'text', text: 'steer text' }] });
-      await expect(
-        pair.v2.steer({ ...input, input: [{ type: 'text', text: 'steer text' }] }),
-      ).rejects.toMatchObject({ code: 'prompt.not_found' });
+      await pair.v2.steer({ ...input, input: [{ type: 'text', text: 'steer text' }] });
       const [v1List, v2List] = await Promise.all([
         pair.v1.listSessions(),
         pair.v2.listSessions(),
       ]);
       expect(v1List[0]?.title).toBe('steer text');
       expect(v1List[0]?.lastPrompt).toBe('steer text');
-      expect(v2List[0]?.lastPrompt).not.toBe('steer text');
+      expect(v2List[0]?.title).toBe('steer text');
+      expect(v2List[0]?.lastPrompt).toBe('steer text');
       await settleTurns();
     } finally {
       await closeSessionPair(pair);
@@ -4243,7 +4251,7 @@ describe('v1↔v2 residual surface parity', () => {
     }
   });
 
-  it('setSwarmMode toggles swarm mode with the same reminder lifecycle on both engines', async () => {
+  it('setSwarmMode toggles swarm mode with the same status lifecycle on both engines', async () => {
     const pair = await makeSessionParityPair();
     try {
       await createOnBoth(pair, { id: 'session_parity_swarm' });
@@ -4253,8 +4261,9 @@ describe('v1↔v2 residual surface parity', () => {
       const historyOnBoth = () =>
         Promise.all([pair.v1.getContext(input), pair.v2.getContext(input)]);
 
-      // Enter with the manual trigger: active on both, and the (byte-identical)
-      // enter reminder lands in the context on both.
+      // Enter with the manual trigger: active on both. The enter reminder
+      // itself is a KNOWN DIFF in placement time, not in content — see
+      // KNOWN_DIFFS.swarmReminderPlacement.
       await Promise.all([
         pair.v1.setSwarmMode({ ...input, enabled: true, trigger: 'manual' }),
         pair.v2.setSwarmMode({ ...input, enabled: true, trigger: 'manual' }),
@@ -4262,22 +4271,23 @@ describe('v1↔v2 residual surface parity', () => {
       const [v1Active, v2Active] = await statusOnBoth();
       expect(v1Active.swarmMode).toBe(true);
       expect(v2Active.swarmMode).toBe(true);
-      const project = KNOWN_DIFFS.getContext;
       const [v1Entered, v2Entered] = await historyOnBoth();
-      expect(project(v2Entered)).toEqual(project(v1Entered));
       expect(v1Entered.history).toHaveLength(1);
       expect(JSON.stringify(v1Entered.history[0])).toContain('<system-reminder>');
+      expect(v2Entered.history).toHaveLength(0);
 
-      // Enter is idempotent on both: still one reminder, still active.
+      // Enter is idempotent on both: v1 still holds exactly one reminder, v2
+      // still has nothing queued into history.
       await Promise.all([
         pair.v1.setSwarmMode({ ...input, enabled: true, trigger: 'manual' }),
         pair.v2.setSwarmMode({ ...input, enabled: true, trigger: 'manual' }),
       ]);
       const [v1Twice, v2Twice] = await historyOnBoth();
       expect(v1Twice.history).toHaveLength(1);
-      expect(v2Twice.history).toHaveLength(1);
+      expect(v2Twice.history).toHaveLength(0);
 
-      // Exit pops the reminder (it is the last message) on both.
+      // Exit converges: v1 pops the reminder it pushed, v2 never wrote one, so
+      // both land on an empty context for a mode toggled without a turn.
       await Promise.all([
         pair.v1.setSwarmMode({ ...input, enabled: false }),
         pair.v2.setSwarmMode({ ...input, enabled: false }),
@@ -4286,7 +4296,7 @@ describe('v1↔v2 residual surface parity', () => {
       expect(v1Inactive.swarmMode).toBe(false);
       expect(v2Inactive.swarmMode).toBe(false);
       const [v1Exited, v2Exited] = await historyOnBoth();
-      expect(project(v2Exited)).toEqual(project(v1Exited));
+      expect(KNOWN_DIFFS.getContext(v2Exited)).toEqual(KNOWN_DIFFS.getContext(v1Exited));
       expect(v1Exited.history).toHaveLength(0);
 
       // Exit is idempotent too: a second exit is a silent no-op on both.

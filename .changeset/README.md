@@ -61,7 +61,7 @@ Fill in the following:
 | Field | Value |
 | --- | --- |
 | GitHub Organization | `YaseenHQ` |
-| GitHub Repository | `kimi` |
+| GitHub Repository | `echadron` |
 | GitHub Workflow | `release.yml` |
 | Environment | leave empty |
 

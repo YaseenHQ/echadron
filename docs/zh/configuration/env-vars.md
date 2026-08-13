@@ -129,6 +129,8 @@ echadron
 | `KIMI_CODE_PLUGIN_MARKETPLACE_URL` | 覆盖 `/plugins` 加载的 plugin marketplace JSON，适合 dev loopback server、测试 CDN 文件或替换 marketplace 目录 | `https://code.kimi.com/kimi-code/plugins/marketplace.json`；也接受 `http://`、`file://` URL 和本地路径 |
 | `KIMI_CODE_AGENT_SWARM_MAX_CONCURRENCY` | 限制 AgentSwarm 初始提升并发阶段可同时运行的子 Agent 数量；不设置表示不限制 | 正整数；非法值会立即失败 |
 | `KIMI_SUBAGENT_TIMEOUT_MS` | 单个子 Agent（`Agent` / `AgentSwarm`）可运行的最长时间（毫秒）；优先级高于 `config.toml` 的 `[subagent] timeout_ms`（默认 `7200000`，即 2 小时） | 正整数；非法值回退到配置或默认值 |
+| `KIMI_GOAL_GATE_COMMANDS` | `/goal` 完成请求被接受前必须全部以退出码 0 结束的命令；优先级高于 `config.toml` 的 `[goal_completion_gates] commands` | 分号或换行分隔的命令，或 JSON 字符串数组，如 `["npm test"]`；空白或非法值被忽略 |
+| `KIMI_GOAL_GATE_TIMEOUT_MS` | 目标完成门禁的单条命令超时（毫秒）；优先级高于 `config.toml` 的 `[goal_completion_gates] timeout_ms`（默认 `300000`） | 正整数；非法值回退到配置或默认值 |
 | `ECHADRON_EXPERIMENTAL_TOOL_SELECT` | 覆盖默认开启的渐进式 MCP 工具披露功能；使用假值可回退关闭 | 真值：`1`/`true`/`yes`/`on`；假值：`0`/`false`/`no`/`off` |
 | `KIMI_CODE_EXPERIMENTAL_TOOL_SELECT` | `ECHADRON_EXPERIMENTAL_TOOL_SELECT` 的历史别名 | 同上所列真值或假值 |
 | `ECHADRON_EXPERIMENTAL_SECONDARY_MODEL` | 覆盖默认开启的次主力模型功能；使用假值可回退关闭 | 真值：`1`/`true`/`yes`/`on`；假值：`0`/`false`/`no`/`off` |

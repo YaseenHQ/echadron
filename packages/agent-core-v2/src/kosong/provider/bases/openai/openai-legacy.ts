@@ -293,6 +293,20 @@ function convertMessage(
     result[reasoningKey] = reasoningContent;
   }
 
+  // A turn interrupted mid-thinking leaves an assistant message holding only a
+  // reasoning fragment. Serialized as-is it carries neither `content` nor
+  // `tool_calls`, and strict Chat Completions gateways reject every later
+  // request in that session with a 400. Project an explicit empty `content` so
+  // the required shape is present while the reasoning field stays intact.
+  if (
+    message.role === 'assistant' &&
+    hasReasoningPart &&
+    result.content === undefined &&
+    result.tool_calls === undefined
+  ) {
+    result.content = '';
+  }
+
   return result;
 }
 
@@ -812,6 +826,11 @@ export class OpenAILegacyChatProvider implements ChatProvider {
     const clientOpts: Record<string, unknown> = {
       apiKey,
       baseURL: auth?.baseUrl ?? this._baseUrl,
+      // The SDK's internal backoff sleep never observes the turn's AbortSignal,
+      // so its hidden retries make Ctrl+C unresponsive during a 429/5xx/connection
+      // retry and double-count the engine's retry budget. Retry belongs to the
+      // engine's step-retry layer: observable (turn.step.retrying) and cancellable.
+      maxRetries: 0,
     };
     const defaultHeaders = mergeRequestHeaders(this._defaultHeaders, auth?.headers);
     if (defaultHeaders !== undefined) {

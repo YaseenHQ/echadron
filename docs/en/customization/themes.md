@@ -8,25 +8,31 @@ Custom themes can override the tokens below. The `dark` and `light` columns show
 
 | Token | `dark` | `light` | What it controls |
 | --- | --- | --- | --- |
-| `primary` | `#E4E4E4` | `#202020` | The most-used identity tone. Links, inline code, selected items, focused editor border, Plan/"running" badges, spinners |
-| `accent` | `#B8B8B8` | `#4B4B4B` | Secondary identity tone. Approval `▶` prefix, device-code box, image placeholder, BTW / queue panes, registry import |
-| `text` | `#E4E4E4` | `#1A1A1A` | Body text. Dialog bodies, todo titles, footer model label, Markdown headings, assistant/tool message bullets, list bullets |
-| `textStrong` | `#F4F4F4` | `#0A0A0A` | Emphasized / bold text. Input dialogs, status messages |
-| `textDim` | `#A0A0A0` | `#4A4A4A` | Secondary, dimmed text. Thinking, hints, descriptions, completed todos, Markdown quotes, footer status bar |
-| `textMuted` | `#858585` | `#5F5F5F` | Faintest text. Counters, scroll info, descriptions, Markdown link URLs, code-block borders |
-| `border` | `#646464` | `#737373` | Pane and editor borders, Markdown horizontal rule |
-| `borderFocus` | `#D0D0D0` | `#303030` | Focus / attention border, currently only the approval panel |
-| `success` | `#3FA266` | `#0E7A38` | Success state. `✓`, "enabled", completed |
-| `warning` | `#D6A55D` | `#92660A` | Warning state. auto/yolo badges, stale markers, Plan mode hint |
-| `error` | `#D74A6A` | `#B91C1C` | Error state. Error messages, failed tool output |
-| `diffAdded` | `#3FA266` | `#0E7A38` | Diff added lines |
-| `diffRemoved` | `#D74A6A` | `#B91C1C` | Diff removed lines |
-| `diffAddedStrong` | `#70B489` | `#0E7A38` | Diff intra-line changed words, added and bold |
-| `diffRemovedStrong` | `#ED7890` | `#B91C1C` | Diff intra-line changed words, removed and bold |
-| `diffGutter` | `#858585` | `#737373` | Diff line-number gutter |
-| `diffMeta` | `#A0A0A0` | `#5F5F5F` | Diff meta / hunk headers |
-| `roleUser` | `#D0D0D0` | `#363636` | User message bullet and text, skill-activation name |
-| `shellMode` | `#B0B0B0` | `#565656` | Shell mode (`!`) prompt, editor border, and the echoed `$ command` line |
+| `primary` | `#E1E1E1` | `#262626` | Chrome identity. Selected items, focused editor text, links, inline code |
+| `accent` | `#1ABC9C` | `#0A7A62` | Secondary highlight. Approval prefix, queue, device-code box |
+| `running` | `#BB9AF7` | `#7D4BC6` | Live-agent pop. Thinking spinner, running badges, in-flight tool icons |
+| `text` | `#E1E1E1` | `#262626` | Body text. Dialog bodies, todo titles, Markdown headings, assistant/tool message bullets |
+| `textStrong` | `#F3F3F3` | `#141414` | Emphasized / bold text. Input dialogs, status messages |
+| `textDim` | `#C8C8C8` | `#444444` | Secondary, dimmed text. Thinking body, hints, descriptions, completed todos, Markdown quotes, footer status bar |
+| `textMuted` | `#6C6C6C` | `#767676` | Faintest text. Counters, scroll info, descriptions, Markdown link URLs, code-block borders |
+| `border` | `#505058` | `#626262` | Pane and editor borders, Markdown horizontal rule |
+| `borderFocus` | `#505058` | `#626262` | Focus / attention border, currently only the approval panel |
+| `surfaceTool` | `#1C1C1C` | `#E4E4E4` | Tool execution panel background — neutral surface that groups each tool call |
+| `surfaceToolSuccess` | `#141A14` | `#DAF2DC` | Tool panel background on success — slight success tint |
+| `surfaceToolError` | `#1C1215` | `#F5DADE` | Tool panel background on error — slight error tint |
+| `surfaceUser` | `#242424` | `#DEDEDE` | User message background — distinguishes user input from assistant output |
+| `success` | `#9ECE6A` | `#0E7A38` | Success state. `✓`, "enabled", completed |
+| `warning` | `#E0AF68` | `#8A5808` | Warning state. auto/yolo badges, stale markers, Plan mode hint |
+| `error` | `#F7768E` | `#CD3048` | Error state. Error messages, failed tool output |
+| `diffAdded` | `#9ECE6A` | `#0E7A38` | Diff added lines |
+| `diffRemoved` | `#F7768E` | `#CD3048` | Diff removed lines |
+| `diffAddedStrong` | `#B4E07F` | `#0E7A38` | Diff intra-line changed words, added and bold |
+| `diffRemovedStrong` | `#FF9AAD` | `#CD3048` | Diff intra-line changed words, removed and bold |
+| `diffGutter` | `#6C6C6C` | `#626262` | Diff line-number gutter |
+| `diffMeta` | `#C8C8C8` | `#767676` | Diff meta / hunk headers |
+| `roleUser` | `#C8C8C8` | `#444444` | User message bullet and text, skill-activation name |
+| `shellMode` | `#E0AF68` | `#8A5808` | Shell mode (`!`) prompt, editor border, and the echoed `$ command` line |
+| `onPrimary` | `#141414` | `#FFFFFF` | Text that sits on a `primary` fill (selected tabs) |
 
 ## Use the custom-theme skill
 

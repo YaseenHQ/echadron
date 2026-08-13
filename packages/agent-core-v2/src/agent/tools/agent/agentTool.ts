@@ -65,12 +65,14 @@ import { ISessionAgentProfileCatalog } from '#/session/sessionAgentProfileCatalo
 import { applyProfilePromptPrefix } from '#/app/agentProfileCatalog/promptPrefix';
 import {
   agentProfileModelAlias,
+  isDelegatableProfile,
   subagentAllowlistFor,
   subagentTypeNotAllowedMessage,
 } from '#/app/agentProfileCatalog/profile-shared';
 import { ILogService } from '#/_base/log/log';
 import { IConfigService } from '#/app/config/config';
 import { IFlagService } from '#/app/flag/flag';
+import { secondaryModelDisplayAlias } from '#/app/kosongConfig/secondaryModelOverlay';
 import { IModelCatalog } from '#/kosong/model/catalog';
 import { IAgentLifecycleService } from '#/session/agentLifecycle/agentLifecycle';
 import { isSubagentMeta, subagentLabels, subagentParentAgentId } from '#/session/agentLifecycle/subagentMetadata';
@@ -83,9 +85,9 @@ import { ISessionSubagentService } from '#/session/subagent/subagent';
 import {
   buildSubagentModelDescriptions,
   formatSubagentTimeoutDescription,
+  isSubagentModelRole,
   resolveSubagentBinding,
   resolveSubagentTimeoutMs,
-  subagentDisplayModel,
   wrapSubagentModelError,
 } from '#/session/subagent/configSection';
 import { SECONDARY_MODEL_FLAG_ID } from '#/session/subagent/flag';
@@ -150,7 +152,7 @@ export class SubagentTool implements ISubagentTool {
       : AGENT_BACKGROUND_DISABLED_DESCRIPTION;
     let description = `${AGENT_DESCRIPTION_BASE}\n\n${backgroundDescription}`;
     const allowlist = subagentAllowlistFor(this.catalog, this.profile.data());
-    const catalogProfiles = this.catalogProfiles();
+    const catalogProfiles = this.catalogProfiles().filter(isDelegatableProfile);
     const profiles =
       allowlist === undefined
         ? catalogProfiles
@@ -267,7 +269,7 @@ export class SubagentTool implements ISubagentTool {
       displayModel =
         resumed.modelAlias === undefined
           ? undefined
-          : subagentDisplayModel(this.config, resumed.modelAlias);
+          : secondaryModelDisplayAlias(this.config, resumed.modelAlias);
     } else {
       const requestedProfileName = args.subagent_type?.length
         ? args.subagent_type
@@ -282,19 +284,30 @@ export class SubagentTool implements ISubagentTool {
       if (profile === undefined) {
         throw new Error(`Unknown agent type: "${requestedProfileName}"`);
       }
+      if (!isDelegatableProfile(profile)) {
+        throw new Error(
+          `Agent type "${requestedProfileName}" is internal and cannot be launched through the Agent tool.`,
+        );
+      }
       if (own.modelAlias === undefined) {
         throw new Error('Caller agent has no model bound');
       }
+      // `profile.model` accepts the same vocabulary as the tool's `model`
+      // parameter: a role keyword or a concrete alias. Roles fall through to
+      // `resolveSubagentBinding`, which is what knows how to resolve them, so
+      // `model: secondary` in an agent file behaves exactly like the legacy
+      // `model_preference: secondary`.
+      const profileModel = profile.model === 'inherit' ? undefined : profile.model;
       const usesProfileModel =
         args.model === undefined &&
-        profile.model !== undefined &&
-        profile.model !== 'inherit';
+        profileModel !== undefined &&
+        !isSubagentModelRole(profileModel);
       const binding = usesProfileModel
         ? {
             model: agentProfileModelAlias(profile, own.modelAlias),
             thinking:
               profile.model === own.modelAlias ? own.thinkingLevel : undefined,
-            displayModel: subagentDisplayModel(
+            displayModel: secondaryModelDisplayAlias(
               this.config,
               agentProfileModelAlias(profile, own.modelAlias),
             ),
@@ -303,7 +316,9 @@ export class SubagentTool implements ISubagentTool {
             this.config,
             this.flags,
             { modelAlias: own.modelAlias, thinkingLevel: own.thinkingLevel },
-            args.model ?? profile.modelPreference,
+            // `model_preference` is superseded by `model`; still honoured last
+            // so existing agent files keep working unchanged.
+            args.model ?? profileModel ?? profile.modelPreference,
           );
       let created: IAgentScopeHandle;
       try {
@@ -319,7 +334,9 @@ export class SubagentTool implements ISubagentTool {
         });
       } catch (error) {
         if (usesProfileModel) throw error;
-        throw wrapSubagentModelError(error, binding.model, own.modelAlias);
+        throw wrapSubagentModelError(error, binding.model, own.modelAlias, {
+          requestedExplicitly: args.model !== undefined && !isSubagentModelRole(args.model),
+        });
       }
       created.accessor.get(IAgentPermissionModeService).setMode(this.permissionMode.mode);
       created.accessor

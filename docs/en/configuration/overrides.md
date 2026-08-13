@@ -62,6 +62,7 @@ Options passed at startup have the highest priority and apply only to the curren
 | `--auto` | Start in auto permission mode: fully autonomous, the agent will not ask questions |
 | `--plan` | Start in Plan mode |
 | `-m, --model <model>` | Use a specific model alias for this session |
+| `--thinking <effort>` | Use a specific thinking effort for this session, including when resuming it; does not change the `config.toml` default |
 | `-p, --prompt <prompt>` | Run in non-interactive mode: execute a single prompt and exit |
 | `--output-format <format>` | Output format for `-p` mode: `text` or `stream-json` |
 | `--skills-dir <dir>` | Replace auto-discovered Skills directories (repeatable; applies to this session only) |
@@ -102,6 +103,12 @@ echadron --yolo -p "Batch rename the following files..."
 
 ```sh
 echadron --plan
+```
+
+**Use maximum thinking for a session without changing the `config.toml` default**:
+
+```sh
+echadron --thinking max -p "Investigate and fix the regression"
 ```
 
 ## Next steps

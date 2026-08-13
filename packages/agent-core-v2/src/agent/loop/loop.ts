@@ -29,6 +29,16 @@ export function isMaxStepsExceededError(error: unknown): boolean {
   return isError2(error) && error.code === LoopErrors.codes.LOOP_MAX_STEPS_EXCEEDED;
 }
 
+export function effectiveMaxStepsPerTurn(
+  globalMaxSteps: number | undefined,
+  profileMaxSteps: number | undefined,
+): number | undefined {
+  const positives = [globalMaxSteps, profileMaxSteps].filter(
+    (value): value is number => value !== undefined && value > 0,
+  );
+  return positives.length === 0 ? undefined : Math.min(...positives);
+}
+
 export interface BeforeStepContext {
   readonly turnId: number;
   readonly step: number;

@@ -23,7 +23,7 @@
 // references become '(circular)', and class instances collapse to a '(ClassName)'
 // marker — the wire shape of an entry is the JSON projection of the type here.
 //
-// Index (Session: 28 keys · Agent: 67 keys)
+// Index (Session: 28 keys · Agent: 68 keys)
 //   Session
 //     cron.inFlight                             src/session/cron/sessionCronServiceImpl.ts
 //     cron.lastSeenAt                           src/session/cron/sessionCronServiceImpl.ts
@@ -103,6 +103,7 @@
 //     shellCommand.tasks                                src/agent/shellCommand/shellCommandService.ts
 //     stepRetry.failedAttempts                          src/agent/stepRetry/stepRetryService.ts
 //     stepRetry.lastFailedDriverId                      src/agent/stepRetry/stepRetryService.ts
+//     swarm.lastAnnounced                               src/agent/swarm/injection/swarmInjection.ts
 //     task.activeTaskReminderPending                    src/agent/task/taskService.ts
 //     task.deliveredNotificationKeys                    src/agent/task/taskService.ts
 //     task.ghosts                                       src/agent/task/taskService.ts
@@ -189,6 +190,8 @@ export interface SessionStateSnapshot {
         readonly disallowedTools?: readonly string[];
         readonly subagents?: readonly string[];
         readonly modelPreference?: 'primary' | 'secondary';
+        readonly maxStepsPerTurn?: number;
+        readonly internal?: boolean;
         systemPrompt: (context: /* AgentProfileContext — packages/agent-core-v2/src/app/agentProfileCatalog/agentProfileCatalog.ts */ {
           readonly cwd?: string;
           readonly cwdListing?: string;
@@ -256,6 +259,8 @@ export interface SessionStateSnapshot {
     readonly disallowedTools?: readonly string[];
     readonly subagents?: readonly string[];
     readonly modelPreference?: 'primary' | 'secondary';
+    readonly maxStepsPerTurn?: number;
+    readonly internal?: boolean;
     systemPrompt: (context: /* AgentProfileContext — packages/agent-core-v2/src/app/agentProfileCatalog/agentProfileCatalog.ts */ {
       readonly cwd?: string;
       readonly cwdListing?: string;
@@ -1115,6 +1120,8 @@ export interface AgentStateSnapshot {
   // src/agent/stepRetry/stepRetryService.ts
   'stepRetry.failedAttempts': number;
   'stepRetry.lastFailedDriverId': string | undefined;
+  // src/agent/swarm/injection/swarmInjection.ts
+  'swarm.lastAnnounced': boolean | undefined;
   // src/agent/task/taskService.ts
   'task.activeTaskReminderPending': boolean;
   'task.deliveredNotificationKeys': Set<string>;

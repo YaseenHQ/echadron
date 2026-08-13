@@ -13,7 +13,10 @@
  * The lifecycle is imperative — the caller awaits the returned `completion`
  * promise. Turn hooks are not used because there is exactly one observer (the
  * caller who requested the run); a hook indirection would only obscure the
- * flow.
+ * flow. `TruncatedTurnError` is the typed, code-less signal raised when a
+ * completed turn was truncated (`finish_reason=length`); it is a local
+ * recoverable cue for callers that retry a format-only turn, matched via
+ * `isTruncatedTurnError` rather than its message.
  */
 
 import { APIProviderRateLimitError, isProviderRateLimitError } from '#/kosong/contract/errors';
@@ -36,8 +39,19 @@ export const AGENT_RUN_PROMPT_ORIGIN: PromptOrigin = {
   name: 'subagent',
 };
 
-const SUBAGENT_MAX_TOKENS_ERROR =
+const SUBAGENT_MAX_TOKENS_MESSAGE =
   'Subagent turn failed before completing its final summary: reason=max_tokens';
+
+export class TruncatedTurnError extends Error {
+  constructor() {
+    super(SUBAGENT_MAX_TOKENS_MESSAGE);
+    this.name = 'TruncatedTurnError';
+  }
+}
+
+export function isTruncatedTurnError(error: unknown): boolean {
+  return error instanceof TruncatedTurnError;
+}
 
 export interface RunAgentTurnOptions {
   readonly summaryPolicy?: AgentProfileSummaryPolicy;
@@ -181,7 +195,7 @@ function classifyTurnResult(result: TurnResult): void {
   switch (result.type) {
     case 'completed':
       if (result.truncated) {
-        throw new Error(SUBAGENT_MAX_TOKENS_ERROR);
+        throw new TruncatedTurnError();
       }
       return;
     case 'failed': {

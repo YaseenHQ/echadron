@@ -102,6 +102,9 @@ function makeDeps(
   const stderr: string[] = [];
   const exitCodes: number[] = [];
   const deps: ProviderDeps = {
+    // No on-disk cache in tests: every catalog read must go through the
+    // mocked fetch, never this machine's real ~/.echadron snapshot.
+    readCachedCatalog: async () => undefined,
     getHarness: () => harness as unknown as ProviderDeps extends { getHarness: () => infer R }
       ? R
       : never,

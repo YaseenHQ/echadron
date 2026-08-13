@@ -18,6 +18,7 @@ echadron <subcommand> [options]
 | `--session [id]` | `-S` | 恢复一个会话。带 ID 时直接打开指定会话；不带 ID 时进入交互式选择器 |
 | `--continue` | `-c` | 继续当前工作目录下最近一次的会话，无需手动指定 ID |
 | `--model <model>` | `-m` | 为本次启动指定模型别名。省略时新会话使用配置文件中的 `default_model` |
+| `--thinking <effort>` | | 为当前会话覆盖 thinking effort，例如 `off`、`high` 或 `max`。新建或恢复会话时会将该值记录在会话中，但不会修改 `config.toml` 默认值 |
 | `--prompt <prompt>` | `-p` | 非交互执行单次 prompt，并把 Assistant 输出流式写到 stdout。该模式不会打开 TUI |
 | `--output-format <format>` | | 设置非交互输出格式，支持 `text` 与 `stream-json`。仅可与 `--prompt` 一起使用，默认 `text` |
 | `--yolo` | `-y` | 自动批准普通工具调用，跳过审批请求 |
@@ -121,6 +122,12 @@ echadron -p "Summarize the current repository status"
 
 ```sh
 echadron -m kimi-code/kimi-for-coding -p "Explain the latest diff"
+```
+
+为当前会话使用最高 thinking effort，而不修改 `config.toml`：
+
+```sh
+echadron --thinking max -p "修复失败的测试"
 ```
 
 需要结构化读取输出时，使用 `stream-json` 格式——stdout 每行都是一个 JSON 对象：

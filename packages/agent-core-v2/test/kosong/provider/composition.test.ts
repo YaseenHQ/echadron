@@ -500,6 +500,28 @@ describe('kimi provider definitions', () => {
 // bases use `stream: false` and answer plain responses.
 // ---------------------------------------------------------------------------
 
+describe('reasoning-only assistant history projection', () => {
+  it('adds empty content on the OpenAI Chat Completions wire without dropping reasoning', async () => {
+    // A turn interrupted mid-thinking leaves an assistant holding only a
+    // reasoning fragment. Without an explicit empty `content`, strict Chat
+    // Completions gateways 400 every later request in that session.
+    const provider = new OpenAILegacyChatProvider({
+      model: 'deepseek-v4-flash',
+      apiKey: 'sk-probe',
+      stream: false,
+    });
+
+    const body = await captureOpenAIBody(provider, undefined, THINK_HISTORY);
+    const messages = body['messages'] as Array<Record<string, unknown>>;
+
+    expect(messages[0]).toEqual({
+      role: 'assistant',
+      content: '',
+      reasoning_content: 'earlier reasoning',
+    });
+  });
+});
+
 const PROBE_HISTORY: Message[] = [
   { role: 'user', content: [{ type: 'text', text: 'Hi' }], toolCalls: [] },
 ];

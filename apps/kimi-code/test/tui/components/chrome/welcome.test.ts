@@ -45,6 +45,15 @@ function truecolorCodes(text: string): Set<string> {
   return codes;
 }
 
+function rgbOf(hex: string): string {
+  const value = hex.replace(/^#/, '');
+  return [
+    Number.parseInt(value.slice(0, 2), 16),
+    Number.parseInt(value.slice(2, 4), 16),
+    Number.parseInt(value.slice(4, 6), 16),
+  ].join(',');
+}
+
 /** The two identity rows (logo + product/workspace metadata). */
 function headerOf(lines: string[]): string {
   return [lines[1], lines[2]].join('\n');
@@ -73,11 +82,13 @@ describe('WelcomeComponent', () => {
     setRainbowDance(undefined);
   });
 
-  it('renders the banner in a single brand color by default', () => {
-    const codes = truecolorCodes(headerOf(new WelcomeComponent(appState).render(80)));
+  it('keeps the header gray without a teal model tint', () => {
+    const header = headerOf(new WelcomeComponent(appState, { now: () => 0 }).render(80));
+    const codes = truecolorCodes(header);
 
-    // No rainbow by default — just the brand primary (plus the dim tagline).
-    expect(codes.size).toBeLessThanOrEqual(2);
+    expect(codes.has(rgbOf(darkColors.accent))).toBe(false);
+    expect(codes.has(rgbOf(darkColors.running))).toBe(false);
+    expect(codes.has(rgbOf(darkColors.textStrong))).toBe(true);
   });
 
   it('paints the banner in rainbow while colored', () => {
@@ -88,11 +99,21 @@ describe('WelcomeComponent', () => {
   });
 
   it('renders exactly the default banner when not colored', () => {
-    const base = headerOf(new WelcomeComponent(appState).render(80));
+    const now = () => 0;
+    const base = headerOf(new WelcomeComponent(appState, { now }).render(80));
     setDanceView(false, 5);
-    const off = headerOf(new WelcomeComponent(appState).render(80));
+    const off = headerOf(new WelcomeComponent(appState, { now }).render(80));
 
     expect(off).toBe(base);
+  });
+
+  it('draws the resting cube face with two open eyes', () => {
+    const header = headerOf(new WelcomeComponent(appState, { now: () => 0 }).render(80));
+    const plain = header.replaceAll(/\u001B\[[0-9;]*m/g, '');
+    // Every cell is a full block so the painted background covers the whole
+    // line box; the eyes are pupils drawn over filled cells, not holes.
+    expect(plain).toContain('██▗█▗██');
+    expect(plain).toContain('███████');
   });
 
   it('uses compact command-line hierarchy without a surrounding panel', () => {
@@ -100,7 +121,7 @@ describe('WelcomeComponent', () => {
 
     expect(rendered).toContain('Echadron');
     expect(rendered).toContain('/tmp/project');
-    expect(rendered).toContain('Ask, edit, or run anything');
+    expect(rendered).not.toContain('Ask, edit, or run anything');
     expect(rendered).toContain('/ commands');
     expect(rendered).not.toContain('Directory:');
     expect(rendered).not.toContain('Session:');

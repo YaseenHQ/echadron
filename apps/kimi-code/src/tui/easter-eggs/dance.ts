@@ -10,6 +10,8 @@
  */
 
 import chalk from 'chalk';
+
+import { paintLogoCell, SOLID_LOGO_CELL } from '#/tui/utils/logo-eyes';
 import { truncateToWidth, visibleWidth } from '@moonshot-ai/pi-tui';
 
 import type { SlashCommandHost } from '../commands/dispatch';
@@ -61,6 +63,7 @@ export function rainbowText(
       if (char === ' ') return char;
       const color = colors[colorIndex % colors.length] ?? colors[0];
       colorIndex++;
+      if (!bold && char === SOLID_LOGO_CELL) return paintLogoCell(char, color);
       const style = chalk.hex(color);
       return bold ? style.bold(char) : style(char);
     })

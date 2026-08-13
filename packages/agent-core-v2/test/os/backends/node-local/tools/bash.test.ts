@@ -1158,6 +1158,7 @@ describe('BashTool', () => {
     const taskId = /^task_id: (bash-[0-9a-z]{8})$/m.exec(output)?.[1];
 
     expect(output).toContain('[...truncated]');
+    expect(output).toContain('tail survives');
     expect(output).toContain('[Full output saved]');
     expect(taskId).toBeTruthy();
     expect(persisted.has(taskId!)).toBe(true);
@@ -1504,7 +1505,7 @@ describe('BashTool background mode', () => {
     expect(output).toContain(`task_id: ${task.taskId}`);
     expect(output).toContain('automatic_notification: true');
     expect(output).toContain('foreground_output:');
-    expect(output).toContain('noisy output line 0');
+    expect(output).toContain('noisy output line 5999');
     expect(output).toContain('[...truncated]');
     expect(output).toContain('Output is truncated to fit in the message.');
     expect(output.indexOf(`task_id: ${task.taskId}`)).toBeLessThan(

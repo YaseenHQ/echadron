@@ -53,9 +53,12 @@ const AGENT_TOOLS = [
   'mcp__*',
 ] as const;
 
+// Deliberately without `Agent` / `AgentSwarm`: `coder` is the profile
+// subagents are spawned as, and letting a subagent spawn its own subagents
+// makes fan-out recursive and its cost unbounded. The main `agent` profile
+// keeps both, so ordinary sessions still delegate; a custom profile that
+// lists them explicitly still opts in.
 const CODER_TOOLS = [
-  'Agent',
-  'AgentSwarm',
   'Bash',
   'CronCreate',
   'CronDelete',

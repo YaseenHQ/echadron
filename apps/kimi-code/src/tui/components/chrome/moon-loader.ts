@@ -26,6 +26,7 @@ export class MoonLoader extends Text {
   private inlineText = '';
   private tip: string = '';
   private availableWidth = 0;
+  private customFramesKey: string | undefined;
 
   constructor(
     ui: TUI,
@@ -74,10 +75,28 @@ export class MoonLoader extends Text {
   }
 
   setAnimation(animation: UnicodeAnimationName): void {
-    if (this.animationName === animation) return;
+    if (this.animationName === animation && this.customFramesKey === undefined) return;
     this.animationName = animation;
-    this.frames = animationFrames(animation);
-    this.interval = animationInterval(animation);
+    this.customFramesKey = undefined;
+    this.applyFrames(animationFrames(animation), animationInterval(animation));
+  }
+
+  /**
+   * Drive the loader from frames this app owns rather than a named library
+   * animation — used by the activity face, whose frames depend on what the
+   * agent is currently doing. `key` identifies the frame set so repeated
+   * sets with the same mood do not restart the animation mid-cycle.
+   */
+  setCustomAnimation(key: string, frames: readonly string[], interval: number): void {
+    if (this.customFramesKey === key) return;
+    if (frames.length === 0) return;
+    this.customFramesKey = key;
+    this.applyFrames([...frames], interval);
+  }
+
+  private applyFrames(frames: string[], interval: number): void {
+    this.frames = frames;
+    this.interval = interval;
     this.currentFrame = 0;
     const wasRunning = this.intervalId !== null;
     if (wasRunning) this.start();

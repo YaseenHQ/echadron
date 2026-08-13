@@ -5,10 +5,12 @@ import {
   type TUI,
 } from '@moonshot-ai/pi-tui';
 import chalk from 'chalk';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { ToolCallComponent } from '#/tui/components/messages/tool-call';
 import {
+  ACCENT_BAR,
+  FAILURE_MARK,
   GENERIC_TOOL_GLYPH,
   STATUS_BULLET,
   TOOL_GLYPHS,
@@ -35,7 +37,14 @@ function stubTui(rows: number): TUI {
 }
 
 describe('ToolCallComponent', () => {
+  const previousChalkLevel = chalk.level;
+
+  beforeEach(() => {
+    chalk.level = 3;
+  });
+
   afterEach(() => {
+    chalk.level = previousChalkLevel;
     vi.useRealTimers();
     resetCapabilitiesCache();
   });
@@ -52,6 +61,31 @@ describe('ToolCallComponent', () => {
     const out = component.render(100).join('\n');
     expect(out).toContain(`${ESC}]8;;file:///tmp/project/src/main.ts${ESC}\\`);
     expect(strip(out)).toContain('Using Read (src/main.ts)');
+  });
+
+  it('keeps successful Skill/Read headers gray and only marks failures red', () => {
+    const previousLevel = chalk.level;
+    chalk.level = 3;
+    try {
+      const ok = new ToolCallComponent(
+        { id: 'call_ok_tone', name: 'Skill', args: { skill: 'test' } },
+        { tool_call_id: 'call_ok_tone', output: 'ok', is_error: false },
+      );
+      const err = new ToolCallComponent(
+        { id: 'call_err_tone', name: 'Read', args: { path: 'foo.ts' } },
+        { tool_call_id: 'call_err_tone', output: 'fail', is_error: true },
+      );
+      const okOut = ok.render(80).join('\n');
+      const errOut = err.render(80).join('\n');
+      expect(okOut).not.toContain(chalk.hex(darkColors.success)('Used'));
+      expect(okOut).not.toContain(chalk.hex(darkColors.success)('test'));
+      expect(okOut).toContain(chalk.hex(darkColors.primary).bold('Skill'));
+      expect(errOut).toContain(chalk.hex(darkColors.error)(FAILURE_MARK));
+      expect(errOut).toContain(chalk.hex(darkColors.error).bold('Read'));
+      expect(errOut).toContain(chalk.hex(darkColors.error)(ACCENT_BAR));
+    } finally {
+      chalk.level = previousLevel;
+    }
   });
 
   it('uses the shared semantic Unicode glyph for a tool', () => {
@@ -1267,7 +1301,7 @@ describe('ToolCallComponent', () => {
       'text',
     );
 
-    const joined = strip(component.render(34).join('\n'));
+    const joined = strip(component.render(36).join('\n'));
     // The two-row window drops the head of the wrapped paragraph.
     expect(joined).not.toContain('output words that should');
     // Every kept row carries the `│` gutter as a hanging indent.
@@ -1846,7 +1880,7 @@ describe('ToolCallComponent', () => {
       undefined,
     );
     // While streaming, body is rendered live from streamingArguments.
-    expect(strip(component.render(100).join('\n'))).toMatch(/^\s*1\s+a\s*$/m);
+    expect(strip(component.render(100).join('\n'))).toMatch(/^[┃\s]*1\s+a\s*$/m);
 
     // Finalized tool.call: streamingArguments is undefined; the body
     // re-renders from finalized args, content unchanged.
@@ -1856,8 +1890,8 @@ describe('ToolCallComponent', () => {
       args: { file_path: 'foo.ts', content: 'a\nb' },
     });
     const out = strip(component.render(100).join('\n'));
-    expect(out).toMatch(/^\s*1\s+a\s*$/m);
-    expect(out).toMatch(/^\s*2\s+b\s*$/m);
+    expect(out).toMatch(/^[┃\s]*1\s+a\s*$/m);
+    expect(out).toMatch(/^[┃\s]*2\s+b\s*$/m);
   });
 
   it('builds the Edit diff when finalized args arrive after streaming', () => {
@@ -1881,8 +1915,8 @@ describe('ToolCallComponent', () => {
     });
     const out = strip(component.render(100).join('\n'));
     expect(out).toContain('foo.ts');
-    expect(out).toMatch(/^\s*2\s+- b\s*$/m);
-    expect(out).toMatch(/^\s*2\s+\+ B\s*$/m);
+    expect(out).toMatch(/^[┃\s]*2\s+- b\s*$/m);
+    expect(out).toMatch(/^[┃\s]*2\s+\+ B\s*$/m);
   });
 
   it('refreshes and stops the Edit streaming progress timer', () => {
@@ -1988,5 +2022,43 @@ describe('ToolCallComponent', () => {
     } finally {
       stderr.restore();
     }
+  });
+
+  it('applies a panel background to tool call output', () => {
+    const component = new ToolCallComponent(
+      { id: 'call_bg', name: 'Read', args: { path: 'foo.ts' } },
+      { tool_call_id: 'call_bg', output: 'content', is_error: false },
+    );
+    const lines = component.render(60);
+    // Every non-empty line should carry a background escape sequence.
+    const hasBg = lines.some((l) => l.includes('\u001B[48;'));
+    expect(hasBg).toBe(true);
+  });
+
+  it('shows the working icon for in-progress (result-less) tool calls', () => {
+    const component = new ToolCallComponent(
+      { id: 'call_wip', name: 'Edit', args: { path: 'bar.ts' } },
+      undefined,
+    );
+    const lines = component.render(60);
+    const text = strip(lines.join('\n'));
+    // The animated diamond glyph should appear in the header.
+    expect(text).toMatch(/[◇◈◆]/);
+  });
+
+  it('keeps completed Read panels on the neutral surface, not the success tint', () => {
+    const ok = new ToolCallComponent(
+      { id: 'call_ok', name: 'Read', args: {} },
+      { tool_call_id: 'call_ok', output: 'ok', is_error: false },
+    );
+    const err = new ToolCallComponent(
+      { id: 'call_err', name: 'Read', args: {} },
+      { tool_call_id: 'call_err', output: 'fail', is_error: true },
+    );
+    const okLines = ok.render(60).join('\n');
+    const errLines = err.render(60).join('\n');
+    expect(okLines).toContain('\u001B[48;');
+    expect(errLines).toContain('\u001B[48;');
+    expect(okLines).not.toEqual(errLines);
   });
 });

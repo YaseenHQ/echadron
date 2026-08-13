@@ -1,9 +1,7 @@
 /**
- * Footer/status bar — multi-line status display at the bottom of the TUI.
+ * Footer/status bar — one muted line under the prompt.
  *
- * Layout:
- *   Line 1: [yolo] [plan] <model> <cwd>  <git-badge>  <shortcut hints>
- *   Line 2: context: N% (tokens/max)
+ *   [yolo] [plan]  model  [N tasks]  ·  branch  ·  context 12%
  */
 
 import type { Component } from '@moonshot-ai/pi-tui';
@@ -11,11 +9,12 @@ import { truncateToWidth, visibleWidth } from '@moonshot-ai/pi-tui';
 import chalk from 'chalk';
 import { effectiveModelAlias, type TokenUsage } from '@moonshot-ai/kimi-code-sdk';
 
-import { ALL_TIPS, type ToolbarTip } from '#/tui/constant/tips';
+import type { ToolbarTip } from '#/tui/constant/tips';
 import { isRainbowDancing, renderDanceFooterModel } from '#/tui/easter-eggs/dance';
 import { currentTheme } from '#/tui/theme';
 import type { ColorPalette } from '#/tui/theme/colors';
 import type { AppState } from '#/tui/types';
+import { formatContextBar } from '#/tui/utils/context-bar';
 import {
   createGitStatusCache,
   formatGitBadgeBase,
@@ -23,29 +22,15 @@ import {
   type GitStatus,
   type GitStatusCache,
 } from '#/utils/git/git-status';
-import {
-  formatTokenCount,
-  usagePercent,
-  usagePercentFromRatio,
-} from '#/utils/usage/usage-format';
+import { formatTokenCount } from '#/utils/usage/usage-format';
 
-const MAX_CWD_SEGMENTS = 3;
 const GOAL_TIMER_INTERVAL_MS = 1_000;
-
-// Toolbar tips — rotates every 10s. Most tips are short and pair up (two
-// joined by " | ") when space allows; tips flagged `solo` are long or
-// important enough to take the whole slot on their own. A `priority` weight
-// makes a tip recur more often in the rotation (default 1). Width is always
-// the final arbiter (a pair that doesn't fit falls back to its first tip).
-const TIP_ROTATE_INTERVAL_MS = 10_000;
-const TIP_SEPARATOR = ' | ';
 
 /**
  * Expand tips into a rotation sequence using smooth weighted round-robin
  * (the nginx SWRR algorithm). Higher-`priority` tips appear more often while
  * staying evenly spread, so a tip generally does not land next to its own
- * duplicate. Deterministic and computed once at module load. Exported for
- * unit testing.
+ * duplicate. Exported for unit testing.
  */
 export function buildWeightedTips(tips: readonly ToolbarTip[]): readonly ToolbarTip[] {
   const items = tips.map((t) => ({
@@ -67,31 +52,6 @@ export function buildWeightedTips(tips: readonly ToolbarTip[]): readonly Toolbar
   return seq;
 }
 
-const ROTATION: readonly ToolbarTip[] = buildWeightedTips(ALL_TIPS);
-
-function currentTipIndex(): number {
-  return Math.floor(Date.now() / TIP_ROTATE_INTERVAL_MS);
-}
-
-/**
- * Pick the tip(s) for a rotation index over the weighted ROTATION sequence.
- * `primary` is always shown when it fits; `pair` (primary + next tip joined
- * by the separator) is offered for wide terminals. Pairing is skipped when
- * the current/next tip is `solo` or when the neighbour is a duplicate of the
- * current tip (which can happen at the wrap boundary), keeping long/important
- * tips on their own and avoiding "X | X".
- */
-function tipsForIndex(index: number): { primary: string; pair: string | null } {
-  const n = ROTATION.length;
-  if (n === 0) return { primary: '', pair: null };
-  const offset = ((index % n) + n) % n;
-  const current = ROTATION[offset]!;
-  if (n === 1 || current.solo) return { primary: current.text, pair: null };
-  const next = ROTATION[(offset + 1) % n]!;
-  if (next.solo || next.text === current.text) return { primary: current.text, pair: null };
-  return { primary: current.text, pair: current.text + TIP_SEPARATOR + next.text };
-}
-
 /**
  * Footer goal badge, e.g. `[goal ● active · 4m · 7 turns]`. Only shown for a
  * live (active/paused) goal; terminal/no goal -> no badge. Turn count is a raw
@@ -110,7 +70,7 @@ function formatGoalBadge(
   }
   const dotColor =
     goal.status === 'active'
-      ? colors.primary
+      ? colors.running
       : goal.status === 'blocked'
         ? colors.warning
         : colors.textMuted;
@@ -141,23 +101,6 @@ function modelDisplayName(state: AppState): string {
   return effective?.displayName ?? effective?.model ?? state.model;
 }
 
-function shortenCwd(path: string): string {
-  if (!path) return path;
-  const home = process.env['HOME'] ?? '';
-  let work = path;
-  if (home && path === home) {
-    return '~';
-  }
-  if (home && path.startsWith(home + '/')) {
-    work = '~' + path.slice(home.length);
-  }
-
-  const segments = work.split('/').filter((s) => s.length > 0);
-  if (segments.length <= MAX_CWD_SEGMENTS) return work;
-  const tail = segments.slice(-MAX_CWD_SEGMENTS).join('/');
-  return `…/${tail}`;
-}
-
 /**
  * Footer context readout. Percent comes from the exact token counts when
  * both are known (the ratio can lag a step behind); otherwise it falls
@@ -165,11 +108,22 @@ function shortenCwd(path: string): string {
  * formatter.
  */
 function formatContextStatus(usage: number, tokens?: number, maxTokens?: number): string {
-  if (maxTokens !== undefined && maxTokens > 0 && tokens !== undefined) {
-    const pct = String(usagePercent(tokens, maxTokens));
-    return `context: ${pct}% (${formatTokenCount(tokens)}/${formatTokenCount(maxTokens)})`;
-  }
-  return `context: ${String(usagePercentFromRatio(usage))}%`;
+  return formatContextBar(usage, tokens, maxTokens);
+}
+
+function joinStatusLine(
+  left: string,
+  right: string,
+  width: number,
+  leftColor: string,
+  bold = false,
+): string {
+  const rightWidth = visibleWidth(right);
+  const maxLeft = Math.max(0, width - rightWidth - 1);
+  const shownLeft = visibleWidth(left) <= maxLeft ? left : truncateToWidth(left, maxLeft, '…');
+  const paint = bold ? chalk.hex(leftColor).bold : chalk.hex(leftColor);
+  const pad = Math.max(0, width - visibleWidth(shownLeft) - rightWidth);
+  return truncateToWidth(paint(shownLeft) + ' '.repeat(pad) + right, width);
 }
 
 function finiteUsage(value: number | undefined): number {
@@ -272,12 +226,21 @@ export class FooterComponent implements Component {
     const colors = currentTheme.palette;
     const state = this.state;
 
-    // ── Line 1: mode badges + model + [N task(s) running] + [N agent(s) running] + cwd + git + hints ──
+    const contextText = formatContextStatus(
+      state.contextUsage,
+      state.contextTokens,
+      state.maxContextTokens,
+    );
+
+    if (this.transientHint !== null) {
+      return [joinStatusLine(this.transientHint, contextText, width, colors.warning, true)];
+    }
+
     const left: string[] = [];
     const modes: string[] = [];
     if (state.permissionMode === 'auto') modes.push(chalk.hex(colors.warning).bold('auto'));
     if (state.permissionMode === 'yolo') modes.push(chalk.hex(colors.warning).bold('yolo'));
-    if (state.planMode) modes.push(chalk.hex(colors.primary).bold('plan'));
+    if (state.planMode) modes.push(chalk.hex(colors.warning).bold('plan'));
     if (state.swarmMode) modes.push(chalk.hex(colors.accent).bold('swarm'));
     if (modes.length > 0) left.push(modes.join(' '));
 
@@ -306,84 +269,31 @@ export class FooterComponent implements Component {
       left.push(renderedModelLabel);
     }
 
-    // Background-task badges sit immediately before cwd. `bash-*` tasks
-    // (shell processes) and `agent-*` tasks (background subagents) get
-    // separate badges so the user can distinguish them at a glance.
     if (this.backgroundBashTaskCount > 0) {
       const noun = this.backgroundBashTaskCount === 1 ? 'task' : 'tasks';
       left.push(
-        chalk.hex(colors.primary)(`[${String(this.backgroundBashTaskCount)} ${noun} running]`),
+        chalk.hex(colors.running)(`[${String(this.backgroundBashTaskCount)} ${noun} running]`),
       );
     }
     if (this.backgroundAgentCount > 0) {
       const noun = this.backgroundAgentCount === 1 ? 'agent' : 'agents';
       left.push(
-        chalk.hex(colors.primary)(`[${String(this.backgroundAgentCount)} ${noun} running]`),
+        chalk.hex(colors.running)(`[${String(this.backgroundAgentCount)} ${noun} running]`),
       );
     }
 
-    const cwd = shortenCwd(state.workDir);
-    if (cwd) left.push(chalk.hex(colors.textDim)(cwd));
-
+    const quiet: string[] = [];
     const git = this.gitCache.getStatus();
     if (git !== null) {
-      left.push(formatFooterGitBadge(git, colors));
+      quiet.push(formatFooterGitBadge(git, colors));
     }
+    quiet.push(contextText);
 
-    const leftLine = left.join('  ');
-    const leftWidth = visibleWidth(leftLine);
-
-    // Rotating hint tips, fill remaining space on line 1.
-    const { primary, pair } = tipsForIndex(currentTipIndex());
-    const gap = 2;
-    const remaining = Math.max(0, width - leftWidth - gap);
-    let tipText = '';
-    if (pair && visibleWidth(pair) <= remaining) {
-      tipText = pair;
-    } else if (primary && visibleWidth(primary) <= remaining) {
-      tipText = primary;
-    }
-
-    let line1: string;
-    if (tipText) {
-      const pad = width - leftWidth - visibleWidth(tipText);
-      line1 = leftLine + ' '.repeat(Math.max(0, pad)) + chalk.hex(colors.textMuted)(tipText);
-    } else if (leftWidth <= width) {
-      line1 = leftLine;
-    } else {
-      line1 = truncateToWidth(leftLine, width, '…');
-    }
-
-    // ── Line 2: transient hint (bottom-left) + context (right) ──
-    const contextText = formatContextStatus(
-      state.contextUsage,
-      state.contextTokens,
-      state.maxContextTokens,
-    );
-    const contextWidth = visibleWidth(contextText);
-    let line2: string;
-    const usageText = formatUsageStatus(state.usage?.total);
-    const leftStatus = this.transientHint ?? usageText;
-    if (leftStatus) {
-      const maxHintWidth = Math.max(0, width - contextWidth - 1);
-      const shownHint =
-        visibleWidth(leftStatus) <= maxHintWidth
-          ? leftStatus
-          : truncateToWidth(leftStatus, maxHintWidth, '…');
-      const hintWidth = visibleWidth(shownHint);
-      const pad = Math.max(0, width - hintWidth - contextWidth);
-      line2 =
-        (this.transientHint
-          ? chalk.hex(colors.warning).bold(shownHint)
-          : chalk.hex(colors.textDim)(shownHint)) +
-        ' '.repeat(pad) +
-        chalk.hex(colors.text)(contextText);
-    } else {
-      const leftPad = Math.max(0, width - contextWidth);
-      line2 = ' '.repeat(leftPad) + chalk.hex(colors.text)(contextText);
-    }
-
-    return [truncateToWidth(line1, width), truncateToWidth(line2, width)];
+    const sep = chalk.hex(colors.textMuted)(' · ');
+    const head = left.join('  ');
+    const tail = quiet.join(sep);
+    const line = head.length > 0 ? `${head}${sep}${tail}` : tail;
+    return [truncateToWidth(line, width)];
   }
 
   private syncGoalClock(goal: AppState['goal']): void {

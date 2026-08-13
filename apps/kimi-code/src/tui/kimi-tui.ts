@@ -32,6 +32,8 @@ import { copyTextToClipboard } from '#/utils/clipboard/clipboard-text';
 import { appendInputHistory, loadInputHistory } from '#/utils/history/input-history';
 import { openUrl } from '#/utils/open-url';
 import { getInputHistoryFile } from '#/utils/paths';
+import { activityFaceAnimation, activityMoodFor } from '#/tui/utils/activity-face';
+import { RETRY_DETAIL_MAX_CHARS } from '#/tui/constant/rendering';
 import { detectFdPath, ensureFdPath } from '#/utils/process/fd-detect';
 import { quoteShellArg } from '#/utils/shell-quote';
 import { restoreTerminalModes } from '#/utils/terminal-restore';
@@ -54,6 +56,8 @@ import { BannerComponent } from './components/chrome/banner';
 import { DeviceCodeBoxComponent } from './components/chrome/device-code-box';
 import { GutterContainer } from './components/chrome/gutter-container';
 import { MoonLoader } from './components/chrome/moon-loader';
+import { ToastComponent, TOAST_DURATION_MS } from './components/chrome/toast';
+import { WaitingCueComponent } from './components/chrome/waiting-cue';
 import { WelcomeComponent } from './components/chrome/welcome';
 import { pickRandomWorkingTip } from './components/chrome/working-tips';
 import {
@@ -108,7 +112,16 @@ import {
   TUI_ANIMATIONS,
   type UnicodeAnimationName,
 } from './constant/rendering';
-import { MAX_TERMINAL_TITLE_LENGTH } from './constant/terminal';
+import {
+  DISABLE_TERMINAL_MOUSE_TRACKING,
+  ENABLE_TERMINAL_MOUSE_TRACKING,
+  MAX_TERMINAL_TITLE_LENGTH,
+} from './constant/terminal';
+import {
+  TITLE_SPINNER_INTERVAL_MS,
+  formatTerminalTitle,
+  titleSpinnerShouldAnimate,
+} from './utils/title-spinner';
 import { AuthFlowController } from './controllers/auth-flow';
 import { BtwPanelController } from './controllers/btw-panel';
 import { ClipboardImageHintController } from './controllers/clipboard-image-hint';
@@ -210,13 +223,23 @@ function singleLineStatus(text: string): string {
   return text.replace(/[\r\n\t]+/g, ' ').replace(/\s+/g, ' ').trim();
 }
 
+function truncateRetryReason(reason: string): string {
+  return reason.length > RETRY_DETAIL_MAX_CHARS
+    ? `${reason.slice(0, RETRY_DETAIL_MAX_CHARS - 1)}…`
+    : reason;
+}
+
 export function formatRetryStatus(
   status: StepRetryStatus,
   subject: 'request' | 'compaction' = 'request',
 ): string {
   const seconds = status.delayMs / 1000;
   const delay = seconds >= 10 ? `${String(Math.round(seconds))}s` : `${seconds.toFixed(1)}s`;
-  const reason = singleLineStatus(status.errorMessage) || singleLineStatus(status.errorName);
+  // Provider errors are occasionally whole HTML bodies; cap the reason so one
+  // cannot flood the activity line.
+  const reason = truncateRetryReason(
+    singleLineStatus(status.errorMessage) || singleLineStatus(status.errorName),
+  );
   const code = status.statusCode === undefined ? '' : ` ${String(status.statusCode)}`;
   const detail = reason.length === 0 ? '' : ` ·${code} ${reason}`;
   return `Retrying ${subject} ${String(status.nextAttempt)}/${String(status.maxAttempts)} in ${delay}${detail}`;
@@ -353,6 +376,10 @@ export class KimiTUI {
   private readonly migrateOnly: boolean;
   private startupNotice: string | undefined;
   private lastActivityMode: string | undefined;
+  private toastMessage: string | undefined;
+  private toastTimer: ReturnType<typeof setTimeout> | null = null;
+  private titleSpinnerTimer: ReturnType<typeof setInterval> | null = null;
+  private lastEmittedTitle = '';
   private currentLoadingTip: { kind: LoadingTipKind; tip: string | undefined } | undefined =
     undefined;
   private lastHistoryContent: string | undefined;
@@ -416,6 +443,7 @@ export class KimiTUI {
         auto: startupInput.cliOptions.auto,
         plan: startupInput.cliOptions.plan,
         model: startupInput.cliOptions.model,
+        thinking: startupInput.cliOptions.thinking,
         agentProfile: startupInput.agentProfile,
         agentFiles: startupInput.cliOptions.agentFiles,
         startupNotice: startupInput.startupNotice,
@@ -462,8 +490,12 @@ export class KimiTUI {
   // =========================================================================
 
   private getSlashCommands(): readonly KimiSlashCommand[] {
-    const builtins = sortSlashCommands(BUILTIN_SLASH_COMMANDS).filter((command) =>
-      isExperimentalFlagEnabled(command.experimentalFlag),
+    // `hidden` commands stay dispatchable when typed; they are only kept out
+    // of the browsable list so `/settings` is the single place to discover
+    // configure-once options.
+    const builtins = sortSlashCommands(BUILTIN_SLASH_COMMANDS).filter(
+      (command) =>
+        isExperimentalFlagEnabled(command.experimentalFlag) && command.hidden !== true,
     );
     return [...builtins, ...this.skillCommands, ...this.pluginCommands];
   }
@@ -673,7 +705,12 @@ export class KimiTUI {
     this.disposeTerminalTracking();
     this.state.ui.start();
     this.startClipboardImageHintController();
-    this.terminalFocusTrackingDispose = installTerminalFocusTracking(this.state);
+    this.terminalFocusTrackingDispose = installTerminalFocusTracking(this.state, () => {
+      this.syncTitleSpinner();
+    });
+    this.state.terminal.write(ENABLE_TERMINAL_MOUSE_TRACKING);
+    this.state.editor.chromeBelowEditorRows = () =>
+      this.state.footer.render(this.state.terminal.columns).length;
     this.refreshTerminalThemeTracking();
   }
 
@@ -784,6 +821,7 @@ export class KimiTUI {
     const createSessionOptions: MutableCreateSessionOptions = {
       workDir,
       model: startup.model,
+      thinking: startup.thinking,
       permission: startup.auto ? 'auto' : startup.yolo ? 'yolo' : undefined,
       planMode: startup.plan ? true : undefined,
       // --agent/--agent-file bind the startup session only; sessions created
@@ -856,6 +894,9 @@ export class KimiTUI {
         if (startup.model !== undefined) {
           await session.setModel(startup.model);
         }
+        if (startup.thinking !== undefined) {
+          await session.setThinking(startup.thinking);
+        }
       }
     } catch (error) {
       if (!isOAuthLoginRequiredError(error)) throw error;
@@ -885,6 +926,12 @@ export class KimiTUI {
     this.tasksBrowserController.close();
     this.btwPanelController.clear();
     this.stopActivitySpinner();
+    this.stopTitleSpinner();
+    if (this.toastTimer !== null) {
+      clearTimeout(this.toastTimer);
+      this.toastTimer = null;
+    }
+    this.resetActivityContainer();
     this.streamingUI.disposeActiveCompactionBlock();
     this.streamingUI.resetToolUi();
     this.disposeTranscriptChildren();
@@ -991,6 +1038,11 @@ export class KimiTUI {
     this.clipboardImageHintController = undefined;
     this.terminalFocusTrackingDispose?.();
     this.terminalFocusTrackingDispose = undefined;
+    try {
+      this.state.terminal.write(DISABLE_TERMINAL_MOUSE_TRACKING);
+    } catch {
+      // Best-effort: the terminal may already be gone.
+    }
   }
 
   private buildLayout(): void {
@@ -1559,6 +1611,7 @@ export class KimiTUI {
     if (busyChanged) {
       this.updateQueueDisplay();
       this.sessionEventHandler.retryQueuedGoalPromotion();
+      this.syncTitleSpinner();
     }
     if (additionalDirsChanged) this.setupAutocomplete();
     this.state.ui.requestRender();
@@ -1566,8 +1619,10 @@ export class KimiTUI {
 
   patchLivePane(patch: Partial<LivePaneState>): void {
     if (!hasPatchChanges(this.state.livePane, patch)) return;
+    const awaitingChanged = 'pendingApproval' in patch || 'pendingQuestion' in patch;
     Object.assign(this.state.livePane, patch);
     this.updateActivityPane();
+    if (awaitingChanged) this.syncTitleSpinner();
     this.state.ui.requestRender();
   }
 
@@ -1746,8 +1801,56 @@ export class KimiTUI {
 
   updateTerminalTitle(): void {
     const trimmed = this.state.appState.sessionTitle?.trim() ?? '';
-    const label = trimmed.length > 0 ? trimmed.slice(0, MAX_TERMINAL_TITLE_LENGTH) : PRODUCT_NAME;
-    this.state.terminal.setTitle(label);
+    const title = formatTerminalTitle({
+      base: trimmed.length > 0 ? trimmed : PRODUCT_NAME,
+      maxLength: MAX_TERMINAL_TITLE_LENGTH,
+      busy: this.isTitleBusy(),
+      awaiting: this.isTitleAwaiting(),
+      focused: this.state.terminalState.focused,
+      nowMs: Date.now(),
+    });
+    if (title === this.lastEmittedTitle) return;
+    this.lastEmittedTitle = title;
+    this.state.terminal.setTitle(title);
+  }
+
+  private isTitleBusy(): boolean {
+    return this.state.appState.streamingPhase !== 'idle' || this.state.appState.isCompacting;
+  }
+
+  private isTitleAwaiting(): boolean {
+    return (
+      this.state.livePane.pendingApproval !== null || this.state.livePane.pendingQuestion !== null
+    );
+  }
+
+  private syncTitleSpinner(): void {
+    if (
+      titleSpinnerShouldAnimate({
+        busy: this.isTitleBusy(),
+        awaiting: this.isTitleAwaiting(),
+        focused: this.state.terminalState.focused,
+      })
+    ) {
+      this.startTitleSpinner();
+    } else {
+      this.stopTitleSpinner();
+    }
+    this.updateTerminalTitle();
+  }
+
+  private startTitleSpinner(): void {
+    if (this.titleSpinnerTimer !== null) return;
+    this.titleSpinnerTimer = setInterval(() => {
+      this.updateTerminalTitle();
+    }, TITLE_SPINNER_INTERVAL_MS);
+    this.titleSpinnerTimer.unref?.();
+  }
+
+  private stopTitleSpinner(): void {
+    if (this.titleSpinnerTimer === null) return;
+    clearInterval(this.titleSpinnerTimer);
+    this.titleSpinnerTimer = null;
   }
 
   resetSessionRuntime(): void {
@@ -1836,7 +1939,7 @@ export class KimiTUI {
     if (resumeState?.warning !== undefined) {
       this.showStatus(`Warning: ${resumeState.warning}`, 'warning');
     }
-    this.showStatus(statusMessage);
+    this.showToast(statusMessage);
     void this.showSessionWarnings(session);
     void this.cacheHint.maybeShowOnResume();
   }
@@ -1867,7 +1970,7 @@ export class KimiTUI {
     if (resumeState?.warning !== undefined) {
       this.showStatus(`Warning: ${resumeState.warning}`, 'warning');
     }
-    this.showStatus(statusMessage);
+    this.showToast(statusMessage);
     void this.showSessionWarnings(session);
   }
 
@@ -2069,7 +2172,7 @@ export class KimiTUI {
     ) {
       return;
     }
-    const welcome = new WelcomeComponent(this.state.appState);
+    const welcome = new WelcomeComponent(this.state.appState, { ui: this.state.ui });
     this.state.transcriptContainer.addChild(welcome);
   }
 
@@ -2398,12 +2501,30 @@ export class KimiTUI {
     this.showStatus(`Error: ${message}`, 'error');
   }
 
+  showToast(message: string): void {
+    const text = singleLineStatus(message);
+    if (text.length === 0) return;
+    this.toastMessage = text;
+    if (this.toastTimer !== null) {
+      clearTimeout(this.toastTimer);
+    }
+    this.toastTimer = setTimeout(() => {
+      this.toastMessage = undefined;
+      this.toastTimer = null;
+      this.lastActivityMode = undefined;
+      this.updateActivityPane();
+    }, TOAST_DURATION_MS);
+    this.toastTimer.unref?.();
+    this.lastActivityMode = undefined;
+    this.updateActivityPane();
+  }
+
   showLoginProgressSpinner(label: string): LoginProgressSpinnerHandle {
     return this.showProgressSpinner(label);
   }
 
   showProgressSpinner(label: string): LoginProgressSpinnerHandle {
-    const tint = (s: string): string => currentTheme.fg('primary', s);
+    const tint = (s: string): string => currentTheme.fg('running', s);
     const spinner = new MoonLoader(this.state.ui, tint, label, TUI_ANIMATIONS.progress);
     this.state.transcriptContainer.addChild(new Spacer(1));
     this.state.transcriptContainer.addChild(spinner);
@@ -2479,7 +2600,10 @@ export class KimiTUI {
     }
 
     this.lastActivityMode = activityModeKey;
-    this.state.activityContainer.clear();
+    this.resetActivityContainer();
+    if (this.toastMessage !== undefined && effectiveMode !== 'hidden') {
+      this.state.activityContainer.addChild(new ToastComponent(this.toastMessage));
+    }
 
     switch (effectiveMode) {
       case 'hidden':
@@ -2487,24 +2611,46 @@ export class KimiTUI {
         this.syncAgentSwarmActivitySpinner(undefined);
         this.state.ui.requestRender();
         return;
+      case 'awaiting': {
+        this.stopActivitySpinner();
+        this.syncAgentSwarmActivitySpinner(undefined);
+        const awaitingLabel =
+          this.state.livePane.pendingQuestion !== null
+            ? 'waiting for an answer'
+            : 'waiting for approval';
+        this.state.activityContainer.addChild(
+          new WaitingCueComponent(
+            this.state.ui,
+            awaitingLabel,
+            this.state.appState.streamingStartTime,
+          ),
+        );
+        break;
+      }
       case 'waiting': {
         const spinner = this.ensureActivitySpinner(
           retryStatus === undefined
-            ? ''
+            ? placeSpinnerInAgentSwarm
+              ? ''
+              : 'waiting'
             : formatRetryStatus(
                 retryStatus,
                 this.state.appState.isCompacting ? 'compaction' : 'request',
               ),
-          retryStatus === undefined ? undefined : (s) => currentTheme.fg('warning', s),
+          retryStatus === undefined
+            ? (s) => currentTheme.fg('running', s)
+            : (s) => currentTheme.fg('warning', s),
           retryStatus === undefined ? TUI_ANIMATIONS.default : TUI_ANIMATIONS.retry,
         );
         this.syncAgentSwarmActivitySpinner(placeSpinnerInAgentSwarm ? spinner : undefined);
         if (placeSpinnerInAgentSwarm) break;
+        this.applyActivityFace(spinner, 'waiting', retryStatus !== undefined);
         this.state.activityContainer.addChild(
           new ActivityPaneComponent({
             mode: 'waiting',
             spinner,
             tip: retryStatus === undefined ? this.currentLoadingTip?.tip : undefined,
+            startedAt: this.state.appState.streamingStartTime,
           }),
         );
         break;
@@ -2515,29 +2661,37 @@ export class KimiTUI {
         break;
       }
       case 'composing': {
-        const spinner = this.ensureActivitySpinner('working...', (s) =>
-          currentTheme.fg('primary', s),
+        const spinner = this.ensureActivitySpinner('working', (s) =>
+          currentTheme.fg('running', s),
           TUI_ANIMATIONS.composing,
         );
+        this.applyActivityFace(spinner, 'composing', false);
         this.syncAgentSwarmActivitySpinner(undefined);
         this.state.activityContainer.addChild(
           new ActivityPaneComponent({
             mode: 'composing',
             spinner,
             tip: this.currentLoadingTip?.tip,
+            startedAt: this.state.appState.streamingStartTime,
           }),
         );
         break;
       }
       case 'tool': {
-        const spinner = this.ensureActivitySpinner('', undefined, TUI_ANIMATIONS.tool);
+        const spinner = this.ensureActivitySpinner(
+          placeSpinnerInAgentSwarm ? '' : 'running tools',
+          (s) => currentTheme.fg('running', s),
+          TUI_ANIMATIONS.tool,
+        );
         this.syncAgentSwarmActivitySpinner(placeSpinnerInAgentSwarm ? spinner : undefined);
         if (placeSpinnerInAgentSwarm) break;
+        this.applyActivityFace(spinner, 'tool', false);
         this.state.activityContainer.addChild(
           new ActivityPaneComponent({
             mode: 'tool',
             spinner,
             tip: this.currentLoadingTip?.tip,
+            startedAt: this.state.appState.streamingStartTime,
           }),
         );
         break;
@@ -2546,10 +2700,12 @@ export class KimiTUI {
       case 'session': {
         this.stopActivitySpinner();
         this.syncAgentSwarmActivitySpinner(undefined);
-        // Keep a placeholder row so the activity area does not fully shrink
-        // when the spinner is removed at the end of streaming; combined with
-        // pi-tui's clamp, this avoids a destructive full redraw (viewport jump).
-        this.state.activityContainer.addChild(new Spacer(1));
+        if (this.toastMessage === undefined) {
+          // Keep a placeholder row so the activity area does not fully shrink
+          // when the spinner is removed at the end of streaming; combined with
+          // pi-tui's clamp, this avoids a destructive full redraw (viewport jump).
+          this.state.activityContainer.addChild(new Spacer(1));
+        }
         break;
       }
     }
@@ -2558,11 +2714,11 @@ export class KimiTUI {
 
   private resolveActivityPaneMode(): EffectiveActivityPaneMode {
     if (this.state.activeDialog === 'session-picker') return 'hidden';
-    if (this.state.livePane.pendingApproval !== null) return 'hidden';
+    if (this.state.livePane.pendingApproval !== null) return 'awaiting';
     if (this.state.appState.isCompacting) {
       return this.state.appState.retryStatus === undefined ? 'hidden' : 'waiting';
     }
-    if (this.state.livePane.pendingQuestion !== null) return 'hidden';
+    if (this.state.livePane.pendingQuestion !== null) return 'awaiting';
 
     const streamingPhase = this.state.appState.streamingPhase;
 
@@ -2817,6 +2973,20 @@ export class KimiTUI {
     this.state.terminalState.progressActive = active;
   }
 
+  /**
+   * Drive the activity spinner with the cube's face for this mode. The header
+   * logo scrolls away with the transcript, so this is the only place the
+   * character is visible while work is actually happening.
+   */
+  private applyActivityFace(
+    spinner: MoonLoader,
+    mode: 'waiting' | 'thinking' | 'composing' | 'tool' | 'awaiting',
+    retrying: boolean,
+  ): void {
+    const animation = activityFaceAnimation(activityMoodFor({ mode, retrying }));
+    spinner.setCustomAnimation(animation.key, animation.frames, animation.intervalMs);
+  }
+
   private ensureActivitySpinner(
     label = '',
     colorFn?: (s: string) => string,
@@ -2832,6 +3002,13 @@ export class KimiTUI {
     this.state.activitySpinner.setColorFn(colorFn);
     this.state.activitySpinner.setAnimation(animation);
     return this.state.activitySpinner;
+  }
+
+  private resetActivityContainer(): void {
+    for (const child of this.state.activityContainer.children) {
+      if (hasDispose(child)) child.dispose();
+    }
+    this.state.activityContainer.clear();
   }
 
   private stopActivitySpinner(): void {

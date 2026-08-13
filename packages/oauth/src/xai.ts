@@ -35,13 +35,19 @@ const DEFAULT_INTERVAL_SECONDS = 5;
  * not expose per-model wire type, so this mirrors pi's authoritative table at
  * references/pi/packages/ai/src/providers/xai.models.ts.
  *
- * Update this set when xAI ships a new Responses-speaking model.
+ * Update this set when xAI ships a new Responses-speaking model. Prefixes
+ * cover dated snapshots (grok-4.6, grok-4.20-0309-reasoning, …).
  */
-const XAI_RESPONSES_MODELS: ReadonlySet<string> = new Set(['grok-4.5']);
+const XAI_RESPONSES_MODELS: ReadonlySet<string> = new Set(['grok-4.5', 'grok-4.6']);
+const XAI_RESPONSES_PREFIXES = ['grok-4.5', 'grok-4.6', 'grok-4.20'] as const;
 
 /** Resolve the kosong wire type for an xAI model id. */
 export function xaiWireTypeForModel(modelId: string): 'openai' | 'openai_responses' {
-  return XAI_RESPONSES_MODELS.has(modelId) ? 'openai_responses' : 'openai';
+  if (XAI_RESPONSES_MODELS.has(modelId)) return 'openai_responses';
+  if (XAI_RESPONSES_PREFIXES.some((prefix) => modelId === prefix || modelId.startsWith(`${prefix}-`))) {
+    return 'openai_responses';
+  }
+  return 'openai';
 }
 const DEFAULT_TOKEN_LIFETIME_SECONDS = 3600;
 const HTTP_TIMEOUT_MS = 30_000;

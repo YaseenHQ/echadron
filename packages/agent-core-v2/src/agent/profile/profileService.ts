@@ -70,13 +70,13 @@ import { DEFAULT_AGENT_PROFILE_NAME, IAgentProfileCatalogService } from '#/app/a
 import { ErrorCodes, Error2 } from "#/errors";
 import { IBootstrapService } from '#/app/bootstrap/bootstrap';
 import { IConfigService } from '#/app/config/config';
+import { secondaryModelDisplayAlias } from '#/app/kosongConfig/secondaryModelOverlay';
 import type { LoopControl } from '#/agent/loop/configSection';
 import { IHostEnvironment } from '#/os/interface/hostEnvironment';
 import { IHostFileSystem } from '#/os/interface/hostFileSystem';
 import { ISessionContext } from '#/session/sessionContext/sessionContext';
 import type { ToolSource } from '#/tool/toolContract';
 import { ISessionWorkspaceContext } from '#/session/workspaceContext/workspaceContext';
-import { subagentDisplayModel } from '#/session/subagent/configSection';
 import { ISessionSkillCatalog } from '#/session/sessionSkillCatalog/skillCatalog';
 import { ISessionAgentProfileCatalog } from '#/session/sessionAgentProfileCatalog/sessionAgentProfileCatalog';
 import { ISessionToolPolicy } from '#/session/sessionToolPolicy/sessionToolPolicy';
@@ -462,6 +462,7 @@ export class AgentProfileService extends Disposable implements IAgentProfileServ
       disallowedTools: [...(this.profileState.disallowedTools ?? [])],
       subagents:
         this.profileState.subagents === undefined ? undefined : [...this.profileState.subagents],
+      maxStepsPerTurn: this.resolveActiveProfile()?.maxStepsPerTurn,
     };
   }
 
@@ -635,7 +636,7 @@ export class AgentProfileService extends Disposable implements IAgentProfileServ
     const maxContextTokens = capabilities?.max_input_tokens ?? capabilities?.max_context_tokens;
     this.eventBus.publish({
       type: 'agent.status.updated',
-      model: subagentDisplayModel(this.config, modelAlias),
+      model: secondaryModelDisplayAlias(this.config, modelAlias),
       thinkingEffort: includeThinkingEffort
         ? this.getEffectiveThinkingLevel()
         : undefined,

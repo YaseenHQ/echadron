@@ -17,15 +17,19 @@
  * next step lives entirely in the aspects: the `loopContinuation` aspect
  * enqueues a `ContinuationStepRequest` when a step executed tools (a plain
  * assistant message enqueues nothing, so the queue empties and the turn
- * completes), and orchestrators (`prompt`, `goal`, `externalHooks`, `task`)
- * steer the turn by enqueueing further requests. A failed step is dispatched
+ * completes), or a tool-free landing prompt when the next step would exceed
+ * the composed per-turn ceiling, and orchestrators (`prompt`, `goal`,
+ * `externalHooks`, `task`) steer the turn by enqueueing further requests. A
+ * failed step is dispatched
  * to the registered error handlers (first match wins); a handler that claims
  * and catches the error has already enqueued the turn's continuation itself —
  * `stepRetry` re-enqueues the failed driver after backoff, `fullCompaction`
  * compacts and re-enqueues it — so the loop only learns caught-or-not, while
  * an unclaimed or uncaught error fails the turn. Emits `turn.*` / delta
  * events through `event`, persists loop events through `contextMemory`, and
- * reads the step budget from `config`. The plain-data loop state
+ * reads the step budget from `config` and the bound profile's per-turn step
+ * ceiling (`effectiveMaxStepsPerTurn` takes the smaller positive one). The
+ * plain-data loop state
  * (`nextReservedTurnId`, `lastRequestTraceId`, `disposing`) is registered
  * into `agentState` (`IAgentStateService`) and read/written through it;
  * `pendingTurns` and `activeTurnJob` stay plain fields because a `TurnJob`
@@ -60,6 +64,8 @@ import { OrderedHookSlot } from '#/hooks';
 
 import { IAgentContextMemoryService } from '#/agent/contextMemory/contextMemory';
 import { isVacuousContentPart } from '#/agent/contextMemory/vacuousContent';
+import { isMaxStepsLandingRequest } from '#/agent/loop/loopContinuation';
+import { IAgentProfileService } from '#/agent/profile/profile';
 import { IAgentStateService } from '#/agent/state/agentState';
 import { IAgentTelemetryContextService } from '#/app/telemetry/agentTelemetryContext';
 import type {
@@ -72,6 +78,7 @@ import { IWireService } from '#/wire/wire';
 import { LOOP_CONTROL_SECTION, type LoopControl } from './configSection';
 import {
   createMaxStepsExceededError,
+  effectiveMaxStepsPerTurn,
   IAgentLoopService,
   isMaxStepsExceededError,
   type AfterStepContext,
@@ -136,6 +143,7 @@ export class AgentLoopService extends Disposable implements IAgentLoopService {
     @ITelemetryService private readonly telemetry: ITelemetryService,
     @IAgentTelemetryContextService private readonly telemetryContext: IAgentTelemetryContextService,
     @IAgentStateService private readonly states: IAgentStateService,
+    @IAgentProfileService private readonly profile: IAgentProfileService,
   ) {
     super();
     this.states.register(loopNextReservedTurnIdKey);
@@ -631,6 +639,7 @@ export class AgentLoopService extends Disposable implements IAgentLoopService {
             begun.step.number,
             begun.step.uuid,
             options.onStarted,
+            isMaxStepsLandingRequest(begun.step.batch.driver),
           );
           const completed = this.completeLoopStep(runtime, result);
           if (completed !== undefined) return completed;
@@ -669,8 +678,18 @@ export class AgentLoopService extends Disposable implements IAgentLoopService {
         },
       };
     }
-    const maxSteps = this.config.get<LoopControl>(LOOP_CONTROL_SECTION)?.maxStepsPerTurn;
-    if (maxSteps !== undefined && maxSteps > 0 && runtime.steps >= maxSteps) {
+    const globalMaxSteps = this.config.get<LoopControl>(LOOP_CONTROL_SECTION)?.maxStepsPerTurn;
+    const profileMaxSteps = this.profile.data().maxStepsPerTurn;
+    const maxSteps = effectiveMaxStepsPerTurn(globalMaxSteps, profileMaxSteps);
+    const nextDriver = runtime.queue.peekNextDriver();
+    const allowLanding =
+      nextDriver !== undefined && isMaxStepsLandingRequest(nextDriver);
+    if (
+      maxSteps !== undefined &&
+      maxSteps > 0 &&
+      runtime.steps >= maxSteps &&
+      !allowLanding
+    ) {
       throw createMaxStepsExceededError(maxSteps);
     }
     const batch = runtime.queue.takeNextBatch()!;
@@ -815,13 +834,17 @@ export class AgentLoopService extends Disposable implements IAgentLoopService {
     currentStep: number,
     stepUuid: string,
     onStarted: ((step: number) => void) | undefined,
+    disableTools: boolean,
   ): Promise<StepExecutionResult> {
     this.activeRequestTrace = undefined;
     await this.hooks.onWillBeginStep.run({ turnId, step: currentStep, signal });
     const markStepStarted = this.beginStep(turnId, signal, currentStep, stepUuid, onStarted);
     const streamParts = this.createStreamPartHandler(turnId, markStepStarted);
     const request = this.llmRequester.start(
-      { source: { type: 'turn', turnId, step: currentStep } },
+      {
+        source: { type: 'turn', turnId, step: currentStep },
+        tools: disableTools ? [] : undefined,
+      },
       streamParts.handle,
       signal,
     );

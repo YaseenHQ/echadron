@@ -16,6 +16,7 @@ interface PickerOptions {
   readonly currentValue: string;
   readonly currentThinkingEffort: string;
   readonly title?: string;
+  readonly warning?: string;
   readonly onSelect: (selection: { alias: string; thinking: ThinkingEffort }) => void;
 }
 
@@ -102,10 +103,31 @@ describe('handleSecondaryModelCommand', () => {
     await handleSecondaryModelCommand(host, '');
 
     const opts = mountedPicker(host);
-    expect(Object.keys(opts.models)).toEqual(['k2', 'cheap']);
+    expect(Object.keys(opts.models)).toEqual(['__inherit__', 'k2', 'cheap']);
+    expect(opts.models['__inherit__']?.displayName).toBe('Inherit primary model');
     expect(opts.currentValue).toBe('cheap');
     expect(opts.currentThinkingEffort).toBe('high');
     expect(opts.title).toContain('secondary model');
+    expect(opts.warning).toContain('Inherit');
+  });
+
+  it('clears the secondary model when inherit is selected', async () => {
+    const { host, session } = makeHost({ secondaryModel: { model: 'cheap', defaultEffort: 'high' } });
+
+    await handleSecondaryModelCommand(host, '');
+    mountedPicker(host).onSelect({ alias: '__inherit__', thinking: 'off' });
+
+    await vi.waitFor(() => {
+      expect(host.showStatus).toHaveBeenCalled();
+    });
+    expect(host.harness.setConfig).toHaveBeenCalledWith({
+      secondaryModel: { model: '' },
+    });
+    expect(session!.applyPersistedSecondaryModel).toHaveBeenCalledWith();
+    expect(host.showStatus).toHaveBeenCalledWith(
+      'Secondary model set to inherit the primary model.',
+      'success',
+    );
   });
 
   it('persists first, then live-applies the selection to the session', async () => {

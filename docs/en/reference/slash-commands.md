@@ -5,6 +5,10 @@ Slash commands are built-in control commands provided by Echadron in the interac
 After typing the full command name, press `Enter` to execute. If the `/`-prefixed input does not match any built-in or Skill command, it is sent to the Agent as a regular message.
 
 ::: tip
+Options you configure once — `/theme`, `/editor`, `/features`, `/secondary_model` — no longer appear in the `/` completion list or `/help`. They are grouped under `/settings` instead, so the browsable list stays short. Typing them directly still works exactly as before, and they are documented individually below.
+:::
+
+::: tip
 Some commands are only available in the idle state. Executing these commands while a session is streaming output or compacting context will be blocked — press `Esc` or `Ctrl-C` to interrupt first. The "Always available" column in the tables below indicates commands that are also available during streaming.
 :::
 
@@ -15,12 +19,12 @@ Some commands are only available in the idle state. Executing these commands whi
 | `/login` | — | Select an account or platform and log in: Kimi Code uses OAuth device-code flow; Kimi Platform uses API key login | No |
 | `/logout` | — | Clear individual or bundled credentials, or remove saved provider configuration | No |
 | `/model` | — | Switch the LLM model used in the current session | Yes |
-| `/secondary_model` | — | Configure the secondary model used by subagents (writes the [`[secondary_model]`](../configuration/config-files.md#secondary_model) section and applies to the current session immediately) | Yes |
-| `/settings` | `/config` | Open the settings panel inside the TUI | Yes |
-| `/features` | `/experiments`, `/experimental` | Open Feature controls for released defaults and rollback switches | Yes |
+| `/secondary_model` | — | Configure the secondary model used by subagents (writes the [`[secondary_model]`](../configuration/config-files.md#secondary_model) section and applies to the current session immediately). Not shown in completion; also reachable from `/settings` | Yes |
+| `/settings` | `/config` | Open the settings panel inside the TUI: Model, Secondary model, Permission, Theme, Editor, Feature controls, Automatic updates, Usage | Yes |
+| `/features` | `/experiments`, `/experimental` | Open Feature controls for released defaults and rollback switches. Not shown in completion; also reachable from `/settings` | Yes |
 | `/permission` | — | Select a permission mode | Yes |
-| `/editor` | — | Configure the external editor launched by `Ctrl-G` | Yes |
-| `/theme` | — | Switch the terminal UI color theme | Yes |
+| `/editor` | — | Configure the external editor launched by `Ctrl-G`. Not shown in completion; also reachable from `/settings` | Yes |
+| `/theme` | — | Switch the terminal UI color theme. Not shown in completion; also reachable from `/settings` | Yes |
 
 ## Session Management
 
@@ -35,7 +39,7 @@ Some commands are only available in the idle state. Executing these commands whi
 | `/compact [<instruction>]` | — | Compact the current conversation context to free up token usage; an optional custom instruction can hint to the model what to preserve | No |
 | `/undo [<count>]` | — | Undo recent prompts from the active context. Without a count, opens a selector; with a count, undoes that many prompts. Prompts before the last compaction cannot be undone. Undoing also rolls back the todo list and plan mode state produced by those prompts (code changes are not reverted) | No |
 | `/reload` | — | Reload the current session and apply the latest `config.toml` settings (providers, models, etc.) and `tui.toml` UI preferences, without restarting the CLI | No |
-| `/reload-tui` | — | Reload only the `tui.toml` UI preferences (theme, editor, notifications, etc.) without rebuilding the session | Yes |
+| `/reload-tui` | — | Reload only the `tui.toml` UI preferences (theme, editor, notifications, etc.) without rebuilding the session. Not shown in completion — it is a subset of `/reload` | Yes |
 | `/init` | — | Analyze the current codebase and generate `AGENTS.md` | No |
 | `/export-md [<path>]` | `/export` | Export the current session as a Markdown file | No |
 | `/export-debug-zip` | — | Export the current session as a debug ZIP archive (same behavior as [`echadron export`](./kimi-command.md#echadron-export)) | No |

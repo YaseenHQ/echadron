@@ -52,6 +52,13 @@ export interface ProviderDeps {
   readonly stderr: WritableLike;
   readonly env: NodeJS.ProcessEnv;
   readonly exit: (code: number) => never;
+  /**
+   * Locally cached models.dev snapshot, consulted before any network fetch.
+   * Injected so a caller (notably tests) controls it like every other edge
+   * here — reading the real on-disk cache directly would make behaviour
+   * depend on whatever this machine last refreshed.
+   */
+  readonly readCachedCatalog: () => Promise<Catalog | undefined>;
 }
 
 interface AddOptions {
@@ -449,7 +456,7 @@ export async function handleCatalogAdd(
 async function loadCatalogOrExit(deps: ProviderDeps, url: string): Promise<Catalog> {
   try {
     if (url === DEFAULT_CATALOG_URL) {
-      const cached = await readFreshModelsDevCatalog();
+      const cached = await deps.readCachedCatalog();
       if (cached !== undefined) return cached;
     }
     const result = await fetchCatalogOrBuiltIn(url, { userAgent: createKimiCodeUserAgent() });
@@ -582,6 +589,7 @@ function resolveDeps(overrides: Partial<ProviderDeps> = {}): ResolvedProviderDep
         });
         return harness;
       }),
+    readCachedCatalog: overrides.readCachedCatalog ?? (() => readFreshModelsDevCatalog()),
     stdout: overrides.stdout ?? process.stdout,
     stderr: overrides.stderr ?? process.stderr,
     env: overrides.env ?? process.env,

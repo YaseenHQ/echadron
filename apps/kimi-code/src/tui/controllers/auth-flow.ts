@@ -1,5 +1,16 @@
-import type { CreateSessionOptions, KimiHarness, Session } from '@moonshot-ai/kimi-code-sdk';
+import { isDeepStrictEqual } from 'node:util';
 
+import { XAI_PROVIDER_NAME } from '@moonshot-ai/kimi-code-oauth';
+import {
+  DEFAULT_CATALOG_URL,
+  fetchCatalog,
+  mergeXaiCatalogModels,
+  type CreateSessionOptions,
+  type KimiHarness,
+  type Session,
+} from '@moonshot-ai/kimi-code-sdk';
+
+import { refreshModelsDevCatalog } from '#/cli/models/catalog-cache';
 import { createKimiCodeUserAgent } from '#/cli/version';
 
 import type { SkillListSession } from '../commands';
@@ -174,7 +185,7 @@ export class AuthFlowController {
 
   private async refreshProviderModelsWithScope(scope: RefreshProviderScope): Promise<RefreshResult> {
     const { host } = this;
-    const result = await refreshAllProviderModels(
+    let result = await refreshAllProviderModels(
       {
         getConfig: () => host.harness.getConfig({ reload: true }),
         removeProvider: (id) => host.harness.removeProvider(id),
@@ -187,9 +198,62 @@ export class AuthFlowController {
       },
       { scope },
     );
-    if (result.changed.length > 0) {
+    const xai = await this.refreshXaiCatalogModels();
+    if (result.changed.length > 0 || xai.changed) {
       await this.refreshAvailableModels();
+    }
+    if (xai.changed) {
+      result = {
+        ...result,
+        changed: [
+          ...result.changed,
+          {
+            providerId: XAI_PROVIDER_NAME,
+            providerName: 'xAI',
+            added: xai.added,
+            removed: 0,
+          },
+        ],
+      };
     }
     return result;
   }
+
+  /**
+   * Re-import xAI aliases from models.dev. Login writes a snapshot; without
+   * this pass, later models (Grok 4.6) never appear in `/model`.
+   */
+  async refreshXaiCatalogModels(): Promise<{ changed: boolean; added: number }> {
+    const { host } = this;
+    const config = await host.harness.getConfig({ reload: true });
+    if (config.providers?.[XAI_PROVIDER_NAME] === undefined) {
+      return { changed: false, added: 0 };
+    }
+    try {
+      const refreshed = await refreshModelsDevCatalog({
+        force: true,
+        userAgent: createKimiCodeUserAgent(),
+      });
+      const catalog =
+        refreshed.cache.catalog ??
+        (await fetchCatalog(DEFAULT_CATALOG_URL, { userAgent: createKimiCodeUserAgent() }));
+      const current = config.models ?? {};
+      const next = mergeXaiCatalogModels(current, catalog);
+      const added = Object.keys(next).filter((alias) => current[alias] === undefined).length;
+      if (added === 0 && modelTablesEqual(current, next)) {
+        return { changed: false, added: 0 };
+      }
+      await host.harness.setConfig({ models: next });
+      return { changed: true, added };
+    } catch {
+      return { changed: false, added: 0 };
+    }
+  }
+}
+
+export function modelTablesEqual(
+  left: Record<string, unknown>,
+  right: Record<string, unknown>,
+): boolean {
+  return isDeepStrictEqual(left, right);
 }

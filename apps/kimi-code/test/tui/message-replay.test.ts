@@ -55,6 +55,7 @@ function makeStartupInput(): KimiTUIStartupInput {
       auto: false,
       plan: false,
       model: undefined,
+      thinking: undefined,
       outputFormat: undefined,
       prompt: undefined,
       skillsDirs: [],

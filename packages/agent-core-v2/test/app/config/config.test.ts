@@ -66,13 +66,13 @@ import {
 import { applyPrintModeConfigDefaults } from '#/agent/task/printDefaults';
 import '#/session/subagent/configSection';
 import {
+  buildSubagentModelDescriptions,
   DEFAULT_SUBAGENT_TIMEOUT_MS,
   resolveSecondaryModel,
   resolveSubagentBinding,
   resolveSubagentTimeoutMs,
   SUBAGENT_SECTION,
   SUBAGENT_TIMEOUT_ENV,
-  subagentDisplayModel,
   type SubagentConfig,
   wrapSubagentModelError,
 } from '#/session/subagent/configSection';
@@ -84,7 +84,10 @@ import {
   WEB_SEARCH_BASE_URL_ENV,
   type ServicesConfig,
 } from '#/app/auth/configSection';
-import { SECONDARY_DERIVED_MODEL_ID } from '#/app/kosongConfig/secondaryModelOverlay';
+import {
+  SECONDARY_DERIVED_MODEL_ID,
+  secondaryModelDisplayAlias,
+} from '#/app/kosongConfig/secondaryModelOverlay';
 import { type SecondaryModelConfig } from '#/app/kosongConfig/configSection';
 import '#/agent/mcp/configSection';
 import {
@@ -1494,6 +1497,127 @@ describe('subagent config section', () => {
     withFactPatch.disposables.dispose();
   });
 
+  it('treats a role in profile.model the same as the legacy model_preference', async () => {
+    // `model` supersedes `model_preference`, so it has to accept the same two
+    // role keywords — otherwise migrating a file from one field to the other
+    // would silently change which model a subagent binds.
+    const own = { modelAlias: 'provider/main', thinkingLevel: 'medium' };
+    const { config, disposables } = await createConfig(
+      {},
+      '[secondary_model]\nmodel = "provider/secondary"\n',
+    );
+
+    for (const role of ['primary', 'secondary'] as const) {
+      expect(resolveSubagentBinding(config, secondaryModelFlags(), own, role)).toEqual(
+        resolveSubagentBinding(config, secondaryModelFlags(), own, role),
+      );
+    }
+    expect(resolveSubagentBinding(config, secondaryModelFlags(), own, 'primary').model).toBe(
+      'provider/main',
+    );
+    expect(resolveSubagentBinding(config, secondaryModelFlags(), own, 'secondary').model).toBe(
+      'provider/secondary',
+    );
+
+    disposables.dispose();
+  });
+
+  it('routes an explicitly named model id straight to that entry', async () => {
+    const own = { modelAlias: 'provider/main', thinkingLevel: 'medium' };
+    const { config, disposables } = await createConfig(
+      {},
+      '[secondary_model]\nmodel = "provider/secondary"\ndefault_effort = "low"\n',
+    );
+
+    // A concrete alias wins over both roles, and thinking resolves naturally
+    // from that entry rather than inheriting a level tuned for another model.
+    expect(resolveSubagentBinding(config, secondaryModelFlags(), own, 'provider/vision')).toEqual({
+      model: 'provider/vision',
+      thinking: undefined,
+      displayModel: 'provider/vision',
+    });
+
+    // Role keywords keep their meaning and are not treated as aliases.
+    expect(resolveSubagentBinding(config, secondaryModelFlags(), own, 'primary').model).toBe(
+      'provider/main',
+    );
+    expect(resolveSubagentBinding(config, secondaryModelFlags(), own, 'secondary').model).toBe(
+      SECONDARY_DERIVED_MODEL_ID,
+    );
+
+    disposables.dispose();
+  });
+
+  it('advertises the configured model ids alongside the two roles', async () => {
+    const own = 'provider/main';
+    const { config, disposables } = await createConfig(
+      {},
+      [
+        '[secondary_model]',
+        'model = "provider/secondary"',
+        '',
+        '[models."provider/main"]',
+        'provider = "p"',
+        'model = "main"',
+        '',
+        '[models."provider/secondary"]',
+        'provider = "p"',
+        'model = "secondary"',
+        '',
+        '[models."provider/vision"]',
+        'provider = "p"',
+        'model = "vision"',
+        '',
+      ].join('\n'),
+    );
+
+    const described = buildSubagentModelDescriptions(config, secondaryModelFlags(), own);
+    expect(described).toContain('- secondary: provider/secondary (default)');
+    expect(described).toContain('- primary: provider/main');
+    expect(described).toContain('Or pass any other configured model id:');
+    expect(described).toContain('- provider/vision');
+    // The two role models are not repeated in the routable list.
+    expect(described).not.toMatch(/Or pass any other[\s\S]*provider\/main/);
+    // The reserved derived entry is never advertised.
+    expect(described).not.toContain(SECONDARY_DERIVED_MODEL_ID);
+
+    disposables.dispose();
+  });
+
+  it('advertises nothing when every choice resolves to the caller model', async () => {
+    // No secondary role and nothing else configured: `model` cannot change the
+    // outcome, so the schema should stay silent rather than offer a one-item list.
+    const bare = await createConfig({});
+    expect(
+      buildSubagentModelDescriptions(bare.config, secondaryModelFlags(), 'provider/main'),
+    ).toBeUndefined();
+    bare.disposables.dispose();
+
+    // Other configured entries make `model` meaningful even with no secondary.
+    const routable = await createConfig(
+      {},
+      [
+        '[models."provider/main"]',
+        'provider = "p"',
+        'model = "main"',
+        '',
+        '[models."provider/vision"]',
+        'provider = "p"',
+        'model = "vision"',
+        '',
+      ].join('\n'),
+    );
+    const described = buildSubagentModelDescriptions(
+      routable.config,
+      secondaryModelFlags(),
+      'provider/main',
+    );
+    expect(described).toContain('- primary: provider/main (default)');
+    expect(described).not.toContain('- secondary:');
+    expect(described).toContain('- provider/vision');
+    routable.disposables.dispose();
+  });
+
   it('inherits the caller binding when the secondary-model feature control is disabled', async () => {
     const own = { modelAlias: 'provider/main', thinkingLevel: 'medium' };
     const { config, disposables } = await createConfig(
@@ -1515,14 +1639,14 @@ describe('subagent config section', () => {
       {},
       '[secondary_model]\nmodel = "provider/secondary"\ndefault_effort = "low"\n',
     );
-    expect(subagentDisplayModel(withRecipe.config, SECONDARY_DERIVED_MODEL_ID)).toBe(
+    expect(secondaryModelDisplayAlias(withRecipe.config, SECONDARY_DERIVED_MODEL_ID)).toBe(
       'provider/secondary',
     );
-    expect(subagentDisplayModel(withRecipe.config, 'provider/main')).toBe('provider/main');
+    expect(secondaryModelDisplayAlias(withRecipe.config, 'provider/main')).toBe('provider/main');
     withRecipe.disposables.dispose();
 
     const bare = await createConfig({});
-    expect(subagentDisplayModel(bare.config, SECONDARY_DERIVED_MODEL_ID)).toBe(
+    expect(secondaryModelDisplayAlias(bare.config, SECONDARY_DERIVED_MODEL_ID)).toBe(
       SECONDARY_DERIVED_MODEL_ID,
     );
     bare.disposables.dispose();

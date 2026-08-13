@@ -285,6 +285,23 @@ persistence_minidb_readmodel = false
 | `timeout_ms` | `integer` | `7200000`（2 小时） | 单个子代理（`Agent` / `AgentSwarm`）允许运行的最长时间（毫秒）。超时后子代理以 `timed_out` 收尾。`0` 表示无超时——子代理一直运行到自行结束或被模型手动停止。该值是后台任务管理器对每个子代理任务的 per-task timeout，因此对前台与后台子代理同时生效。在 print 模式（`echadron -p`）下未显式设置时默认为 `0`。注意：超过 `2147483647`（约 24.8 天）的值会被运行时钳到约 24.8 天 |
 `timeout_ms` 可被环境变量 `KIMI_SUBAGENT_TIMEOUT_MS` 覆盖，优先级高于配置文件。
 
+## `goal_completion_gates`
+
+在独立完成审核通过 `/goal` 的 complete 请求之后，必须全部以退出码 0 结束的命令。空列表表示不额外检查。
+
+| 字段 | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `commands` | `array<string>` | `[]` | 在会话工作区中按顺序执行的 shell 命令。第一个非 0 退出、超时或启动失败会拒绝完成并保持目标为 active |
+| `timeout_ms` | `integer` | `300000`（5 分钟） | 单条命令的墙钟超时（毫秒） |
+
+```toml
+[goal_completion_gates]
+commands = ["npm test"]
+timeout_ms = 300000
+```
+
+`commands` 可被 `KIMI_GOAL_GATE_COMMANDS` 覆盖（分号或换行分隔的列表，或 JSON 字符串数组），`timeout_ms` 可被 `KIMI_GOAL_GATE_TIMEOUT_MS` 覆盖，优先级均高于配置文件。
+
 ## `mcp`
 
 | 字段 | 类型 | 默认值 | 说明 |

@@ -16,6 +16,7 @@ import {
   visibleWidth,
 } from '@moonshot-ai/pi-tui';
 import type { Component, TUI } from '@moonshot-ai/pi-tui';
+import chalk from 'chalk';
 import { highlightLines, langFromPath } from '#/tui/components/media/code-highlight';
 import { renderDiffLinesClustered } from '#/tui/components/media/diff-preview';
 import {
@@ -35,14 +36,18 @@ import {
   STATUS_BULLET,
   SUCCESS_MARK,
   TOOL_GLYPHS,
+  WORKING_ICON_INTERVAL_MS,
+  workingIconFrame,
 } from '#/tui/constant/symbols';
 import { currentTheme } from '#/tui/theme';
 import { createMarkdownTheme } from '#/tui/theme/pi-tui-theme';
 import type { ToolCallBlockData, ToolResultBlockData } from '#/tui/types';
 import type { TokenUsage } from '@moonshot-ai/kimi-code-sdk';
+import { pulseHex } from '#/tui/utils/accent-pulse';
 import { appendStreamingArgsPreview } from '#/tui/utils/event-payload';
 import { decodeMcpToolName } from '#/tui/utils/mcp-tool-name';
 import { isRenderCacheEnabled } from '#/tui/utils/render-cache';
+import { toolPanelContentWidth, toolPanelLine, toolPanelSurface } from '#/tui/utils/tool-panel-bg';
 import { formatTokenCount } from '#/utils/usage/usage-format';
 
 import { agentSwarmResultSummaryFromOutput } from './agent-swarm-progress';
@@ -628,6 +633,8 @@ export class ToolCallComponent extends Container {
   private subagentError: string | undefined;
   private streamingProgressTimer: ReturnType<typeof setInterval> | undefined;
   private subagentElapsedTimer: ReturnType<typeof setInterval> | undefined;
+  private workingIconTimer: ReturnType<typeof setInterval> | undefined;
+  private workingIconFrameCount = 0;
   private subagentStartedAtMs: number | undefined;
   private subagentEndedAtMs: number | undefined;
   private subagentSpinnerFrame = 0;
@@ -684,28 +691,41 @@ export class ToolCallComponent extends Container {
     this.buildSubagentBlock();
     this.syncStreamingProgressTimer();
     this.syncSubagentElapsedTimer();
+    this.syncWorkingIconTimer();
     this.startDetachHintTimer();
   }
 
   private renderCache:
-    | { width: number; lines: string[]; childRefs: Component[]; childLines: string[][] }
+    | {
+        width: number;
+        surface: string;
+        lines: string[];
+        childRefs: Component[];
+        childLines: string[][];
+      }
     | undefined;
 
   override render(width: number): string[] {
+    const isFinished = this.result !== undefined;
+    const isError = this.result?.is_error ?? false;
+    const surface = toolPanelSurface(isFinished, isError);
+
     const cache = this.renderCache;
     const cacheValid =
       isRenderCacheEnabled() &&
       cache !== undefined &&
       cache.width === width &&
+      cache.surface === surface &&
       cache.childRefs.length === this.children.length;
 
+    const contentWidth = toolPanelContentWidth(width);
     const childRefs: Component[] = [];
     const childLines: string[][] = [];
     let allReused = cacheValid;
 
     let i = 0;
     for (const child of this.children) {
-      const lines = child.render(width);
+      const lines = child.render(contentWidth);
       childRefs.push(child);
       childLines.push(lines);
       if (cacheValid && (cache.childRefs[i] !== child || cache.childLines[i] !== lines)) {
@@ -718,12 +738,13 @@ export class ToolCallComponent extends Container {
       return cache!.lines;
     }
 
+    const railHex = this.toolRailHex(isFinished, isError);
     const out: string[] = [];
     for (const lines of childLines) {
-      for (const line of lines) out.push(line);
+      for (const line of lines) out.push(toolPanelLine(line, width, surface, railHex));
     }
     if (isRenderCacheEnabled()) {
-      this.renderCache = { width, lines: out, childRefs, childLines };
+      this.renderCache = { width, surface, lines: out, childRefs, childLines };
     }
     return out;
   }
@@ -758,6 +779,7 @@ export class ToolCallComponent extends Container {
     this.finalizeSubagentElapsedIfNeeded();
     this.syncStreamingProgressTimer();
     this.syncSubagentElapsedTimer();
+    this.syncWorkingIconTimer();
     this.headerText.setText(this.buildHeader());
     // rebuildBody (not rebuildContent) so the call preview re-renders
     // with the collapsed cap applied — Write streaming previews and
@@ -813,6 +835,7 @@ export class ToolCallComponent extends Container {
   dispose(): void {
     this.stopStreamingProgressTimer();
     this.stopSubagentElapsedTimer();
+    this.stopWorkingIconTimer();
     this.stopDetachHintTimer();
   }
 
@@ -1033,6 +1056,33 @@ export class ToolCallComponent extends Container {
     if (this.streamingProgressTimer === undefined) return;
     clearInterval(this.streamingProgressTimer);
     this.streamingProgressTimer = undefined;
+  }
+
+  /**
+   * Drive the diamond pulse icon shown in the header of in-progress tool
+   * calls. Only active while the tool has no result yet; stopped on
+   * completion, failure, or disposal.
+   */
+  private syncWorkingIconTimer(): void {
+    const shouldRun = this.result === undefined && this.ui !== undefined;
+    if (shouldRun && this.workingIconTimer === undefined) {
+      this.workingIconTimer = setInterval(() => {
+        this.workingIconFrameCount++;
+        this.renderCache = undefined;
+        this.headerText.setText(this.buildHeader());
+        this.ui?.requestRender();
+      }, WORKING_ICON_INTERVAL_MS);
+      this.workingIconTimer.unref?.();
+    } else if (!shouldRun && this.workingIconTimer !== undefined) {
+      clearInterval(this.workingIconTimer);
+      this.workingIconTimer = undefined;
+    }
+  }
+
+  private stopWorkingIconTimer(): void {
+    if (this.workingIconTimer === undefined) return;
+    clearInterval(this.workingIconTimer);
+    this.workingIconTimer = undefined;
   }
 
   /** Only foreground Bash/Agent calls can be detached via Ctrl+B. */
@@ -1450,6 +1500,22 @@ export class ToolCallComponent extends Container {
     this.ui?.requestRender();
   }
 
+  private livePopHex(): string {
+    return pulseHex(
+      currentTheme.palette.textMuted,
+      currentTheme.palette.running,
+      this.workingIconFrameCount * (WORKING_ICON_INTERVAL_MS / 1000),
+    );
+  }
+
+  /** Grok: Bash rail is green/red; Skill/Read/Edit stay gray. Never paint the label. */
+  private toolRailHex(isFinished: boolean, isError: boolean): string {
+    if (isError) return currentTheme.palette.error;
+    if (!isFinished) return this.livePopHex();
+    if (this.toolCall.name === 'Bash') return currentTheme.palette.success;
+    return currentTheme.palette.textMuted;
+  }
+
   private buildHeader(): string {
     const { toolCall, result } = this;
     const isFinished = result !== undefined;
@@ -1457,15 +1523,20 @@ export class ToolCallComponent extends Container {
     const isTruncated = toolCall.truncated === true && !isFinished;
 
     const toolGlyph = TOOL_GLYPHS[toolCall.name] ?? GENERIC_TOOL_GLYPH;
+    const liveHex = !isFinished && !isTruncated ? this.livePopHex() : undefined;
+    const labelToken = isError || isTruncated ? 'error' : 'primary';
     let bullet: string;
     if (isFinished) {
       bullet = isError
         ? currentTheme.fg('error', FAILURE_MARK)
-        : currentTheme.fg('success', `${toolGlyph} `);
+        : currentTheme.fg('primary', `${toolGlyph} `);
     } else if (isTruncated) {
       bullet = currentTheme.fg('error', FAILURE_MARK);
     } else {
-      bullet = currentTheme.fg('text', `${toolGlyph} `);
+      // Diamond + color pulse while the tool is in flight.
+      bullet = chalk.hex(liveHex ?? currentTheme.palette.running)(
+        `${workingIconFrame(this.workingIconFrameCount)} `,
+      );
     }
 
     if (toolCall.name === 'ExitPlanMode') {
@@ -1500,8 +1571,7 @@ export class ToolCallComponent extends Container {
         : isBackgroundAsk
           ? 'Starting background question'
           : 'Waiting for your input';
-      const tone = isError ? 'error' : 'primary';
-      return `${bullet}${currentTheme.boldFg(tone, label)}`;
+      return `${bullet}${currentTheme.boldFg(labelToken, label)}`;
     }
 
     if (toolCall.name === 'Bash') {
@@ -1510,12 +1580,15 @@ export class ToolCallComponent extends Container {
       // would duplicate the body. Wording mirrors the other label-only headers
       // (e.g. AskUserQuestion): the whole label takes the tone colour.
       if (isTruncated) {
-        return `${bullet}${currentTheme.fg('error', 'Truncated')} ${currentTheme.boldFg('primary', 'Bash')}`;
+        return `${bullet}${currentTheme.fg('error', 'Truncated')} ${currentTheme.boldFg('error', 'Bash')}`;
       }
       const label = isFinished ? 'Ran a command' : 'Running a command';
-      const tone = isError ? 'error' : 'primary';
       const chipStr = isFinished && result !== undefined ? this.buildHeaderChip(result) : '';
-      return `${bullet}${currentTheme.boldFg(tone, label)}${chipStr}`;
+      const labelStyled =
+        liveHex !== undefined
+          ? chalk.hex(liveHex).bold(label)
+          : currentTheme.boldFg(labelToken, label);
+      return `${bullet}${labelStyled}${chipStr}`;
     }
 
     const goalHeader = buildGoalToolHeader({
@@ -1533,13 +1606,21 @@ export class ToolCallComponent extends Container {
     const verb = isFinished ? 'Used' : isTruncated ? 'Truncated' : 'Using';
     const keyArg = extractKeyArgument(toolCall.name, toolCall.args, this.workspaceDir);
     const decoded = decodeMcpToolName(toolCall.name);
-    const verbStyled = isTruncated
-      ? currentTheme.fg('error', verb)
-      : verb;
+    const verbStyled =
+      liveHex !== undefined
+        ? chalk.hex(liveHex)(verb)
+        : isTruncated || isError
+          ? currentTheme.fg('error', verb)
+          : currentTheme.fg('primary', verb);
+    const toolName =
+      decoded !== null ? decoded.toolName : toolCall.name;
     const toolLabel =
-      decoded !== null
-        ? `${currentTheme.boldFg('primary', decoded.toolName)}${currentTheme.dim(` · MCP/${decoded.serverName}`)}`
-        : currentTheme.boldFg('primary', toolCall.name);
+      liveHex !== undefined
+        ? chalk.hex(liveHex).bold(toolName) +
+          (decoded !== null ? currentTheme.dim(` · MCP/${decoded.serverName}`) : '')
+        : decoded !== null
+          ? `${currentTheme.boldFg(labelToken, decoded.toolName)}${currentTheme.dim(` · MCP/${decoded.serverName}`)}`
+          : currentTheme.boldFg(labelToken, toolCall.name);
     let argStr = keyArg ? currentTheme.dim(` (${keyArg})`) : '';
     const toolPath = extractToolPath(toolCall.name, toolCall.args);
     if (argStr.length > 0 && toolPath !== undefined && getCapabilities().hyperlinks) {
@@ -1820,7 +1901,7 @@ export class ToolCallComponent extends Container {
       case 'failed':
         return currentTheme.fg('error', 'Failed');
       case 'running':
-        return currentTheme.fg('primary', 'Running');
+        return currentTheme.fg('running', 'Running');
       case 'backgrounded':
         return 'Backgrounded';
       case 'queued':

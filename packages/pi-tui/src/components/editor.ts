@@ -296,6 +296,7 @@ export class Editor implements Component, Focusable {
 
 	// Store last render width for cursor navigation
 	private lastWidth: number = 80;
+	private lastRenderHeight = 0;
 
 	// Vertical scrolling support
 	private scrollOffset: number = 0;
@@ -683,6 +684,7 @@ export class Editor implements Component, Focusable {
 			}
 		}
 
+		this.lastRenderHeight = result.length;
 		return result;
 	}
 
@@ -1113,6 +1115,32 @@ export class Editor implements Component, Focusable {
 
 	getCursor(): { line: number; col: number } {
 		return { line: this.state.cursorLine, col: this.state.cursorCol };
+	}
+
+	/**
+	 * Place the cursor from a click inside this editor's last-rendered box.
+	 * `localCol`/`localRow` are 0-based cells relative to the editor's top-left
+	 * (including the border). Returns true when the click landed in the box.
+	 */
+	placeCursorFromClick(localCol: number, localRow: number, width: number): boolean {
+		if (this.lastRenderHeight <= 0) return false;
+		if (localRow < 0 || localRow >= this.lastRenderHeight) return false;
+		if (localCol < 0 || localCol >= width) return false;
+
+		const maxPadding = Math.max(0, Math.floor((width - 1) / 2));
+		const paddingX = Math.min(this.paddingX, maxPadding);
+		const contentWidth = Math.max(1, width - paddingX * 2);
+		const layoutWidth = Math.max(1, contentWidth - (paddingX ? 0 : 1));
+		const visualLines = this.buildVisualLineMap(layoutWidth);
+		const contentRow = Math.max(0, Math.min(localRow - 1, this.lastRenderHeight - 3));
+		const visualIndex = Math.max(0, Math.min(this.scrollOffset + contentRow, visualLines.length - 1));
+		const visual = visualLines[visualIndex];
+		if (visual === undefined) return false;
+		const visualCol = Math.max(0, localCol - paddingX);
+		const logicalCol = Math.min(visual.startCol + visualCol, (this.state.lines[visual.logicalLine] ?? "").length);
+		this.state.cursorLine = visual.logicalLine;
+		this.setCursorCol(logicalCol);
+		return true;
 	}
 
 	setText(text: string): void {

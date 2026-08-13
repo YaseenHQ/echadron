@@ -322,7 +322,7 @@ function formatLineTail(snap: ToolCallSubagentSnapshot): string {
     case 'queued':
       return separator + currentTheme.fg('primary', 'Waiting');
     case 'running':
-      return separator + currentTheme.fg('primary', 'Running');
+      return separator + currentTheme.fg('running', 'Running');
     case 'spawning':
     case undefined:
       return separator + currentTheme.fg('primary', 'Starting');

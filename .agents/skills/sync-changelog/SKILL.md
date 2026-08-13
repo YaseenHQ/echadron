@@ -7,7 +7,7 @@ description: Use after a release succeeds, when maintainers need to sync apps/ki
 
 ## Overview
 
-`kimi-code` uses changesets for versioning. Each package gets its own `CHANGELOG.md`. The user-facing CLI package, `@moonshot-ai/kimi-code`, writes its changelog here:
+Echadron uses changesets for versioning. Each package gets its own `CHANGELOG.md`. The user-facing CLI package, `echadron`, writes its changelog here:
 
 ```text
 apps/kimi-code/CHANGELOG.md
@@ -39,7 +39,7 @@ Core rule: the English docs changelog is the source of truth, and Chinese is tra
 
 Before editing, confirm:
 
-- The released version exists on npm (`npm view @moonshot-ai/kimi-code versions --json`) or has a matching GitHub Release tag.
+- The released version exists on npm (`npm view echadron versions --json`) or has a matching GitHub Release tag.
 - The top of `apps/kimi-code/CHANGELOG.md` is that new version.
 
 If any condition is not true, stop and confirm with the user.
@@ -103,7 +103,7 @@ Changesets may add a `Thanks ...!` credit, but it must be removed every time. Ke
 
 Remove:
 
-- The upstream H1 `# @moonshot-ai/kimi-code` because the docs page already has `# Changelog`.
+- The upstream package H1 because the docs page already has `# Changelog`.
 - Changesets subheadings such as `### Patch Changes`, `### Minor Changes`, and `### Major Changes`.
 - PR links such as `[#317](...)`.
 - Commit hash links such as ``[`2f51db4`](...)``.
@@ -111,7 +111,7 @@ Remove:
 
 After stripping, each entry is `- <body text>`.
 
-Drop SDK-only and provider-internal detail. This changelog serves `@moonshot-ai/kimi-code` CLI and web users. Within an entry, keep only what CLI/web users can perceive, and remove sentences that document internals instead of user-visible behavior. Apply this on both the English and Chinese pages:
+Drop SDK-only and provider-internal detail. This changelog serves Echadron CLI and web users. Within an entry, keep only what CLI/web users can perceive, and remove sentences that document internals instead of user-visible behavior. Apply this on both the English and Chinese pages:
 
 - Drop sentences about how the SDK maps a capability, builds model aliases, or exposes a flag through an API such as `getExperimentalFeatures()` — that belongs in the SDK changelog, not here.
 - Drop provider / wire-format implementation mechanics (XML markers like `<tools_added>`, protocol field explanations, "the wire protocol is unchanged", cache-hit mechanics) unless they are the behavior a user perceives.
@@ -195,7 +195,7 @@ Never change the English page header:
 ```markdown
 # Changelog
 
-This page documents the changes in each Kimi Code CLI release.
+This page documents each Echadron release.
 ```
 
 Insert new version blocks immediately after the header paragraph and before the previous latest version.
@@ -209,7 +209,7 @@ Every version heading must carry its release date in parentheses:
 Take the date from the version's published GitHub Release tag, not from when you run the sync:
 
 ```bash
-git log -1 --format=%cs "@moonshot-ai/kimi-code@<version>"
+git log -1 --format=%cs "echadron@<version>"
 ```
 
 Use the half-width parenthesis form ` (YYYY-MM-DD)` on the English page. Never invent or guess a date; if the tag is missing, stop and confirm with the user.
@@ -242,7 +242,7 @@ Chinese page requirements:
   ```markdown
   # 变更记录
 
-  本页记录 Kimi Code CLI 每个版本的变更内容。
+  本页记录 Echadron 每个版本的变更内容。
   ```
 
 - Preserve version headings including the release date, but use full-width parentheses on the Chinese page, such as `## 0.2.0（2026-05-26）`. The date must match the English page; only the parenthesis style differs (half-width `()` in English, full-width `（）` in Chinese).
@@ -280,7 +280,7 @@ Guidelines:
   - Better: `--allowed-host <host>`
 - **Keep usage hints to one short clause**.
   - Bad: `传入 --allowed-host 以允许额外的 host。例如 ... （多句展开）`
-  - Better: `例如 kimi web --allowed-host example.com。`
+  - Better: `例如 echadron web --allowed-host example.com。`
 - **Do not translate technical identifiers**: keep command names, flag names, file names, env vars, config keys, and the `web:` scope prefix as-is.
 - **Keep parallel rhythm within a section.** When several entries fix similar web surfaces (layout, animation, sizing), phrase them with a consistent structure (for example 修复 <问题>，现 <行为>) so the section reads as a tidy list rather than a mix of shapes.
 
@@ -289,19 +289,19 @@ Example — translating a feature entry:
 English source:
 
 ```markdown
-- Add a --allowed-host flag to kimi web that lets extra Host header values pass the DNS-rebinding check, and include allow guidance in the 403 error message. Pass --allowed-host <host> to allow an extra host.
+- Add a --allowed-host flag to echadron web that lets extra Host header values pass the DNS-rebinding check, and include allow guidance in the 403 error message. Pass --allowed-host <host> to allow an extra host.
 ```
 
 Before (literal, wordy):
 
 ```markdown
-- 为 `kimi web` 新增 `--allowed-host` 标志，允许额外的 Host 请求头值通过 DNS 重绑定检查，并在 403 错误消息中包含允许指引。传入 `--allowed-host <host>` 以允许额外的 host。例如 `kimi web --allowed-host example.com`。
+- 为 `echadron web` 新增 `--allowed-host` 标志，允许额外的 Host 请求头值通过 DNS 重绑定检查，并在 403 错误消息中包含允许指引。传入 `--allowed-host <host>` 以允许额外的 host。例如 `echadron web --allowed-host example.com`。
 ```
 
 After (concise, idiomatic):
 
 ```markdown
-- `kimi web` 新增 `--allowed-host <host>` 选项，可将指定 Host 加入 DNS 重绑定白名单；403 错误会提示如何通过 `--allowed-host` 或 `KIMI_CODE_ALLOWED_HOSTS` 放行，例如 `kimi web --allowed-host example.com`。
+- `echadron web` 新增 `--allowed-host <host>` 选项，可将指定 Host 加入 DNS 重绑定白名单；403 错误会提示如何通过 `--allowed-host` 或 `ECHADRON_ALLOWED_HOSTS` 放行，例如 `echadron web --allowed-host example.com`。
 ```
 
 ### 7. Verify

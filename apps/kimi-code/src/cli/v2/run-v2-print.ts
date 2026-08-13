@@ -303,13 +303,16 @@ async function resolveNativeSession(
   }
 
   // `--agent` / `--agent-file` are creation-only: validateOptions rejects them
-  // together with --session/--continue, so resume paths only apply an
-  // explicitly requested model — the bound profile is restored by the engine.
+  // together with --session/--continue, so resume paths only apply explicitly
+  // requested model and thinking overrides — the bound profile is restored by
+  // the engine.
   const applyModelOverride = async (
     profile: IAgentProfileService,
     model: string | undefined,
+    thinking: string | undefined,
   ): Promise<void> => {
     if (model !== undefined) await profile.setModel(model);
+    if (thinking !== undefined) profile.setThinking(thinking);
   };
 
   const resumeById = async (id: string): Promise<ISessionScopeHandle> => {
@@ -349,7 +352,7 @@ async function resolveNativeSession(
     const session = await resumeById(opts.session);
     const agent = await ensureMainAgent(session);
     const profile = agent.accessor.get(IAgentProfileService);
-    await applyModelOverride(profile, opts.model);
+    await applyModelOverride(profile, opts.model, opts.thinking);
     const currentModel = profile.getModel();
     const { restorePermission } = forceAuto(agent);
     return {
@@ -368,7 +371,7 @@ async function resolveNativeSession(
       const session = await resumeById(previous.id);
       const agent = await ensureMainAgent(session);
       const profile = agent.accessor.get(IAgentProfileService);
-      await applyModelOverride(profile, opts.model);
+      await applyModelOverride(profile, opts.model, opts.thinking);
       const currentModel = profile.getModel();
       const { restorePermission } = forceAuto(agent);
       return {
@@ -389,6 +392,8 @@ async function resolveNativeSession(
     mainAgentBinding: {
       profile: agentProfileName ?? 'agent',
       model,
+      thinking: opts.thinking,
+      strictThinking: opts.thinking !== undefined,
     },
   });
   const agent = await ensureMainAgent(session);

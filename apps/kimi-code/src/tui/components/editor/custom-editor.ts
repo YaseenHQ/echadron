@@ -18,6 +18,8 @@ import { createEditorTheme } from '#/tui/theme/pi-tui-theme';
 import { printableChar } from '#/tui/utils/printable-key';
 import { isInsideTmux } from '#/tui/utils/terminal-notification';
 
+import { parseSgrMouse } from '#/tui/utils/sgr-mouse';
+
 import { extractAtPrefix } from './file-mention-provider';
 import { WrappingSelectList } from './wrapping-select-list';
 
@@ -156,6 +158,13 @@ export class CustomEditor extends Editor {
   public onInputModeChange?: (mode: 'prompt' | 'bash') => void;
   public connectedAbove = false;
   public borderHighlighted = false;
+  /** Rows occupied by chrome below the editor (footer). Used for mouse hit-testing. */
+  public chromeBelowEditorRows?: () => number;
+  private lastRenderWidth = 0;
+  // Keep the wrapped height separate from pi-tui's private editor height.
+  // `super.render()` records the inner editor box; the custom side borders
+  // add rows that mouse hit-testing must include as well.
+  private lastCustomRenderHeight = 0;
   /**
    * Called when the user triggers "paste image" (Ctrl-V on Unix,
    * Alt-V on Windows — Ctrl-V is terminal-reserved there). Return
@@ -311,7 +320,11 @@ export class CustomEditor extends Editor {
   override render(width: number): string[] {
     this.trackAutocompleteCloseForFullRender();
     const lines = super.render(width);
-    if (lines.length < 3) return lines;
+    this.lastRenderWidth = width;
+    if (lines.length < 3) {
+      this.lastCustomRenderHeight = lines.length;
+      return lines;
+    }
     const firstContentIdx = 1;
     const isBash = this.inputMode === 'bash';
     const text = this.getText().trimStart();
@@ -338,20 +351,27 @@ export class CustomEditor extends Editor {
       const withPrompt = injectPromptSymbol(
         firstContent,
         isBash ? '!' : '>',
-        isBash ? (s) => this.borderColor(s) : undefined,
+        isBash ? (s) => currentTheme.fg('shellMode', s) : undefined,
       );
       if (withPrompt !== undefined) {
         lines[firstContentIdx] = withPrompt;
       }
     }
-    // `this.borderColor` is pi-tui's per-render paint function. The host may
-    // overwrite it (e.g. plan-mode / slash-context highlight via
-    // `editor.borderColor = chalk.hex(primary)`), so we route corners and
-    // side bars through the same hook to stay in sync.
-    return wrapWithSideBorders(lines, (s) => this.borderColor(s), {
-      connectedAbove: this.connectedAbove && !this.borderHighlighted,
-      label: isBash ? ` ${currentTheme.boldFg('shellMode', '! shell mode')} ` : undefined,
+    if (this.getText().length === 0) {
+      const empty = lines[firstContentIdx];
+      if (empty !== undefined) {
+        lines[firstContentIdx] = injectEmptyPlaceholder(
+          empty,
+          isBash ? 'run a shell command' : 'Ask, edit, or run anything',
+          width,
+        );
+      }
+    }
+    const boxed = wrapWithSideBorders(lines, this.borderColor, {
+      connectedAbove: this.connectedAbove,
     });
+    this.lastCustomRenderHeight = boxed.length;
+    return boxed;
   }
 
   private computeArgumentHint(): string | undefined {
@@ -372,8 +392,21 @@ export class CustomEditor extends Editor {
     return trailingSpace.length > 0 ? hint : ` ${hint}`;
   }
 
+  private handleMouseInput(data: string): boolean {
+    const mouse = parseSgrMouse(data);
+    if (mouse === undefined) return false;
+    if (mouse.wheel || !mouse.press || mouse.button !== 0) return true;
+    const below = this.chromeBelowEditorRows?.() ?? 0;
+    const top = this.tui.terminal.rows - below - this.lastCustomRenderHeight;
+    return this.placeCursorFromClick(mouse.col, mouse.row - top, this.lastRenderWidth);
+  }
+
   override handleInput(data: string): void {
     const normalized = normalizeCapsLockedCtrl(data);
+    if (this.handleMouseInput(normalized)) {
+      this.onNonEscapeInput?.();
+      return;
+    }
     if (isKeyRelease(normalized)) {
       return;
     }
@@ -766,6 +799,13 @@ export function injectPromptSymbol(
   return '  ' + rendered + ' ' + line.slice(4);
 }
 
+function injectEmptyPlaceholder(line: string, hint: string, width: number): string {
+  const trimmed = line.replace(/[ \t]+$/u, '');
+  const painted = currentTheme.fg('textMuted', hint);
+  const pad = ' '.repeat(Math.max(0, width - visibleWidth(trimmed) - visibleWidth(hint)));
+  return trimmed + painted + pad;
+}
+
 /**
  * Post-process pi-tui's editor output to draw a full box around it.
  *
@@ -777,6 +817,7 @@ export function injectPromptSymbol(
  * inner SGR intact; only column 0 and the last column are overlaid, and
  * only if they're literal spaces — that protects the cursor-overflow
  * case where the rightmost column is an SGR-tagged inverse cursor.
+ * Rows after the bottom border (slash / file autocomplete) stay unboxed.
  *
  * When `options.label` is set, it is overlaid on the left of the top border
  * (e.g. the `! shell mode` badge), replacing the leading dashes. It is only
@@ -788,13 +829,16 @@ export function wrapWithSideBorders(
   options: { readonly connectedAbove?: boolean; readonly label?: string } = {},
 ): string[] {
   let seenTop = false;
+  let closed = false;
   return lines.map((line) => {
+    if (closed) return line;
     const plain = stripSgr(line);
     if (plain.length > 0 && plain[0] === '─') {
       const isTop = !seenTop;
       const leftCorner = seenTop ? '╰' : options.connectedAbove === true ? '├' : '╭';
       const rightCorner = seenTop ? '╯' : options.connectedAbove === true ? '┤' : '╮';
       seenTop = true;
+      if (!isTop) closed = true;
       if (plain.length === 1) return paint(leftCorner);
       const middle = plain.slice(1, -1);
       if (isTop && options.label !== undefined && /^─+$/.test(middle)) {

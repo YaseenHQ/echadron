@@ -28,6 +28,7 @@ const mocks = vi.hoisted(() => {
   const session = {
     id: 'ses_prompt',
     setModel: vi.fn(),
+    setThinking: vi.fn(),
     setPermission: vi.fn(),
     setApprovalHandler: vi.fn(),
     setQuestionHandler: vi.fn(),
@@ -191,6 +192,7 @@ function opts(overrides: Partial<Parameters<typeof runPrompt>[0]> = {}) {
     auto: false,
     plan: false,
     model: undefined,
+    thinking: undefined,
     outputFormat: undefined,
     prompt: 'say hello',
     skillsDirs: [],
@@ -276,6 +278,7 @@ describe('runPrompt', () => {
     expect(mocks.harnessCreateSession).toHaveBeenCalledWith({
       workDir: process.cwd(),
       model: 'k2',
+      thinking: undefined,
       permission: 'auto',
       additionalDirs: undefined,
       drainAgentTasksOnStop: true,
@@ -431,6 +434,7 @@ describe('runPrompt', () => {
     expect(mocks.harnessCreateSession).toHaveBeenCalledWith({
       workDir: process.cwd(),
       model: 'kimi-code/k2.5',
+      thinking: undefined,
       permission: 'auto',
       additionalDirs: undefined,
       drainAgentTasksOnStop: true,
@@ -438,6 +442,18 @@ describe('runPrompt', () => {
     expect(mocks.initializeTelemetry).toHaveBeenCalledWith(
       expect.objectContaining({ model: 'kimi-code/k2.5' }),
     );
+  });
+
+  it('uses the CLI thinking override when creating a fresh prompt session', async () => {
+    await runPrompt(opts({ thinking: 'max' }), '1.2.3-test', {
+      stdout: writer(),
+      stderr: writer(),
+    });
+
+    expect(mocks.harnessCreateSession).toHaveBeenCalledWith(
+      expect.objectContaining({ thinking: 'max' }),
+    );
+    expect(mocks.session.setThinking).not.toHaveBeenCalled();
   });
 
   it('passes the CLI additional directory when creating a fresh prompt session', async () => {
@@ -449,6 +465,7 @@ describe('runPrompt', () => {
     expect(mocks.harnessCreateSession).toHaveBeenCalledWith({
       workDir: process.cwd(),
       model: 'k2',
+      thinking: undefined,
       permission: 'auto',
       additionalDirs: ['../shared', '/tmp/extra'],
       drainAgentTasksOnStop: true,
@@ -710,6 +727,29 @@ describe('runPrompt', () => {
     expect(mocks.initializeTelemetry).toHaveBeenCalledWith(
       expect.objectContaining({ model: 'kimi-code/k2.5' }),
     );
+  });
+
+  it('applies the CLI thinking override to resumed prompt sessions', async () => {
+    await runPrompt(opts({ session: 'ses_existing', thinking: 'max' }), '1.2.3-test', {
+      stdout: writer(),
+      stderr: writer(),
+    });
+
+    expect(mocks.harnessResumeSession).toHaveBeenCalledWith({ id: 'ses_existing' });
+    expect(mocks.session.setThinking).toHaveBeenCalledWith('max');
+  });
+
+  it('surfaces an unsupported thinking effort when resuming a prompt session', async () => {
+    mocks.session.setThinking.mockRejectedValueOnce(new Error('Unsupported thinking effort'));
+
+    await expect(
+      runPrompt(opts({ session: 'ses_existing', thinking: 'bogus' }), '1.2.3-test', {
+        stdout: writer(),
+        stderr: writer(),
+      }),
+    ).rejects.toThrow('Unsupported thinking effort');
+
+    expect(mocks.harnessClose).toHaveBeenCalled();
   });
 
   it('writes stream-json output as assistant JSONL with resume meta without transcript bullets', async () => {

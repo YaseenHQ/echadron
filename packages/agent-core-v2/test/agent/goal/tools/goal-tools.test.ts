@@ -14,6 +14,8 @@ import {
 } from '#/tool/args-validator';
 import { USER_PROMPT_ORIGIN } from '#/agent/contextMemory/types';
 import { IAgentGoalService } from '#/agent/goal/goal';
+import { IGoalCompletionGateService } from '#/agent/goal/completionGate';
+import { IGoalCompletionReviewService } from '#/agent/goal/completionReview';
 import { CreateGoalTool } from '#/agent/tools/goal/create-goal/createGoalTool';
 import { GetGoalTool } from '#/agent/tools/goal/get-goal/getGoalTool';
 import { SetGoalBudgetTool } from '#/agent/tools/goal/set-goal-budget/setGoalBudgetTool';
@@ -34,10 +36,11 @@ import {
   agentService,
   createTestAgent,
   permissionModeServices,
+  sessionService,
   type TestAgentContext,
 } from '../../../harness';
 import { stubLoopWithHooks } from '../../loop/stubs';
-import { stubAgentSwarm } from '../stubs';
+import { stubAgentSwarm, stubGoalCompletionGate, stubGoalCompletionReview } from '../stubs';
 
 const signal = new AbortController().signal;
 
@@ -55,13 +58,19 @@ describe('goal tools', () => {
     ctx = createTestAgent(
       agentService(IAgentLoopService, loopService),
       agentService(IAgentSwarmService, stubAgentSwarm()),
+      sessionService(IGoalCompletionReviewService, stubGoalCompletionReview()),
+      sessionService(IGoalCompletionGateService, stubGoalCompletionGate()),
       permissionModeServices('auto'),
     );
     goals = ctx.get(IAgentGoalService);
     eventBus = ctx.get(IEventBus);
     toolExecutor = ctx.get(IAgentToolExecutorService);
     setGoalBudgetTool = new SetGoalBudgetTool(goals);
-    updateGoalTool = new UpdateGoalTool(goals);
+    updateGoalTool = new UpdateGoalTool(
+      goals,
+      stubGoalCompletionReview(),
+      stubGoalCompletionGate(),
+    );
   });
 
   afterEach(async () => {
@@ -283,6 +292,98 @@ describe('goal tools', () => {
     expect(result.output).toContain('Goal completed successfully');
     expect(result.output).toContain('Worked');
     expect(result.output).toContain('Write a concise final message for the user');
+  });
+
+  it('UpdateGoal keeps the goal active when independent completion review finds gaps', async () => {
+    await goals.createGoal({ objective: 'ship it' });
+    const tool = new UpdateGoalTool(
+      goals,
+      stubGoalCompletionReview({
+        achieved: false,
+        gaps: ['Exercise the shipped entry point with a changed representative fixture.'],
+        evidence: 'The public CLI was only exercised with the repository fixture.',
+      }),
+      stubGoalCompletionGate(),
+    );
+    const execution = tool.resolveExecution({ status: 'complete' });
+    if (execution.isError === true) throw new Error('execution should not be an error');
+
+    const result = await execution.execute({ turnId: 0, toolCallId: 'call_review', signal });
+
+    expect(result.stopTurn).toBeFalsy();
+    expect(result.output).toContain('Independent completion review found remaining work');
+    expect(result.output).toContain('changed representative fixture');
+    expect(result.output).toContain('Verifier evidence:');
+    expect(result.output).toContain('public CLI was only exercised');
+    // The feedback must forbid launching a duplicate Agent/verifier and request
+    // local narrow repair verification.
+    expect(result.output).toContain('Do not launch an Agent or another verifier');
+    expect(result.output).toContain('narrowest failing probe');
+    expect(result.output).toContain('UpdateGoal');
+    expect(result.output).toContain('complete');
+    expect(goals.getGoal().goal).toMatchObject({ status: 'active', objective: 'ship it' });
+  });
+
+  it('UpdateGoal keeps the goal active when a configured completion gate fails', async () => {
+    await goals.createGoal({ objective: 'ship it' });
+    const tool = new UpdateGoalTool(
+      goals,
+      stubGoalCompletionReview(),
+      stubGoalCompletionGate({
+        passed: false,
+        command: 'npm test',
+        exitText: 'exited 1',
+        output: '1 failing',
+      }),
+    );
+    const execution = tool.resolveExecution({ status: 'complete' });
+    if (execution.isError === true) throw new Error('execution should not be an error');
+
+    const result = await execution.execute({ turnId: 0, toolCallId: 'call_gate', signal });
+
+    expect(result.stopTurn).toBeFalsy();
+    expect(result.output).toContain('Configured completion gate failed');
+    expect(result.output).toContain('npm test');
+    expect(result.output).toContain('1 failing');
+    expect(result.output).toContain('Do not launch an Agent or another verifier');
+    expect(goals.getGoal().goal).toMatchObject({ status: 'active', objective: 'ship it' });
+  });
+
+  it('UpdateGoal does not complete a replacement goal created during review', async () => {
+    await goals.createGoal({ objective: 'old task' });
+    let finishReview!: () => void;
+    const reviewPending = new Promise<void>((resolve) => {
+      finishReview = resolve;
+    });
+    const tool = new UpdateGoalTool(
+      goals,
+      {
+        _serviceBrand: undefined,
+        review: async () => {
+          await reviewPending;
+          return { achieved: true };
+        },
+      },
+      stubGoalCompletionGate(),
+    );
+    const execution = tool.resolveExecution({ status: 'complete' });
+    if (execution.isError === true) throw new Error('execution should not be an error');
+
+    const pendingResult = execution.execute({
+      turnId: 0,
+      toolCallId: 'call_review_race',
+      signal,
+    });
+    const replacement = await goals.createGoal({ objective: 'new task', replace: true });
+    finishReview();
+
+    await expect(pendingResult).resolves.toMatchObject({
+      output: 'Goal not completed: the current goal changed.',
+    });
+    expect(goals.getGoal().goal).toMatchObject({
+      goalId: replacement.goalId,
+      status: 'active',
+    });
   });
 
   it('UpdateGoal blocked returns the blocked-reason prompt and stops the turn', async () => {

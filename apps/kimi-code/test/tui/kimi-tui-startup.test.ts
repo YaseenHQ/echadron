@@ -94,6 +94,7 @@ function makeStartupInput(
       auto: false,
       plan: false,
       model: undefined,
+      thinking: undefined,
       outputFormat: undefined,
       prompt: undefined,
       skillsDirs: [],
@@ -272,6 +273,7 @@ describe('KimiTUI startup', () => {
 
     expect(harness.createSession).toHaveBeenCalledWith({
       workDir: '/tmp/proj-a',
+      thinking: undefined,
       permission: 'yolo',
       planMode: true,
     });
@@ -304,6 +306,7 @@ describe('KimiTUI startup', () => {
 
     expect(harness.createSession).toHaveBeenCalledWith({
       workDir: '/tmp/proj-a',
+      thinking: undefined,
       agentProfile: 'reviewer',
       agentFiles: ['reviewer.md'],
     });
@@ -616,9 +619,21 @@ describe('KimiTUI startup', () => {
     expect(harness.createSession).toHaveBeenCalledWith({
       workDir: '/tmp/proj-a',
       model: 'kimi-code/k2.5',
+      thinking: undefined,
       permission: undefined,
       planMode: undefined,
     });
+  });
+
+  it('passes the CLI thinking override when creating a fresh startup session', async () => {
+    const harness = makeHarness();
+    const driver = makeDriver(harness, makeStartupInput({ thinking: 'max' }));
+
+    await expect(driver.init()).resolves.toBe(false);
+
+    expect(harness.createSession).toHaveBeenCalledWith(
+      expect.objectContaining({ thinking: 'max' }),
+    );
   });
 
   it('applies the CLI model override when resuming a startup session', async () => {
@@ -649,6 +664,33 @@ describe('KimiTUI startup', () => {
 
     expect(session.setModel).toHaveBeenCalledWith('kimi-code/k2.5');
     expect(driver.state.appState.model).toBe('kimi-code/k2.5');
+  });
+
+  it('applies the CLI thinking override when resuming a startup session', async () => {
+    let thinkingEffort = 'off';
+    const session = makeSession({
+      setThinking: vi.fn(async (nextEffort: string) => {
+        thinkingEffort = nextEffort;
+      }),
+      getStatus: vi.fn(async () => ({
+        model: 'k2',
+        thinkingEffort,
+        permission: 'manual',
+        planMode: false,
+        contextTokens: 10,
+        maxContextTokens: 100,
+        contextUsage: 0.1,
+      })),
+    });
+    const harness = makeHarness(session, {
+      listSessions: vi.fn(async () => [{ id: 'ses-latest' }]),
+    });
+    const driver = makeDriver(harness, makeStartupInput({ continue: true, thinking: 'max' }));
+
+    await expect(driver.init()).resolves.toBe(true);
+
+    expect(session.setThinking).toHaveBeenCalledWith('max');
+    expect(driver.state.appState.thinkingEffort).toBe('max');
   });
 
   it('enters picker startup for bare --session without creating a session', async () => {

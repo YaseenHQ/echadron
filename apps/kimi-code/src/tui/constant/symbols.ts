@@ -1,6 +1,9 @@
 // Use U+25CF instead of U+23FA to avoid emoji/fallback rendering in terminals.
 export const STATUS_BULLET = '● ';
 
+/** Grok Build left accent rail (`┃`, U+2503). One cell. */
+export const ACCENT_BAR = '┃';
+
 // Shared transcript markers. Keep widths stable because message wrapping
 // assumes the marker occupies the leading cells.
 export const USER_MESSAGE_BULLET = '› ';
@@ -30,3 +33,14 @@ export const TOOL_GLYPHS: Readonly<Record<string, string>> = {
 // row that is the currently-active value. See .agents/skills/write-tui/DESIGN.md.
 export const SELECT_POINTER = '❯';
 export const CURRENT_MARK = '← current';
+
+// "Still working" indicator: a diamond that pulses while a tool is running.
+// Shared across the tool-call header and any future in-progress surface so
+// motion reads consistently. Advanced by the ToolCallComponent's timer.
+export const WORKING_ICON_FRAMES = ['◇', '◈', '◆', '◈'] as const;
+export const WORKING_ICON_INTERVAL_MS = 250;
+
+export function workingIconFrame(frame: number): string {
+  const frames = WORKING_ICON_FRAMES;
+  return frames[((frame % frames.length) + frames.length) % frames.length] ?? frames[0];
+}

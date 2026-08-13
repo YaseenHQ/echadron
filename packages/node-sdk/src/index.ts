@@ -31,7 +31,9 @@ export {
   fetchCatalog,
   inferWireType,
   loadBuiltInCatalog,
+  mergeXaiCatalogModels,
   resolveCatalogImport,
+  xaiCatalogModelCount,
 } from '#/catalog';
 export type {
   ApplyCatalogProviderOptions,
