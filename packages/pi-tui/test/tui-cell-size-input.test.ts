@@ -51,11 +51,14 @@ describe("TUI cell size responses", () => {
 
 			tui.setFocus(recorder);
 			tui.start();
+			try {
 
-			terminal.sendInput("\x1b");
+				terminal.sendInput("\x1b");
 
-			assert.deepStrictEqual(recorder.inputs, ["\x1b"]);
-			tui.stop();
+				assert.deepStrictEqual(recorder.inputs, ["\x1b"]);
+			} finally {
+				tui.stop();
+			}
 		});
 	});
 
@@ -69,14 +72,17 @@ describe("TUI cell size responses", () => {
 
 			tui.setFocus(recorder);
 			tui.start();
+			try {
 
-			terminal.sendInput("\x1b[6;20;10t");
-			assert.deepStrictEqual(recorder.inputs, []);
-			assert.deepStrictEqual(getCellDimensions(), { widthPx: 10, heightPx: 20 });
+				terminal.sendInput("\x1b[6;20;10t");
+				assert.deepStrictEqual(recorder.inputs, []);
+				assert.deepStrictEqual(getCellDimensions(), { widthPx: 10, heightPx: 20 });
 
-			terminal.sendInput("q");
-			assert.deepStrictEqual(recorder.inputs, ["q"]);
-			tui.stop();
+				terminal.sendInput("q");
+				assert.deepStrictEqual(recorder.inputs, ["q"]);
+			} finally {
+				tui.stop();
+			}
 		});
 	});
 });

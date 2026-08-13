@@ -25,21 +25,24 @@ describe("TUI shrinking content", () => {
 		const content = new Lines(["first", "second", "third"]);
 		tui.addChild(content);
 		tui.start();
-		await terminal.waitForRender();
+		try {
+			await terminal.waitForRender();
 
-		assert.ok(terminal.getViewport().some((line) => line.includes("first")));
-		assert.ok(terminal.getViewport().some((line) => line.includes("second")));
-		assert.ok(terminal.getViewport().some((line) => line.includes("third")));
+			assert.ok(terminal.getViewport().some((line) => line.includes("first")));
+			assert.ok(terminal.getViewport().some((line) => line.includes("second")));
+			assert.ok(terminal.getViewport().some((line) => line.includes("third")));
 
-		tui.clear();
-		tui.requestRender();
-		await terminal.waitForRender();
+			tui.clear();
+			tui.requestRender();
+			await terminal.waitForRender();
 
-		const viewport = terminal.getViewport();
-		assert.ok(!viewport.some((line) => line.includes("first")), "first line should be cleared");
-		assert.ok(!viewport.some((line) => line.includes("second")), "second line should be cleared");
-		assert.ok(!viewport.some((line) => line.includes("third")), "third line should be cleared");
+			const viewport = terminal.getViewport();
+			assert.ok(!viewport.some((line) => line.includes("first")), "first line should be cleared");
+			assert.ok(!viewport.some((line) => line.includes("second")), "second line should be cleared");
+			assert.ok(!viewport.some((line) => line.includes("third")), "third line should be cleared");
 
-		tui.stop();
+		} finally {
+			tui.stop();
+		}
 	});
 });
