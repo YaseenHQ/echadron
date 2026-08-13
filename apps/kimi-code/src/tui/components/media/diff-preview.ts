@@ -158,6 +158,12 @@ export interface ClusteredDiffOptions {
   readonly expandKeyHint?: string;
   readonly oldStart?: number;
   readonly newStart?: number;
+  /**
+   * Omit the `+N -M <path>` line. Set it when the caller already shows the
+   * file and the change stat in its own header, where repeating them costs
+   * two lines and wraps the full path mid-token on a narrow terminal.
+   */
+  readonly omitHeader?: boolean;
 }
 
 interface Cluster {
@@ -254,11 +260,13 @@ export function renderDiffLinesClustered(
   );
 
   const output: string[] = [];
-  let header = '';
-  if (addedCount > 0) header += s.addBold(`+${String(addedCount)} `);
-  if (removedCount > 0) header += s.delBold(`-${String(removedCount)} `);
-  header += path;
-  output.push(header);
+  if (opts.omitHeader !== true) {
+    let header = '';
+    if (addedCount > 0) header += s.addBold(`+${String(addedCount)} `);
+    if (removedCount > 0) header += s.delBold(`-${String(removedCount)} `);
+    header += path;
+    output.push(header);
+  }
 
   if (clusters.length === 0) return output;
 

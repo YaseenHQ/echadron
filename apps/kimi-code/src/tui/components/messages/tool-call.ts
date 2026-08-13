@@ -2128,6 +2128,9 @@ export class ToolCallComponent extends Container {
       const filePath = str(this.toolCall.args['file_path'] ?? this.toolCall.args['path']);
       const lines = renderDiffLinesClustered(oldStr, newStr, filePath, {
         contextLines: 3,
+        // The component header already carries the elided path and the +N -M
+        // stat; repeating them here wrapped the full path mid-token.
+        omitHeader: true,
         ...(shouldCap ? { maxLines: COMMAND_PREVIEW_LINES } : {}),
       });
       for (const line of lines) {
