@@ -70,3 +70,18 @@ describe('activity face', () => {
     );
   });
 });
+
+describe('display mode setting', () => {
+  it('is reachable from /settings', async () => {
+    const { SETTINGS_SELECTION_VALUES } = await import(
+      '#/tui/components/dialogs/settings-selector'
+    );
+    // Fullscreen is only usable if it can be switched on without an env var.
+    expect([...SETTINGS_SELECTION_VALUES]).toContain('displayMode');
+  });
+
+  it('defaults to inline so the alternate screen is opt-in', async () => {
+    const { DEFAULT_TUI_CONFIG } = await import('#/tui/config');
+    expect(DEFAULT_TUI_CONFIG.tuiMode).toBe('inline');
+  });
+});

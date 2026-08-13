@@ -4,6 +4,7 @@ export type SettingsSelection =
   | 'model'
   | 'secondaryModel'
   | 'theme'
+  | 'displayMode'
   | 'editor'
   | 'permission'
   | 'experiments'
@@ -17,6 +18,7 @@ export const SETTINGS_SELECTION_VALUES = [
   'secondaryModel',
   'permission',
   'theme',
+  'displayMode',
   'editor',
   'experiments',
   'upgrade',
@@ -43,6 +45,11 @@ const SETTINGS_OPTIONS: readonly ChoiceOption[] = [
     value: 'theme',
     label: 'Theme',
     description: 'Change the terminal UI theme.',
+  },
+  {
+    value: 'displayMode',
+    label: 'Display mode',
+    description: 'Flow through terminal scrollback, or dock the chrome fullscreen.',
   },
   {
     value: 'editor',

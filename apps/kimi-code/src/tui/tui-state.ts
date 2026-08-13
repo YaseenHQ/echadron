@@ -81,9 +81,14 @@ export function createTUIState(options: KimiTUIOptions): TUIState {
   // The alternate screen scrolls the transcript inside a primary ScrollView
   // and docks the rest of the chrome at the bottom, instead of letting the
   // whole UI flow through the terminal's own scrollback.
+  // `[tui] tui_mode` is the setting; the env override stays for one-off runs
+  // and for trying the mode without touching tui.toml.
+  const envOverride =
+    process.env['ECHADRON_TUI_FULL_SCREEN'] ?? process.env['KIMI_CODE_TUI_FULL_SCREEN'];
   const fullscreen =
-    process.env['ECHADRON_TUI_FULL_SCREEN'] === '1' ||
-    process.env['KIMI_CODE_TUI_FULL_SCREEN'] === '1';
+    envOverride === undefined
+      ? initialAppState.tuiMode === 'fullscreen'
+      : envOverride === '1';
   const ui: TUI = fullscreen ? new TuiAltScreen(terminal) : new TuiMainScreen(terminal);
 
   const transcriptContainer = new GutterContainer(CHROME_GUTTER, CHROME_GUTTER);
