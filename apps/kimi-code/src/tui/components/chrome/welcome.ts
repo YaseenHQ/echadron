@@ -3,8 +3,9 @@
  * Keeps identity, workspace, model, and entry-point hints visible without
  * surrounding the whole startup state in a large panel.
  *
- * The two-row cube runs an idle eye look/blink (see `logo-eyes.ts`) and a
- * periodic specular glint (see `logo-shimmer.ts`) so the header is alive.
+ * Chad, the two-row character, runs an idle look/blink/wink (see
+ * `logo-eyes.ts`) and a periodic specular glint (see `logo-shimmer.ts`) so the
+ * header is alive.
  */
 
 import type { Component, TUI } from '@moonshot-ai/pi-tui';

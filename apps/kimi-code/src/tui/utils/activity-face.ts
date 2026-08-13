@@ -1,5 +1,5 @@
 /**
- * The cube's face as the live activity indicator.
+ * Chad's face as the live activity indicator.
  *
  * The welcome header lives in the transcript, so it scrolls away the moment
  * work starts — the idle look/blink/wink there is only ever seen before the

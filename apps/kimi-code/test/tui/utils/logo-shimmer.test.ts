@@ -33,7 +33,7 @@ function sampleCycle(step = 0.02): number[] {
   return Array.from({ length: Math.round(CYCLE_SECS / step) }, (_, i) => i * step);
 }
 
-describe('logo sheen', () => {
+describe('Chad: sheen', () => {
   it('stays a gentle lift, never a near-white flash', () => {
     const peak = Math.max(...sampleCycle().map(brightest));
     expect(peak).toBeGreaterThan(0.3);
@@ -61,7 +61,7 @@ describe('logo sheen', () => {
     expect(new Set(weights).size).toBeGreaterThan(4);
   });
 
-  it('travels left to right across the cube', () => {
+  it('travels left to right across Chad', () => {
     const columns = [0.8, 1.0, 1.25, 1.5].map((secs) => peakColumn(0, secs));
     expect(columns).toEqual([...columns].sort((a, b) => a - b));
     expect(columns.at(-1)!).toBeGreaterThan(columns[0]!);
@@ -73,7 +73,7 @@ describe('logo sheen', () => {
     expect(glintIntensity(head - 0.5, secs)).toBeGreaterThan(glintIntensity(head + 0.5, secs));
   });
 
-  it('lags the lower row so the cube reads as a solid', () => {
+  it('lags the lower row so Chad reads as a solid', () => {
     expect(peakColumn(1, 1.0)).toBeLessThanOrEqual(peakColumn(0, 1.0));
     expect(rowWeights(1, 0.75)[0]!).toBeLessThan(rowWeights(0, 0.75)[0]!);
   });
@@ -109,7 +109,7 @@ describe('logo sheen', () => {
   });
 });
 
-describe('logo eyes', () => {
+describe('Chad: eyes', () => {
   it('looks at you with the original small pupils at rest', () => {
     const face = logoFaceAt(0);
     expect(face.rows[0]).toBe('██▛█▛██');
@@ -179,7 +179,7 @@ describe('logo eyes', () => {
     expect(frames(isWinking, 26, 27.5)).toBeGreaterThan(frames(isBlinking, 5, 5.5));
   });
 
-  it('never opens the cube roof with a half-block pupil', () => {
+  it('never opens Chad\'s roof with a half-block pupil', () => {
     for (let t = 0; t < 20; t += 0.25) {
       expect(logoFaceAt(t).rows[0]).not.toMatch(/[▄▙▟▀]/);
     }
