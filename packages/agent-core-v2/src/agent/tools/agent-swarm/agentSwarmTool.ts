@@ -33,6 +33,10 @@ import { toInputJsonSchema } from '#/tool/input-schema';
 import { IConfigService } from '#/app/config/config';
 import { IFlagService } from '#/app/flag/flag';
 import { IModelCatalog } from '#/kosong/model/catalog';
+import {
+  buildResultSchemaInstruction,
+  extractStructuredResult,
+} from '#/agent/tools/agent/resultSchema';
 import { ISessionSwarmService, type SessionSwarmTask } from '#/session/swarm/sessionSwarm';
 import { ISessionAgentProfileCatalog } from '#/session/sessionAgentProfileCatalog/sessionAgentProfileCatalog';
 import { IAgentProfileService } from '#/agent/profile/profile';
@@ -212,7 +216,10 @@ export class AgentSwarmTool implements IAgentSwarmTool {
         data: spec,
         profileName: spec.kind === 'resume' ? 'subagent' : profileName,
         parentToolCallId: toolCallId,
-        prompt: spec.prompt,
+        prompt:
+          args.result_schema === undefined
+            ? spec.prompt
+            : spec.prompt + buildResultSchemaInstruction(args.result_schema),
         description: childDescription(args.description, spec.index, descriptionName),
         swarmIndex: spec.index,
         runInBackground: false,
@@ -245,6 +252,7 @@ export class AgentSwarmTool implements IAgentSwarmTool {
     });
     return renderSwarmResults(
       results.map(({ task, ...result }) => ({ spec: task.data as AgentSwarmSpec, ...result })),
+      args.result_schema,
     );
   }
 }
@@ -320,7 +328,10 @@ function childDescription(swarmDescription: string, index: number, profileName: 
   return `${swarmDescription} #${String(index)} (${profileName})`;
 }
 
-function renderSwarmResults(results: readonly SwarmRunResult[]): string {
+function renderSwarmResults(
+  results: readonly SwarmRunResult[],
+  resultSchema?: Record<string, unknown>,
+): string {
   const completed = results.filter((result) => result.status === 'completed').length;
   const failed = results.filter((result) => result.status === 'failed').length;
   const aborted = results.filter((result) => result.status === 'aborted').length;
@@ -343,7 +354,10 @@ function renderSwarmResults(results: readonly SwarmRunResult[]): string {
     const mode = result.spec.kind === 'resume' ? ' mode="resume"' : '';
     const item = result.spec.item === undefined ? '' : ` item="${escapeXmlAttribute(result.spec.item)}"`;
     const state = result.state === undefined ? '' : ` state="${result.state}"`;
-    const body = result.status === 'completed' ? (result.result ?? '') : (result.error ?? 'unknown error');
+    const body =
+      result.status === 'completed'
+        ? renderSwarmBody(result.result ?? '', resultSchema)
+        : (result.error ?? 'unknown error');
     lines.push(
       `<subagent${mode}${agentId}${item}${state} outcome="${result.status}">${body}</subagent>`,
     );
@@ -351,6 +365,20 @@ function renderSwarmResults(results: readonly SwarmRunResult[]): string {
 
   lines.push('</agent_swarm_result>');
   return lines.join('\n');
+}
+
+/**
+ * Body of one completed subagent. With a `result_schema`, a valid object
+ * replaces the prose entirely — a 100-agent report of JSON objects is
+ * mergeable, one of paragraphs is not. A child that failed to produce the
+ * object keeps its prose plus a marker, so nothing it found is lost.
+ */
+function renderSwarmBody(result: string, schema: Record<string, unknown> | undefined): string {
+  if (schema === undefined) return result;
+  const extracted = extractStructuredResult(result, schema);
+  return extracted.ok
+    ? JSON.stringify(extracted.value)
+    : `${result}\n[structured_result_missing] ${extracted.reason}`;
 }
 
 function normalizeOptionalString(value: string | undefined): string | undefined {

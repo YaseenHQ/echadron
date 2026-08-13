@@ -15,6 +15,7 @@ import { AgentSwarmService } from '#/agent/swarm/swarmService';
 import { SwarmModel } from '#/agent/swarm/swarmOps';
 import { SECONDARY_DERIVED_MODEL_ID } from '#/app/kosongConfig/secondaryModelOverlay';
 import { AgentSwarmToolInputSchema } from '#/agent/tools/agent-swarm/agent-swarm';
+import { buildResultSchemaInstruction } from '#/agent/tools/agent/resultSchema';
 import { AgentSwarmTool } from '#/agent/tools/agent-swarm/agentSwarmTool';
 import { IAgentToolApprovalService } from '#/agent/toolApproval/toolApproval';
 import { IAgentToolExecutorService } from '#/agent/toolExecutor/toolExecutor';
@@ -829,6 +830,55 @@ describe('AgentSwarmTool', () => {
         '</agent_swarm_result>',
       ].join('\n'),
     );
+  });
+
+  it('carries result_schema into every prompt and renders structured bodies', async () => {
+    const schema = {
+      type: 'object',
+      required: ['file', 'verdict'],
+      properties: { file: { type: 'string' }, verdict: { type: 'string' } },
+    };
+    const run = vi.fn().mockImplementation(async ({ tasks }) => [
+      {
+        task: tasks[0],
+        agentId: 'agent-coder-1',
+        status: 'completed',
+        result: 'Looked at it.\n{"file":"src/a.ts","verdict":"clean"}',
+      },
+      {
+        task: tasks[1],
+        agentId: 'agent-coder-2',
+        status: 'completed',
+        result: 'All good, nothing structured here.',
+      },
+    ]);
+    const host = mockSwarmHost({ run });
+    const tool = new AgentSwarmTool(host.swarmService, makeAgentScopeContext({ agentId: host.callerAgentId, agentScope: '' }), mockSwarmMode(), stubConfig(), stubFlag(true), stubSwarmCatalog(), stubCallerProfile());
+
+    const result = await executeTool(
+      tool,
+      context({
+        description: 'Review files',
+        prompt_template: 'Review {{item}}',
+        items: ['src/a.ts', 'src/b.ts'],
+        result_schema: schema,
+      }),
+    );
+
+    // Every child is told how to finish, on top of its filled template.
+    const { tasks } = run.mock.calls[0]![0] as { tasks: Array<{ prompt: string }> };
+    for (const task of tasks) {
+      expect(task.prompt).toContain('Review src/');
+      expect(task.prompt).toContain(buildResultSchemaInstruction(schema).trim());
+    }
+
+    // A valid object replaces the prose; a child without one keeps its prose
+    // plus a marker, so nothing it found is lost.
+    expect(result.output).toContain(
+      '<subagent agent_id="agent-coder-1" item="src/a.ts" outcome="completed">{"file":"src/a.ts","verdict":"clean"}</subagent>',
+    );
+    expect(result.output).toContain('All good, nothing structured here.');
+    expect(result.output).toContain('[structured_result_missing] no JSON object found in the reply');
   });
 
   it('reports failed subagents inside the XML result without failing the tool', async () => {

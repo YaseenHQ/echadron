@@ -53,6 +53,12 @@ export const AgentSwarmToolInputSchema = z
       .describe(
         'Map of existing subagent agent_id to the prompt used to resume that subagent. These resumed subagents are launched before new item-based subagents.',
       ),
+    result_schema: z
+      .record(z.string(), z.unknown())
+      .optional()
+      .describe(
+        'Optional JSON Schema (type "object") every subagent must satisfy by ending its final message with a matching JSON object. The aggregated report then carries each subagent\'s parsed object instead of prose, so you can merge findings across the swarm. Keep it flat — a few required string/number/array fields.',
+      ),
     model: z
       .string()
       .trim()

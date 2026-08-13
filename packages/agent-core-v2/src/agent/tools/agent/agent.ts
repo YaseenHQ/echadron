@@ -56,6 +56,12 @@ export const SubagentToolInputSchema = z.preprocess(
       .describe(
         'If true, return immediately without waiting for completion. Prefer false unless the task can run independently and there is a clear benefit to not waiting.',
       ),
+    result_schema: z
+      .record(z.string(), z.unknown())
+      .optional()
+      .describe(
+        'Optional JSON Schema (type "object") the subagent must satisfy by ending its final message with a matching JSON object. Use it when you will combine results from several subagents: the tool output then carries the parsed object in a [structured_result] section instead of leaving you to re-read prose. Keep it flat — a few required string/number/array fields.',
+      ),
     model: z
       .string()
       .trim()
