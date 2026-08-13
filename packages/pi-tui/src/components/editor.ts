@@ -702,10 +702,24 @@ export class Editor implements Component, Focusable {
 		const visualIndex = Math.max(0, Math.min(this.scrollOffset + contentRow, visualLines.length - 1));
 		const visual = visualLines[visualIndex];
 		if (visual === undefined) return false;
-		const visualCol = Math.max(0, localCol - paddingX);
-		const logicalCol = Math.min(visual.startCol + visualCol, (this.state.lines[visual.logicalLine] ?? "").length);
+		// `localCol` counts terminal cells while `startCol` is a UTF-16 offset, so
+		// they cannot be added: a CJK character occupies two cells and an emoji
+		// several code units. Walk the clicked visual segment grapheme by
+		// grapheme, spending display width, so the cursor lands on a boundary and
+		// a click in the trailing padding clamps to the end of that segment
+		// rather than spilling into the next one.
+		const logicalLine = this.state.lines[visual.logicalLine] ?? "";
+		const segmentText = logicalLine.slice(visual.startCol, visual.startCol + visual.length);
+		let remainingCells = Math.max(0, localCol - paddingX);
+		let logicalCol = visual.startCol;
+		for (const { segment } of this.segment(segmentText, "grapheme")) {
+			const cells = visibleWidth(segment);
+			if (remainingCells < cells) break;
+			remainingCells -= cells;
+			logicalCol += segment.length;
+		}
 		this.state.cursorLine = visual.logicalLine;
-		this.setCursorCol(logicalCol);
+		this.setCursorCol(Math.min(logicalCol, logicalLine.length));
 		return true;
 	}
 
