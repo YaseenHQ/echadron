@@ -21,6 +21,15 @@ export const TuiThemeSchema = z.string();
 
 export const NotificationConditionSchema = z.enum(['unfocused', 'always']);
 
+/**
+ * `inline` flows the whole UI through the terminal's own scrollback.
+ * `fullscreen` mounts the alternate screen: the transcript scrolls in its own
+ * view and the chrome stays docked at the bottom. Chosen when the TUI is
+ * constructed, so a change needs a restart.
+ */
+export const TuiModeSchema = z.enum(['inline', 'fullscreen']);
+export type TuiMode = z.infer<typeof TuiModeSchema>;
+
 export const NotificationsConfigSchema = z.object({
   enabled: z.boolean(),
   condition: NotificationConditionSchema,
@@ -34,6 +43,7 @@ export const TuiConfigFileSchema = z.object({
   theme: TuiThemeSchema.optional(),
   disable_paste_burst: z.boolean().optional(),
   cache_expiry_hint: z.boolean().optional(),
+  tui_mode: TuiModeSchema.optional(),
   editor: z
     .object({
       command: z.string().optional(),
@@ -58,6 +68,9 @@ export const TuiConfigSchema = z.object({
   /** Present in every normalized config; optional only so hand-built test
    * fixtures from before this field existed still typecheck. */
   cacheExpiryHint: z.boolean().optional(),
+  /** Present in every normalized config; optional only so hand-built test
+   * fixtures from before this field existed still typecheck. */
+  tuiMode: TuiModeSchema.optional(),
   editorCommand: z.string().nullable(),
   notifications: NotificationsConfigSchema,
   upgrade: UpgradePreferencesSchema,
@@ -81,6 +94,7 @@ export const DEFAULT_TUI_CONFIG: TuiConfig = TuiConfigSchema.parse({
   theme: 'auto',
   disablePasteBurst: false,
   cacheExpiryHint: true,
+  tuiMode: 'inline',
   editorCommand: null,
   notifications: DEFAULT_NOTIFICATIONS_CONFIG,
   upgrade: DEFAULT_UPGRADE_PREFERENCES,
@@ -142,6 +156,7 @@ export function normalizeTuiConfig(config: TuiConfigFileShape): TuiConfig {
     theme: config.theme ?? DEFAULT_TUI_CONFIG.theme,
     disablePasteBurst: config.disable_paste_burst ?? DEFAULT_TUI_CONFIG.disablePasteBurst,
     cacheExpiryHint: config.cache_expiry_hint ?? DEFAULT_TUI_CONFIG.cacheExpiryHint,
+    tuiMode: config.tui_mode ?? DEFAULT_TUI_CONFIG.tuiMode,
     editorCommand: command === undefined || command.length === 0 ? null : command,
     notifications: {
       enabled: config.notifications?.enabled ?? DEFAULT_NOTIFICATIONS_CONFIG.enabled,
@@ -162,6 +177,7 @@ export function renderTuiConfig(config: TuiConfig): string {
 theme = "${escapeTomlBasicString(config.theme)}" # "auto" | "dark" | "light" | custom theme name
 disable_paste_burst = ${String(config.disablePasteBurst)} # true disables non-bracketed paste-burst fallback
 cache_expiry_hint = ${String(config.cacheExpiryHint !== false)} # false disables the "cache expired" dialog on resume / idle submit
+tui_mode = "${config.tuiMode ?? 'inline'}" # "inline" flows through terminal scrollback | "fullscreen" docks the chrome on the alternate screen (restart to apply)
 
 [editor]
 command = "${escapeTomlBasicString(config.editorCommand ?? '')}" # Empty uses $VISUAL / $EDITOR

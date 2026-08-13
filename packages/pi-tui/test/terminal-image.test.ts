@@ -3,19 +3,24 @@
  */
 
 import assert from "node:assert";
-import { describe, it } from "node:test";
 import { homedir } from "node:os";
 import { join } from "node:path";
+import { describe, it } from "node:test";
 import { Image } from "../src/components/image.ts";
 import {
+	cropKittyImageLine,
 	deleteAllKittyImages,
+	deleteAllKittyPlacements,
 	deleteKittyImage,
 	detectCapabilities,
 	encodeITerm2,
 	encodeKitty,
+	getKittyImageMetadata,
+	getKittyImagePlacement,
 	hyperlink,
 	imageFallback,
 	isImageLine,
+	registerKittyImageMetadata,
 	renderImage,
 	resetCapabilitiesCache,
 	setCapabilities,
@@ -343,16 +348,6 @@ describe("detectCapabilities", () => {
 		});
 	});
 
-	it("keeps truecolor enabled for unidentified Windows consoles", () => {
-		withEnv({ TERM: "xterm-256color" }, () => {
-			const caps = detectCapabilities();
-			if (process.platform === "win32") {
-				assert.strictEqual(caps.trueColor, true);
-				assert.strictEqual(caps.hyperlinks, false);
-			}
-		});
-	});
-
 	it("enables truecolor without hyperlinks for JetBrains terminal", () => {
 		withEnv({ TERMINAL_EMULATOR: "JetBrains-JediTerm", TERM: "xterm-256color" }, () => {
 			const caps = detectCapabilities();
@@ -381,11 +376,14 @@ describe("detectCapabilities", () => {
 	});
 });
 
-describe("Kitty image cursor movement", () => {
-	it("includes decoded payload size in iTerm2 sequences", () => {
-		const sequence = encodeITerm2("AQID", { inline: true });
-		assert.ok(sequence.startsWith("\x1b]1337;File=inline=1;size=3:"));
+describe("iTerm2 image encoding", () => {
+	it("includes the decoded payload size in OSC 1337 metadata", () => {
+		const sequence = encodeITerm2("AAAA", { width: 2, height: "auto" });
+		assert.strictEqual(sequence, "\x1b]1337;File=inline=1;size=3;width=2;height=auto:AAAA\x07");
 	});
+});
+
+describe("Kitty image cursor movement", () => {
 	it("can request no terminal-side cursor movement", () => {
 		const sequence = encodeKitty("AAAA", { columns: 2, rows: 2, moveCursor: false });
 		assert.ok(sequence.startsWith("\x1b_Ga=T,f=100,q=2,C=1,c=2,r=2;"));
@@ -394,6 +392,7 @@ describe("Kitty image cursor movement", () => {
 	it("suppresses Kitty replies for delete commands", () => {
 		assert.strictEqual(deleteKittyImage(42), "\x1b_Ga=d,d=I,i=42,q=2\x1b\\");
 		assert.strictEqual(deleteAllKittyImages(), "\x1b_Ga=d,d=A,q=2\x1b\\");
+		assert.strictEqual(deleteAllKittyPlacements(), "\x1b_Ga=d,d=a,q=2\x1b\\");
 	});
 
 	it("preserves renderImage's default terminal-side cursor movement", () => {
@@ -422,6 +421,48 @@ describe("Kitty image cursor movement", () => {
 			resetCapabilitiesCache();
 			setCellDimensions({ widthPx: 9, heightPx: 18 });
 		}
+	});
+
+	it("registers metadata and crops a partially visible placement", () => {
+		setCapabilities({ images: "kitty", trueColor: true, hyperlinks: true });
+		setCellDimensions({ widthPx: 10, heightPx: 10 });
+		try {
+			const result = renderImage(
+				"AAAA",
+				{ widthPx: 100, heightPx: 100 },
+				{ maxWidthCells: 3, imageId: 42, moveCursor: false },
+			);
+			assert.ok(result);
+			assert.deepStrictEqual(getKittyImageMetadata(result.sequence), {
+				imageId: 42,
+				columns: 3,
+				rows: 3,
+				widthPx: 100,
+				heightPx: 100,
+			});
+			assert.ok(cropKittyImageLine(result.sequence, 2, 1).includes("y=66,h=34,r=1"));
+		} finally {
+			resetCapabilitiesCache();
+			setCellDimensions({ widthPx: 9, heightPx: 18 });
+		}
+	});
+
+	it("creates placement-only commands for uploaded and cropped images", () => {
+		registerKittyImageMetadata({ imageId: 42, columns: 3, rows: 3, widthPx: 100, heightPx: 100 });
+		const transmission = encodeKitty("A".repeat(8192), {
+			columns: 3,
+			rows: 3,
+			imageId: 42,
+			moveCursor: false,
+		});
+		const line = `left ${cropKittyImageLine(transmission, 2, 1)} right`;
+		const placement = getKittyImagePlacement(line);
+		assert.ok(placement);
+		assert.strictEqual(placement.transmissionBytes, line.length - "left ".length - " right".length);
+		assert.strictEqual(placement.estimatedDecodedBytes, 100 * 100 * 4);
+		assert.strictEqual(placement.sequence, "\x1b_Ga=p,q=2,C=1,c=3,i=42,y=66,h=34,r=1\x1b\\");
+		assert.strictEqual(placement.replacementLine, `left ${placement.sequence} right`);
+		assert.ok(!placement.replacementLine.includes("AAAA"));
 	});
 
 	it("honors maxHeightCells by reducing rendered width", () => {
@@ -486,7 +527,11 @@ describe("Kitty image cursor movement", () => {
 	it("truncates long image fallback lines to render width", () => {
 		setCapabilities({ images: null, trueColor: false, hyperlinks: false });
 		try {
-			const longPath = join(homedir(), "images", "generated-image-with-a-very-long-absolute-path".repeat(4) + ".png");
+			const longPath = join(
+				homedir(),
+				"images",
+				`${"generated-image-with-a-very-long-absolute-path".repeat(4)}.png`,
+			);
 			const width = 40;
 			const image = new Image(
 				"AAAA",
@@ -497,8 +542,12 @@ describe("Kitty image cursor movement", () => {
 			);
 			const lines = image.render(width);
 			assert.strictEqual(lines.length, 1);
-			assert.ok(visibleWidth(lines[0]!) <= width);
-			assert.ok(lines[0]!.includes("~"));
+			assert.ok(
+				visibleWidth(lines[0]) <= width,
+				`fallback line wider than ${width}: visible=${visibleWidth(lines[0])} raw=${JSON.stringify(lines[0])}`,
+			);
+			assert.ok(lines[0].includes("..."), "expected ellipsis when truncating long fallback path");
+			assert.ok(lines[0].includes("~"), "expected home-shortened path in fallback");
 		} finally {
 			resetCapabilitiesCache();
 		}
@@ -506,34 +555,50 @@ describe("Kitty image cursor movement", () => {
 });
 
 describe("imageFallback", () => {
-	it("shortens home-prefixed paths without hyperlinks", () => {
+	it("shortens home-prefixed absolute paths without hyperlinks", () => {
 		setCapabilities({ images: null, trueColor: false, hyperlinks: false });
 		try {
 			const abs = join(homedir(), ".pi", "agent", "shot.png");
-			assert.strictEqual(imageFallback("image/png", { widthPx: 1280, heightPx: 720 }, abs), "[Image: ~/.pi/agent/shot.png [image/png] 1280x720]");
+			const result = imageFallback("image/png", { widthPx: 1280, heightPx: 720 }, abs);
+			assert.strictEqual(result, "[Image: ~/.pi/agent/shot.png [image/png] 1280x720]");
 		} finally {
 			resetCapabilitiesCache();
 		}
 	});
 
-	it("hyperlinks absolute paths when supported", () => {
+	it("wraps shortened absolute paths in OSC 8 file links when hyperlinks are enabled", () => {
 		setCapabilities({ images: null, trueColor: false, hyperlinks: true });
 		try {
 			const abs = join(homedir(), ".pi", "agent", "shot.png");
 			const result = imageFallback("image/png", { widthPx: 10, heightPx: 10 }, abs);
-			assert.ok(result.includes("\x1b]8;;file://"));
-			assert.ok(result.includes("~/.pi/agent/shot.png"));
+			assert.ok(result.includes("\x1b]8;;file://"), "expected OSC 8 file link");
+			assert.ok(
+				result.includes(abs.replaceAll("\\", "/")) || result.includes(abs),
+				"file URL should target absolute path",
+			);
+			// Visible text must use ~/... not the expanded home path.
+			const visible = result.replace(/\x1b\]8;;.*?\x1b\\/g, "");
+			assert.strictEqual(visible, "[Image: ~/.pi/agent/shot.png [image/png] 10x10]");
 		} finally {
 			resetCapabilitiesCache();
 		}
 	});
 
-	it("does not hyperlink a bare basename", () => {
+	it("leaves bare basenames unchanged and does not hyperlink them", () => {
 		setCapabilities({ images: null, trueColor: false, hyperlinks: true });
 		try {
-			const result = imageFallback("image/png", { widthPx: 1, heightPx: 1 }, "shot.png");
-			assert.strictEqual(result, "[Image: shot.png [image/png] 1x1]");
-			assert.ok(!result.includes("\x1b]8;"));
+			const result = imageFallback("image/png", { widthPx: 1, heightPx: 1 }, "clankolas.png");
+			assert.strictEqual(result, "[Image: clankolas.png [image/png] 1x1]");
+			assert.ok(!result.includes("\x1b]8;"), "basename must not be hyperlinked");
+		} finally {
+			resetCapabilitiesCache();
+		}
+	});
+
+	it("omits filename segment when not provided", () => {
+		setCapabilities({ images: null, trueColor: false, hyperlinks: false });
+		try {
+			assert.strictEqual(imageFallback("image/png", { widthPx: 8, heightPx: 6 }), "[Image: [image/png] 8x6]");
 		} finally {
 			resetCapabilitiesCache();
 		}

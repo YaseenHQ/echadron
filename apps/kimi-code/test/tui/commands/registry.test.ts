@@ -210,6 +210,8 @@ describe('built-in slash command registry', () => {
     const reachableFromSettings = new Set<string>(SETTINGS_SELECTION_VALUES);
     const hiddenToSettings: Record<string, string> = {
       theme: 'theme',
+      // display mode has no slash command; it is settings-only
+
       editor: 'editor',
       features: 'experiments',
       secondary_model: 'secondaryModel',

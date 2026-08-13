@@ -70,3 +70,31 @@ describe('activity face', () => {
     );
   });
 });
+
+describe('display mode setting', () => {
+  it('every row in the settings menu is actually selectable', async () => {
+    // The regression this guards: SettingsSelectorComponent runs each choice
+    // through a type guard before calling onSelect. When that guard was a
+    // hand-written whitelist, a row added to the menu but missed in the guard
+    // rendered normally and did nothing at all when picked — no error, no
+    // dispatch. Compare the menu against the guard's source of truth.
+    const { SETTINGS_OPTIONS, SETTINGS_SELECTION_VALUES } = await import(
+      '#/tui/components/dialogs/settings-selector'
+    );
+    const selectable = new Set<string>(SETTINGS_SELECTION_VALUES);
+    for (const option of SETTINGS_OPTIONS) {
+      expect(selectable.has(option.value), `menu row "${option.value}" is not selectable`).toBe(
+        true,
+      );
+    }
+    // And nothing is claimed selectable that the menu never offers.
+    expect(SETTINGS_OPTIONS.length).toBe(SETTINGS_SELECTION_VALUES.length);
+    expect([...SETTINGS_SELECTION_VALUES]).toContain('displayMode');
+    expect([...SETTINGS_SELECTION_VALUES]).toContain('secondaryModel');
+  });
+
+  it('defaults to inline so the alternate screen is opt-in', async () => {
+    const { DEFAULT_TUI_CONFIG } = await import('#/tui/config');
+    expect(DEFAULT_TUI_CONFIG.tuiMode).toBe('inline');
+  });
+});

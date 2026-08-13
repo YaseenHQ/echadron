@@ -4,6 +4,7 @@ export type SettingsSelection =
   | 'model'
   | 'secondaryModel'
   | 'theme'
+  | 'displayMode'
   | 'editor'
   | 'permission'
   | 'experiments'
@@ -17,13 +18,14 @@ export const SETTINGS_SELECTION_VALUES = [
   'secondaryModel',
   'permission',
   'theme',
+  'displayMode',
   'editor',
   'experiments',
   'upgrade',
   'usage',
 ] as const satisfies readonly SettingsSelection[];
 
-const SETTINGS_OPTIONS: readonly ChoiceOption[] = [
+export const SETTINGS_OPTIONS: readonly ChoiceOption[] = [
   {
     value: 'model',
     label: 'Model',
@@ -43,6 +45,11 @@ const SETTINGS_OPTIONS: readonly ChoiceOption[] = [
     value: 'theme',
     label: 'Theme',
     description: 'Change the terminal UI theme.',
+  },
+  {
+    value: 'displayMode',
+    label: 'Display mode',
+    description: 'Flow through terminal scrollback, or dock the chrome fullscreen.',
   },
   {
     value: 'editor',
@@ -66,16 +73,13 @@ const SETTINGS_OPTIONS: readonly ChoiceOption[] = [
   },
 ];
 
+/**
+ * Derived from `SETTINGS_SELECTION_VALUES` rather than hand-listed. A
+ * hardcoded whitelist silently drops any entry added to the menu but missed
+ * here — the row renders and selecting it does nothing at all, with no error.
+ */
 function isSettingsSelection(value: string): value is SettingsSelection {
-  return (
-    value === 'model' ||
-    value === 'theme' ||
-    value === 'editor' ||
-    value === 'permission' ||
-    value === 'experiments' ||
-    value === 'upgrade' ||
-    value === 'usage'
-  );
+  return (SETTINGS_SELECTION_VALUES as readonly string[]).includes(value);
 }
 
 export interface SettingsSelectorOptions {

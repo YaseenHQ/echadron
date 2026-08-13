@@ -1,3 +1,4 @@
+import type { TuiMode } from '#/tui/config';
 import type {
   GoalChange,
   GoalSnapshot,
@@ -57,6 +58,8 @@ export interface AppState {
   disablePasteBurst?: boolean;
   /** Mirrors the TUI config toggle; defaults to true when absent from older fixtures. */
   cacheExpiryHint?: boolean;
+  /** `[tui] tui_mode`; read once when the TUI is constructed. */
+  tuiMode?: TuiMode;
   notifications: NotificationsConfig;
   upgrade: UpgradePreferences;
   availableModels: Record<string, ModelAlias>;

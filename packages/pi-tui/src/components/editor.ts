@@ -296,10 +296,10 @@ export class Editor implements Component, Focusable {
 
 	// Store last render width for cursor navigation
 	private lastWidth: number = 80;
-	private lastRenderHeight = 0;
 
 	// Vertical scrolling support
 	private scrollOffset: number = 0;
+	private lastRenderHeight = 0;
 
 	// Border color (can be changed dynamically)
 	public borderColor: (str: string) => string;
@@ -688,6 +688,41 @@ export class Editor implements Component, Focusable {
 		return result;
 	}
 
+	placeCursorFromClick(localCol: number, localRow: number, width: number): boolean {
+		if (this.lastRenderHeight <= 0) return false;
+		if (localRow < 0 || localRow >= this.lastRenderHeight) return false;
+		if (localCol < 0 || localCol >= width) return false;
+
+		const maxPadding = Math.max(0, Math.floor((width - 1) / 2));
+		const paddingX = Math.min(this.paddingX, maxPadding);
+		const contentWidth = Math.max(1, width - paddingX * 2);
+		const layoutWidth = Math.max(1, contentWidth - (paddingX ? 0 : 1));
+		const visualLines = this.buildVisualLineMap(layoutWidth);
+		const contentRow = Math.max(0, Math.min(localRow - 1, this.lastRenderHeight - 3));
+		const visualIndex = Math.max(0, Math.min(this.scrollOffset + contentRow, visualLines.length - 1));
+		const visual = visualLines[visualIndex];
+		if (visual === undefined) return false;
+		// `localCol` counts terminal cells while `startCol` is a UTF-16 offset, so
+		// they cannot be added: a CJK character occupies two cells and an emoji
+		// several code units. Walk the clicked visual segment grapheme by
+		// grapheme, spending display width, so the cursor lands on a boundary and
+		// a click in the trailing padding clamps to the end of that segment
+		// rather than spilling into the next one.
+		const logicalLine = this.state.lines[visual.logicalLine] ?? "";
+		const segmentText = logicalLine.slice(visual.startCol, visual.startCol + visual.length);
+		let remainingCells = Math.max(0, localCol - paddingX);
+		let logicalCol = visual.startCol;
+		for (const { segment } of this.segment(segmentText, "grapheme")) {
+			const cells = visibleWidth(segment);
+			if (remainingCells < cells) break;
+			remainingCells -= cells;
+			logicalCol += segment.length;
+		}
+		this.state.cursorLine = visual.logicalLine;
+		this.setCursorCol(Math.min(logicalCol, logicalLine.length));
+		return true;
+	}
+
 	handleInput(data: string): void {
 		const kb = getKeybindings();
 
@@ -859,6 +894,18 @@ export class Editor implements Component, Focusable {
 		}
 		if (kb.matches(data, "tui.editor.yankPop")) {
 			this.yankPop();
+			return;
+		}
+
+		// Dedicated history actions always browse entries instead of moving the cursor.
+		if (kb.matches(data, "tui.editor.historyPrevious")) {
+			this.cancelAutocomplete();
+			this.navigateHistory(-1);
+			return;
+		}
+		if (kb.matches(data, "tui.editor.historyNext")) {
+			this.cancelAutocomplete();
+			this.navigateHistory(1);
 			return;
 		}
 
@@ -1117,33 +1164,7 @@ export class Editor implements Component, Focusable {
 		return { line: this.state.cursorLine, col: this.state.cursorCol };
 	}
 
-	/**
-	 * Place the cursor from a click inside this editor's last-rendered box.
-	 * `localCol`/`localRow` are 0-based cells relative to the editor's top-left
-	 * (including the border). Returns true when the click landed in the box.
-	 */
-	placeCursorFromClick(localCol: number, localRow: number, width: number): boolean {
-		if (this.lastRenderHeight <= 0) return false;
-		if (localRow < 0 || localRow >= this.lastRenderHeight) return false;
-		if (localCol < 0 || localCol >= width) return false;
-
-		const maxPadding = Math.max(0, Math.floor((width - 1) / 2));
-		const paddingX = Math.min(this.paddingX, maxPadding);
-		const contentWidth = Math.max(1, width - paddingX * 2);
-		const layoutWidth = Math.max(1, contentWidth - (paddingX ? 0 : 1));
-		const visualLines = this.buildVisualLineMap(layoutWidth);
-		const contentRow = Math.max(0, Math.min(localRow - 1, this.lastRenderHeight - 3));
-		const visualIndex = Math.max(0, Math.min(this.scrollOffset + contentRow, visualLines.length - 1));
-		const visual = visualLines[visualIndex];
-		if (visual === undefined) return false;
-		const visualCol = Math.max(0, localCol - paddingX);
-		const logicalCol = Math.min(visual.startCol + visualCol, (this.state.lines[visual.logicalLine] ?? "").length);
-		this.state.cursorLine = visual.logicalLine;
-		this.setCursorCol(logicalCol);
-		return true;
-	}
-
-	setText(text: string): void {
+	setText(text: string, options?: { preservePasteRegistry?: boolean }): void {
 		this.cancelAutocomplete();
 		this.lastAction = null;
 		this.exitHistoryBrowsing();
@@ -1152,8 +1173,10 @@ export class Editor implements Component, Focusable {
 		if (this.getText() !== normalized) {
 			this.pushUndoSnapshot();
 		}
-		this.pastes.clear();
-		this.pasteCounter = 0;
+		if (!options?.preservePasteRegistry) {
+			this.pastes.clear();
+			this.pasteCounter = 0;
+		}
 		this.setTextInternal(normalized);
 	}
 
@@ -1424,10 +1447,11 @@ export class Editor implements Component, Focusable {
 			const graphemes = [...this.segment(beforeCursor, "grapheme")];
 			const lastGrapheme = graphemes[graphemes.length - 1];
 			const graphemeLength = lastGrapheme ? lastGrapheme.segment.length : 1;
-			const pastedSegment = lastGrapheme ? PASTE_MARKER_SINGLE.exec(lastGrapheme.segment) : null;
+			const isPastedSegmented = PASTE_MARKER_SINGLE.exec(lastGrapheme!.segment);
 
-			if (pastedSegment) {
-				const targetId = Number(pastedSegment[1]);
+			if (isPastedSegmented) {
+				// This contains the id part e.g 4 from [paste #4 +123 lines]
+				const targetId = Number(isPastedSegmented[1]);
 				this.pastes.delete(targetId);
 				this.pasteCounter--;
 
@@ -1441,11 +1465,11 @@ export class Editor implements Component, Focusable {
 				}
 
 				// Renumber markers with ids greater than the removed one.
-				this.state.lines = this.state.lines.map((stateLine) =>
-					stateLine.replace(PASTE_MARKER_REGEX, (fullMatch, idGroup, suffixGroup) => {
-						const id = Number(idGroup);
-						if (id <= targetId) return fullMatch;
-						return `[paste #${id - 1}${suffixGroup}]`;
+				this.state.lines = this.state.lines.map((line) =>
+					line.replace(PASTE_MARKER_REGEX, (fullMatch, idGroup, suffixGroup) => {
+						const x = Number(idGroup);
+						if (x <= targetId) return fullMatch;
+						return `[paste #${x - 1}${suffixGroup}]`;
 					}),
 				);
 			}

@@ -819,7 +819,7 @@ class LatexParser {
 	private parseSequence(endCharacter?: string): string {
 		let result = "";
 		while (this.position < this.source.length) {
-			const character = this.source[this.position];
+			const character = this.source[this.position]!;
 			if (endCharacter && character === endCharacter) {
 				this.position++;
 				return result;
@@ -861,7 +861,7 @@ class LatexParser {
 				continue;
 			}
 
-			if (character !== undefined && /\s/.test(character)) {
+			if (/\s/.test(character)) {
 				result += this.parseWhitespace();
 				continue;
 			}
@@ -1145,7 +1145,7 @@ class LatexParser {
 	}
 
 	private parseRequiredArgumentValue(): string {
-		while (this.position < this.source.length && /[ \t]/.test(this.source[this.position] ?? "")) {
+		while (this.position < this.source.length && /\s/.test(this.source[this.position] ?? "")) {
 			this.position++;
 		}
 		if (this.position >= this.source.length) {

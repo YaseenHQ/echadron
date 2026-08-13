@@ -4,14 +4,15 @@ import { stripVTControlCharacters } from "node:util";
 import { type AutocompleteProvider, CombinedAutocompleteProvider } from "../src/autocomplete.ts";
 import { Editor, wordWrapLine } from "../src/components/editor.ts";
 import { PasteBurst } from "../src/paste-burst.ts";
-import { TUI } from "../src/tui.ts";
+import type { TUI } from "../src/tui.ts";
+import { TuiMainScreen } from "../src/tui-main-screen.ts";
 import { visibleWidth } from "../src/utils.ts";
 import { defaultEditorTheme } from "./test-themes.ts";
 import { VirtualTerminal } from "./virtual-terminal.ts";
 
 /** Create a TUI with a virtual terminal for testing */
 function createTestTUI(cols = 80, rows = 24): TUI {
-	return new TUI(new VirtualTerminal(cols, rows));
+	return new TuiMainScreen(new VirtualTerminal(cols, rows));
 }
 
 /** Standard applyCompletion that replaces prefix with item.value */
@@ -999,11 +1000,7 @@ describe("Editor component", () => {
 			assert.strictEqual(topBorder, borderColor(stripVTControlCharacters(topBorder)));
 			assert.strictEqual(bottomBorder, borderColor(stripVTControlCharacters(bottomBorder)));
 			for (const line of lines) {
-				assert.strictEqual(
-					visibleWidth(line),
-					width,
-					`line exceeds width ${width}: ${JSON.stringify(line)}`,
-				);
+				assert.strictEqual(visibleWidth(line), width, `line exceeds width ${width}: ${JSON.stringify(line)}`);
 			}
 		});
 	});
@@ -4007,8 +4004,8 @@ describe("Editor component", () => {
 		it("undo after paste marker deletion restores the paste registry", () => {
 			const editor = new Editor(createTestTUI(), defaultEditorTheme);
 			let submitted = "";
-			editor.onSubmit = (text) => {
-				submitted = text;
+			editor.onSubmit = (t) => {
+				submitted = t;
 			};
 
 			const paste = bigPaste("alpha");
@@ -4022,8 +4019,8 @@ describe("Editor component", () => {
 		it("undo after deleting the first of two paste markers restores both registry entries", () => {
 			const editor = new Editor(createTestTUI(), defaultEditorTheme);
 			let submitted = "";
-			editor.onSubmit = (text) => {
-				submitted = text;
+			editor.onSubmit = (t) => {
+				submitted = t;
 			};
 
 			const pasteA = bigPaste("alpha");
@@ -4041,8 +4038,8 @@ describe("Editor component", () => {
 		it("renumbers the paste registry in ascending id order when markers are out of order in text", () => {
 			const editor = new Editor(createTestTUI(), defaultEditorTheme);
 			let submitted = "";
-			editor.onSubmit = (text) => {
-				submitted = text;
+			editor.onSubmit = (t) => {
+				submitted = t;
 			};
 
 			const pasteA = bigPaste("alpha");
@@ -4062,14 +4059,30 @@ describe("Editor component", () => {
 		it("undo after setText restores paste markers and registry", () => {
 			const editor = new Editor(createTestTUI(), defaultEditorTheme);
 			let submitted = "";
-			editor.onSubmit = (text) => {
-				submitted = text;
+			editor.onSubmit = (t) => {
+				submitted = t;
 			};
 
 			const paste = bigPaste("alpha");
 			editor.handleInput(`\x1b[200~${paste}\x1b[201~`);
 			editor.setText("replacement");
 			editor.handleInput("\x1b[45;5u"); // undo
+			editor.handleInput("\r");
+			assert.strictEqual(submitted, paste);
+		});
+
+		it("setText with preservePasteRegistry keeps the registry for surviving markers", () => {
+			const editor = new Editor(createTestTUI(), defaultEditorTheme);
+			let submitted = "";
+			editor.onSubmit = (t) => {
+				submitted = t;
+			};
+
+			const paste = bigPaste("alpha");
+			editor.handleInput(`\x1b[200~${paste}\x1b[201~`); // #1 = alpha
+			// A programmatic replace that still contains the marker (e.g. a subclass
+			// expanding one of several paste markers) must not orphan its entry.
+			editor.setText(editor.getText(), { preservePasteRegistry: true });
 			editor.handleInput("\r");
 			assert.strictEqual(submitted, paste);
 		});
@@ -4524,7 +4537,7 @@ describe("Editor narrow width rendering", () => {
 
 	it("renders inside a TUI at 5 columns without crashing or overflowing", async () => {
 		const terminal = new VirtualTerminal(5, 12);
-		const tui = new TUI(terminal);
+		const tui = new TuiMainScreen(terminal);
 		const editor = new Editor(tui, defaultEditorTheme, { paddingX: 4 });
 		tui.addChild(editor);
 		editor.setText("你好世界");

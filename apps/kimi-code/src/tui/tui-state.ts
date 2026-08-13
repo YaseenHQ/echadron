@@ -1,7 +1,11 @@
 import {
   Container,
   ProcessTerminal,
-  TUI,
+  ScrollView,
+  TuiAltScreen,
+  TuiMainScreen,
+  VStack,
+  type TUI,
 } from '@moonshot-ai/pi-tui';
 
 import { FooterComponent } from './components/chrome/footer';
@@ -60,6 +64,12 @@ export interface TUIState {
    */
   queuedMessageDispatchPending: boolean;
   swarmModeEntry: 'manual' | 'task' | undefined;
+  /**
+   * Fullscreen only: the bottom dock (activity / todo / queue / btw / editor)
+   * stacked under the transcript ScrollView. Undefined in regular mode, where
+   * every piece of chrome is a direct child of the root container.
+   */
+  dockContainer: VStack | undefined;
 }
 
 export function createTUIState(options: KimiTUIOptions): TUIState {
@@ -67,7 +77,19 @@ export function createTUIState(options: KimiTUIOptions): TUIState {
   const theme = currentTheme;
 
   const terminal = new ProcessTerminal();
-  const ui = new TUI(terminal);
+  // Fullscreen is experimental and env-gated: ECHADRON_TUI_FULL_SCREEN=1.
+  // The alternate screen scrolls the transcript inside a primary ScrollView
+  // and docks the rest of the chrome at the bottom, instead of letting the
+  // whole UI flow through the terminal's own scrollback.
+  // `[tui] tui_mode` is the setting; the env override stays for one-off runs
+  // and for trying the mode without touching tui.toml.
+  const envOverride =
+    process.env['ECHADRON_TUI_FULL_SCREEN'] ?? process.env['KIMI_CODE_TUI_FULL_SCREEN'];
+  const fullscreen =
+    envOverride === undefined
+      ? initialAppState.tuiMode === 'fullscreen'
+      : envOverride === '1';
+  const ui: TUI = fullscreen ? new TuiAltScreen(terminal) : new TuiMainScreen(terminal);
 
   const transcriptContainer = new GutterContainer(CHROME_GUTTER, CHROME_GUTTER);
   const activityContainer = new GutterContainer(CHROME_GUTTER, CHROME_GUTTER);
@@ -83,8 +105,34 @@ export function createTUIState(options: KimiTUIOptions): TUIState {
     ui.requestRender();
   });
 
+  let dockContainer: VStack | undefined;
+  if (ui instanceof TuiAltScreen) {
+    // The transcript scrolls inside the primary ScrollView; everything else
+    // stays docked at the bottom. Sizing mirrors pi's interactive layout: the
+    // transcript starts from basis 0 and grows, while the dock keeps its
+    // intrinsic height and the editor is never squeezed below its three rows
+    // (top border / input / bottom border) or its outline gets clipped.
+    const scrollView = new ScrollView(transcriptContainer, {
+      follow: 'end',
+      primary: true,
+      overscroll: 'chain',
+      scrollbar: 'auto',
+    });
+    dockContainer = new VStack();
+    dockContainer.addChild(activityContainer, { shrink: 1, minSize: 0 });
+    dockContainer.addChild(todoPanelContainer, { shrink: 1, minSize: 0 });
+    dockContainer.addChild(queueContainer, { shrink: 1, minSize: 0 });
+    dockContainer.addChild(btwPanelContainer, { shrink: 1, minSize: 0 });
+    dockContainer.addChild(editorContainer, { shrink: 1, minSize: 3 });
+    const root = new VStack();
+    root.addChild(scrollView, { basis: 0, grow: 1, shrink: 1, minSize: 1 });
+    root.addChild(dockContainer, { basis: 'auto', grow: 0, shrink: 1, minSize: 1 });
+    ui.setLayoutRoot(root);
+  }
+
   return {
     ui,
+    dockContainer,
     terminal,
     transcriptContainer,
     activityContainer,

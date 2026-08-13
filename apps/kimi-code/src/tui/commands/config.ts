@@ -21,7 +21,8 @@ import { PermissionSelectorComponent } from '../components/dialogs/permission-se
 import { SettingsSelectorComponent, type SettingsSelection } from '../components/dialogs/settings-selector';
 import { ThemeSelectorComponent } from '../components/dialogs/theme-selector';
 import { UpdatePreferenceSelectorComponent } from '../components/dialogs/update-preference-selector';
-import { DEFAULT_TUI_CONFIG, saveTuiConfig, type TuiConfig } from '../config';
+import { ChoicePickerComponent } from '../components/dialogs/choice-picker';
+import { DEFAULT_TUI_CONFIG, saveTuiConfig, type TuiConfig, type TuiMode } from '../config';
 import type { ThemeName } from '#/tui/theme';
 import { currentTheme, isBuiltInTheme, lightColors, loadCustomThemeMerged } from '#/tui/theme';
 import { NO_ACTIVE_SESSION_MESSAGE } from '../constant/kimi-tui';
@@ -725,6 +726,51 @@ async function performSecondaryModelSwitch(
   );
 }
 
+function showDisplayModePicker(host: SlashCommandHost): void {
+  const current = host.state.appState.tuiMode ?? 'inline';
+  host.mountEditorReplacement(
+    new ChoicePickerComponent({
+      title: ' Display mode',
+      options: [
+        {
+          value: 'inline',
+          label: 'Inline',
+          description: "Flow through the terminal's own scrollback (default).",
+        },
+        {
+          value: 'fullscreen',
+          label: 'Fullscreen',
+          description: 'Dock the chrome and scroll the transcript in its own view.',
+        },
+      ],
+      currentValue: current,
+      onSelect: (value: string) => {
+        host.restoreEditor();
+        void applyDisplayMode(host, value === 'fullscreen' ? 'fullscreen' : 'inline');
+      },
+      onCancel: () => {
+        host.restoreEditor();
+      },
+    }),
+  );
+}
+
+async function applyDisplayMode(host: SlashCommandHost, tuiMode: TuiMode): Promise<void> {
+  if (tuiMode === (host.state.appState.tuiMode ?? 'inline')) {
+    host.showStatus(`Display mode unchanged: ${tuiMode}.`);
+    return;
+  }
+  try {
+    await saveTuiConfig({ ...currentTuiConfig(host), tuiMode });
+  } catch (error) {
+    host.showStatus(`Failed to save display mode: ${formatErrorMessage(error)}`, 'error');
+    return;
+  }
+  // The screen is chosen when the TUI is constructed, so this cannot swap live.
+  host.setAppState({ tuiMode });
+  host.showStatus(`Display mode set to ${tuiMode}. Restart Echadron to apply it.`);
+}
+
 function showThemePicker(host: SlashCommandHost): void {
   host.mountEditorReplacement(
     new ThemeSelectorComponent({
@@ -955,6 +1001,7 @@ function handleSettingsSelection(host: SlashCommandHost, value: SettingsSelectio
     case 'secondaryModel': void handleSecondaryModelCommand(host, ''); return;
     case 'permission': showPermissionPicker(host); return;
     case 'theme': showThemePicker(host); return;
+    case 'displayMode': showDisplayModePicker(host); return;
     case 'editor': showEditorPicker(host); return;
     case 'experiments': void showExperimentsPanel(host); return;
     case 'upgrade': showUpdatePreferencePicker(host); return;
