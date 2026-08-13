@@ -4542,22 +4542,25 @@ describe("Editor narrow width rendering", () => {
 		tui.addChild(editor);
 		editor.setText("你好世界");
 		tui.start();
-		await terminal.waitForRender();
-		const viewport = terminal.getViewport();
-		// Assert the exact visible rows: without truncation, xterm
-		// auto-wraps the overwide rows and the structure shifts, turning
-		// these assertions red (a tautological every(visibleWidth <= 5)
-		// check cannot fail on a 5-column terminal and was removed).
-		// Each content row is 6 columns wide (left padding 2 + CJK char 2
-		// + right padding 2) and is truncated to 5, leaving the trailing
-		// space.
-		assert.strictEqual(viewport[0], "─────");
-		assert.strictEqual(viewport[1], "  你 ");
-		assert.strictEqual(viewport[2], "  好 ");
-		assert.strictEqual(viewport[3], "  世 ");
-		assert.strictEqual(viewport[4], "  界 ");
-		assert.strictEqual(viewport[5], "─────");
-		tui.stop();
+		try {
+			await terminal.waitForRender();
+			const viewport = terminal.getViewport();
+			// Assert the exact visible rows: without truncation, xterm
+			// auto-wraps the overwide rows and the structure shifts, turning
+			// these assertions red (a tautological every(visibleWidth <= 5)
+			// check cannot fail on a 5-column terminal and was removed).
+			// Each content row is 6 columns wide (left padding 2 + CJK char 2
+			// + right padding 2) and is truncated to 5, leaving the trailing
+			// space.
+			assert.strictEqual(viewport[0], "─────");
+			assert.strictEqual(viewport[1], "  你 ");
+			assert.strictEqual(viewport[2], "  好 ");
+			assert.strictEqual(viewport[3], "  世 ");
+			assert.strictEqual(viewport[4], "  界 ");
+			assert.strictEqual(viewport[5], "─────");
+		} finally {
+			tui.stop();
+		}
 	});
 
 	it("does not throw at zero or negative widths", () => {

@@ -58,9 +58,12 @@ describe("TUI overlay compositing", () => {
 		const tui: TUI = new TuiMainScreen(terminal);
 		tui.addChild(new StaticLines([baseLine, "INPUT"]));
 		tui.start();
-		await renderAndFlush(tui, terminal);
-		assert.strictEqual(getCellItalic(terminal, 1, 0), 0);
-		tui.stop();
+		try {
+			await renderAndFlush(tui, terminal);
+			assert.strictEqual(getCellItalic(terminal, 1, 0), 0);
+		} finally {
+			tui.stop();
+		}
 	});
 
 	it("should not leak styles when overlay slicing drops trailing SGR resets", async () => {
@@ -73,9 +76,12 @@ describe("TUI overlay compositing", () => {
 
 		tui.showOverlay(new StaticOverlay("OVR"), { row: 0, col: 5, width: 3 });
 		tui.start();
-		await renderAndFlush(tui, terminal);
+		try {
+			await renderAndFlush(tui, terminal);
 
-		assert.strictEqual(getCellItalic(terminal, 1, 0), 0);
-		tui.stop();
+			assert.strictEqual(getCellItalic(terminal, 1, 0), 0);
+		} finally {
+			tui.stop();
+		}
 	});
 });

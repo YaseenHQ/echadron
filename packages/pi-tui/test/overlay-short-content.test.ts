@@ -39,24 +39,27 @@ describe("TUI overlay with short content", () => {
 
 		// Trigger render
 		tui.start();
-		await terminal.waitForRender();
+		try {
+			await terminal.waitForRender();
 
-		const viewport = terminal.getViewport();
-		const hasOverlay = viewport.some((line) => line.includes("OVERLAY"));
+			const viewport = terminal.getViewport();
+			const hasOverlay = viewport.some((line) => line.includes("OVERLAY"));
 
-		console.log("Terminal rows:", terminal.rows);
-		console.log("Content lines: 3");
-		console.log("Overlay visible:", hasOverlay);
+			console.log("Terminal rows:", terminal.rows);
+			console.log("Content lines: 3");
+			console.log("Overlay visible:", hasOverlay);
 
-		if (!hasOverlay) {
-			console.log("\nViewport contents:");
-			for (let i = 0; i < viewport.length; i++) {
-				console.log(`  [${i}]: "${viewport[i]}"`);
+			if (!hasOverlay) {
+				console.log("\nViewport contents:");
+				for (let i = 0; i < viewport.length; i++) {
+					console.log(`  [${i}]: "${viewport[i]}"`);
+				}
 			}
+
+			assert.ok(hasOverlay, "Overlay should be visible when content is shorter than terminal");
+
+		} finally {
+			tui.stop();
 		}
-
-		assert.ok(hasOverlay, "Overlay should be visible when content is shorter than terminal");
-
-		tui.stop();
 	});
 });
