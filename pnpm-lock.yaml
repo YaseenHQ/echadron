@@ -140,10 +140,6 @@ importers:
         version: 8.20.0
 
   apps/kimi-code:
-    dependencies:
-      '@firecrawl/anydoc':
-        specifier: ^0.1.8
-        version: 0.1.8
     devDependencies:
       '@moonshot-ai/acp-adapter':
         specifier: workspace:^
@@ -224,6 +220,9 @@ importers:
         specifier: ^4.3.6
         version: 4.3.6
     optionalDependencies:
+      '@firecrawl/anydoc':
+        specifier: ^0.1.8
+        version: 0.1.8
       '@mariozechner/clipboard':
         specifier: ^0.3.9
         version: 0.3.9
@@ -720,9 +719,6 @@ importers:
       '@anthropic-ai/sdk':
         specifier: ^0.95.2
         version: 0.95.2(zod@4.3.6)
-      '@firecrawl/anydoc':
-        specifier: ^0.1.8
-        version: 0.1.8
       '@google/genai':
         specifier: ^1.49.0
         version: 1.49.0(@modelcontextprotocol/sdk@1.29.0(zod@4.3.6))
@@ -865,6 +861,10 @@ importers:
       vite:
         specifier: ^6.3.3
         version: 6.4.2(@types/node@22.19.17)(jiti@2.6.1)(lightningcss@1.32.0)(tsx@4.21.0)(yaml@2.8.3)
+    optionalDependencies:
+      '@firecrawl/anydoc':
+        specifier: ^0.1.8
+        version: 0.1.8
 
   packages/kaos:
     dependencies:
@@ -11378,6 +11378,7 @@ snapshots:
       '@firecrawl/anydoc-linux-x64-gnu': 0.1.8
       '@firecrawl/anydoc-linux-x64-musl': 0.1.8
       '@firecrawl/anydoc-win32-x64-msvc': 0.1.8
+    optional: true
 
   '@floating-ui/core@1.8.0':
     dependencies:
@@ -13929,7 +13930,7 @@ snapshots:
       obug: 2.1.1
       std-env: 4.0.0
       tinyrainbow: 3.1.0
-      vitest: 4.1.4(@types/node@22.19.17)(@vitest/coverage-v8@4.1.4)(jsdom@25.0.1)(msw@2.15.0(@types/node@22.19.17)(typescript@6.0.2))(vite@8.0.8(@types/node@22.19.17)(esbuild@0.27.7)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.8.3))
+      vitest: 4.1.4(@types/node@22.19.17)(@vitest/coverage-v8@4.1.4)(jsdom@25.0.1)(msw@2.15.0(@types/node@22.19.17)(typescript@6.0.2))(vite@6.4.2(@types/node@22.19.17)(jiti@2.6.1)(lightningcss@1.32.0)(tsx@4.21.0)(yaml@2.8.3))
 
   '@vitest/expect@4.1.4':
     dependencies:
