@@ -1,18 +1,10 @@
 # @moonshot-ai/pi-tui
 
-## 0.82.0
-
-### Minor Changes
-
-- [#26](https://github.com/YaseenHQ/kimi/pull/26) [`a9b1250`](https://github.com/YaseenHQ/kimi/commit/a9b125062ac298a4dab1714e292e0699400eb79b) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Port the compatible pi-tui improvements through upstream 0.84.1: Unicode LaTeX Markdown rendering with width-aware transforms, terminal-safe image fallbacks and iTerm2 payload metadata, OSC 8-safe truncation, Unicode grapheme width fixes, latency-sensitive input rendering, and the corrected OSC 9;4 progress-clear sequence. The alternate-screen renderer/layout stack remains intentionally deferred because Echadron still uses its existing main-screen renderer.
+## 0.84.1
 
 ### Patch Changes
 
-- [#1](https://github.com/YaseenHQ/kimi/pull/1) [`02606aa`](https://github.com/YaseenHQ/kimi/commit/02606aa7218b4b01a26a28889d025fd3b6c5afee) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Synchronize terminal input, paste restoration, line-ending handling, tab rendering, and cursor cleanup fixes from upstream.
-
-- [#1](https://github.com/YaseenHQ/kimi/pull/1) [`02606aa`](https://github.com/YaseenHQ/kimi/commit/02606aa7218b4b01a26a28889d025fd3b6c5afee) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Sync the vendored fork version string to the upstream release it tracks.
-
-- [#7](https://github.com/YaseenHQ/kimi/pull/7) [`2419cc3`](https://github.com/YaseenHQ/kimi/commit/2419cc3f49a49993d27886b52d656fc3d9b763cb) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Keep editor scroll indicators within narrow terminal widths while preserving their border color.
+- Re-baseline the fork on upstream `@earendil-works/pi-tui` v0.84.1 plus upstream main up to `40a3d85` (2026-08-11), keeping all local patches (narrow-terminal hardening, processed-line render caching, editor history hooks, paste-burst fallback, multi-root `@` completion). The upstream renderer is now split into main-screen and alternate-screen implementations, the `TUI` class is now an interface implemented by `TuiMainScreen` and `TuiAltScreen`, and the Markdown component gained opt-out LaTeX math rendering (`renderLatex`). The post-release main merge adds the fullscreen transcript search, single-line scroll actions, the alternate-screen render-churn reduction, and the SSH-aware escape-timeout default. The version line now tracks the upstream baseline it forks from.
 
 ## 0.80.8
 
