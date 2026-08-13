@@ -1,9 +1,14 @@
 import chalk from 'chalk';
 
 /**
- * Idle face for the welcome cube — two eyes on a box, in the spirit of
- * the Grok bot (https://x.ai/bot). Gaze and blinks are a function of
- * wall-clock seconds so tests can freeze the pose.
+ * Chad's idle face.
+ *
+ * Chad is Echadron's character — the name is the middle of "Echadron", and
+ * doubles as one of the CLI's aliases alongside `maker`, which is roughly what
+ * the name means. He is a two-row block with two eyes.
+ *
+ * Gaze, blinks and winks are functions of wall-clock seconds so tests can
+ * freeze the pose.
  */
 
 export const LOGO_BODY = '███████';

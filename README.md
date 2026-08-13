@@ -14,6 +14,8 @@ installed; upstream Kimi Code and its storage namespace remain independent.
 
 Echadron is an AI coding agent that runs in your terminal — it can read and edit code, run shell commands, search files, fetch web pages, and choose the next step based on the feedback it receives. It supports compatible providers and models through the Kimi Code architecture.
 
+The name means roughly *maker*, which is where the `maker` alias comes from. The character in the terminal header is Chad — the middle of "Echadron", and the other alias you can launch him with.
+
 ## Install
 
 Install Echadron from npm with Node.js 22.19.0 or later:
