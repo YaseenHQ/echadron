@@ -32,7 +32,6 @@ import { copyTextToClipboard } from '#/utils/clipboard/clipboard-text';
 import { appendInputHistory, loadInputHistory } from '#/utils/history/input-history';
 import { openUrl } from '#/utils/open-url';
 import { getInputHistoryFile } from '#/utils/paths';
-import { activityFaceAnimation, activityMoodFor } from '#/tui/utils/activity-face';
 import { RETRY_DETAIL_MAX_CHARS } from '#/tui/constant/rendering';
 import { detectFdPath, ensureFdPath } from '#/utils/process/fd-detect';
 import { quoteShellArg } from '#/utils/shell-quote';
@@ -2645,7 +2644,6 @@ export class KimiTUI {
         );
         this.syncAgentSwarmActivitySpinner(placeSpinnerInAgentSwarm ? spinner : undefined);
         if (placeSpinnerInAgentSwarm) break;
-        this.applyActivityFace(spinner, 'waiting', retryStatus !== undefined);
         this.state.activityContainer.addChild(
           new ActivityPaneComponent({
             mode: 'waiting',
@@ -2666,7 +2664,6 @@ export class KimiTUI {
           currentTheme.fg('running', s),
           TUI_ANIMATIONS.composing,
         );
-        this.applyActivityFace(spinner, 'composing', false);
         this.syncAgentSwarmActivitySpinner(undefined);
         this.state.activityContainer.addChild(
           new ActivityPaneComponent({
@@ -2686,7 +2683,6 @@ export class KimiTUI {
         );
         this.syncAgentSwarmActivitySpinner(placeSpinnerInAgentSwarm ? spinner : undefined);
         if (placeSpinnerInAgentSwarm) break;
-        this.applyActivityFace(spinner, 'tool', false);
         this.state.activityContainer.addChild(
           new ActivityPaneComponent({
             mode: 'tool',
@@ -2972,20 +2968,6 @@ export class KimiTUI {
     if (this.state.terminalState.progressActive === active) return;
     this.state.terminal.setProgress(active);
     this.state.terminalState.progressActive = active;
-  }
-
-  /**
-   * Drive the activity spinner with the cube's face for this mode. The header
-   * logo scrolls away with the transcript, so this is the only place the
-   * character is visible while work is actually happening.
-   */
-  private applyActivityFace(
-    spinner: MoonLoader,
-    mode: 'waiting' | 'thinking' | 'composing' | 'tool' | 'awaiting',
-    retrying: boolean,
-  ): void {
-    const animation = activityFaceAnimation(activityMoodFor({ mode, retrying }));
-    spinner.setCustomAnimation(animation.key, animation.frames, animation.intervalMs);
   }
 
   private ensureActivitySpinner(

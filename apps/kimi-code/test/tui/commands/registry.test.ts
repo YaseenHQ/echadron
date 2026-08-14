@@ -222,6 +222,19 @@ describe('built-in slash command registry', () => {
     }
   });
 
+  it('every row in the settings menu is actually selectable', async () => {
+    // A row added to the menu but missed in the guard renders normally and does
+    // nothing when picked — no error, no dispatch.
+    const { SETTINGS_OPTIONS, SETTINGS_SELECTION_VALUES } = await import(
+      '#/tui/components/dialogs/settings-selector'
+    );
+    const selectable = new Set<string>(SETTINGS_SELECTION_VALUES);
+    for (const option of SETTINGS_OPTIONS) {
+      expect(selectable.has(option.value), `menu row "${option.value}" is not selectable`).toBe(true);
+    }
+    expect(SETTINGS_OPTIONS.length).toBe(SETTINGS_SELECTION_VALUES.length);
+  });
+
   it('keeps session-level toggles in the browsable palette', () => {
     // These change per task rather than being configured once, so they must
     // stay discoverable rather than hiding behind /settings.

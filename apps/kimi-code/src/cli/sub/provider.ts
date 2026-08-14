@@ -5,11 +5,10 @@
  * for the custom-registry path so users can import an api.json document, drop
  * a provider, or inspect what is configured without launching the TUI.
  *
- * `add` writes the same `source = { kind: 'apiJson', url, apiKey }` blob the
- * TUI does; the next launch's `refreshAllProviderModels`
- * (apps/kimi-code/src/tui/utils/refresh-providers.ts) groups by URL, retries
- * available API-key candidates, and re-fetches the model list, so periodic
- * refresh is automatic.
+ * Imports write source provenance for the catalog or custom registry. The
+ * next launch's `refreshAllProviderModels` re-fetches those sources and
+ * reconciles model aliases, so new upstream models arrive without another
+ * login or destructive provider replacement.
  */
 
 import {
@@ -616,6 +615,12 @@ function providerSourceLabel(provider: KimiConfig['providers'][string]): string 
   if (source !== undefined) {
     if (source['kind'] === 'apiJson' && typeof source['url'] === 'string') {
       return `apiJson(${source['url']})`;
+    }
+    if (
+      source['kind'] === 'modelsDev' &&
+      typeof source['catalogId'] === 'string'
+    ) {
+      return `modelsDev(${source['catalogId']})`;
     }
   }
   if (provider.oauth !== undefined) return 'oauth';

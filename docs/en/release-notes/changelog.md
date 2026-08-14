@@ -25,6 +25,7 @@ This page documents each Echadron release. The complete package-level record is 
 - Run the interactive TUI, print mode, doctor, ACP, export, and provider commands on agent-core v2 by default while retaining an explicit v1 compatibility path.
 - Unify OAuth, API-key, catalog-provider, and custom-registry login. Account OAuth supports Kimi Code, ChatGPT (OpenAI Codex), and xAI, with individual and bundled logout controls.
 - Add persistent models.dev catalog updates with `echadron update --models`, provenance-aware provider metadata, model capabilities, context limits, and thinking-effort configuration.
+- Reconcile existing models.dev providers during startup and `echadron update --models`, so newly published models (and updated metadata) appear without re-login or replacing saved credentials, defaults, or explicit model overrides.
 - Add native OpenAI Responses compaction, stronger prompt-cache keys and accounting, cache read/write usage, configurable Anthropic cache retention, and idle cache-expiry reminders.
 - Add model-aware custom agents and subagents, secondary-model selection, live thinking-effort display, turn-tree navigation, and clearer background-task status.
 - Align ACP with live provider/model configuration and add the experimental `echadron acp-v2` bridge. Upgrade MCP clients to the July 2026 stateless protocol with negotiation and legacy fallback.

@@ -277,6 +277,14 @@ echadron upgrade
 
 For global npm, pnpm, yarn, bun, and macOS / Linux native installations, `echadron upgrade` shows update options; selecting `Install update now` runs the corresponding foreground install command. When the current installation method cannot be upgraded automatically (e.g., Windows native installation), the manual update command is printed instead.
 
+### `echadron update --models`
+
+Refresh the persisted models.dev catalog and reconcile every configured provider that was imported from that catalog. New model aliases and metadata are added, removed models are cleaned up, and provider credentials, defaults, and explicit model overrides are preserved. Providers created from custom registries are refreshed on normal startup as described in [Providers](../configuration/providers.md).
+
+```sh
+echadron update --models
+```
+
 ### `echadron vis`
 
 Launch the session visualizer in your browser to inspect a session as it unfolds. The command starts an in-process server pointed at your local sessions, prints the URL, opens your browser, and keeps running until you press `Ctrl-C`.

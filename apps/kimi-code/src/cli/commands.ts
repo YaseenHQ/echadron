@@ -139,7 +139,7 @@ export function createProgram(
     .command('update')
     .alias('upgrade')
     .description('Update Echadron or refresh its model catalogs.')
-    .option('--models', 'Refresh the models.dev catalog only.')
+    .option('--models', 'Refresh the models.dev catalog and configured providers.')
     .action(async (options: { models?: boolean }) => {
       await (options.models === true ? onUpdateModels() : onUpgrade());
     });

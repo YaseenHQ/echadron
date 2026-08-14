@@ -36,6 +36,8 @@ Echadron currently stores one OAuth account per provider. Running `/login` for a
 
 When connecting a known third-party provider, Echadron fetches the [models.dev](https://models.dev/) catalog, then asks you to select a provider, enter an API key, and choose a default model. Vendors whose protocol the catalog does not declare are imported as OpenAI-compatible with a "guessed" note; when the catalog provides no usable endpoint, Echadron asks for a base URL first. Proprietary protocols such as Amazon Bedrock and Cohere, and unrecognized explicit protocols, are refused. Deprecated and alpha-status models are excluded.
 
+Known catalog imports record their models.dev provenance. On startup, and when running `echadron update --models`, Echadron re-fetches that catalog and reconciles new, removed, and changed model aliases without replacing the provider's API key, default selection, or model overrides.
+
 For a custom registry, paste its URL and Bearer token. The CLI creates the `providers` / `models` entries. On later startup, providers from the same registry URL are refreshed together, so upstream provider additions, removals, and model metadata changes are synced.
 
 The same operations are also available in non-interactive environments via the shell command: [`echadron provider`](../reference/kimi-command.md#echadron-provider).
@@ -156,7 +158,7 @@ To route Vertex requests through a custom (e.g. proxied) endpoint, set `base_url
 
 Kimi Code, xAI, and OpenAI Codex can use OAuth rather than static API keys. After running `/login` and choosing **Sign in with an account (OAuth)**, the built-in authentication toolchain stores and refreshes the credential and writes the provider/model configuration automatically. OpenAI Codex offers a browser or device-code choice; the other supported providers use their device-code flows. Anthropic and GitHub Copilot OAuth adapters remain available only to preserve compatibility with existing credentials; they are not advertised for new login.
 
-For xAI, models.dev metadata is fetched again whenever that provider logs in. This is login-time refresh, not a background updater. Kimi Code uses its managed models endpoint, while OpenAI Codex follows the explicit list described below.
+For xAI, models.dev metadata is fetched again whenever that provider logs in and during the normal provider refresh pass. Kimi Code uses its managed models endpoint, while OpenAI Codex follows the explicit list described below.
 
 For example, xAI is persisted in the same `config.toml` architecture as every other provider:
 

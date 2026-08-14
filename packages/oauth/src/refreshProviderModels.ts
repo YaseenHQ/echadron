@@ -5,6 +5,15 @@ import {
   type CustomRegistrySource,
 } from './custom-registry';
 import {
+  applyModelsDevProviderModels,
+  fetchModelsDevCatalog,
+  MODELS_DEV_CATALOG_URL,
+  modelsDevProviderModels,
+  readModelsDevSource,
+  resolveModelsDevSource,
+  type ModelsDevSource,
+} from './models-dev-refresh';
+import {
   applyManagedApiKeyProviderModels,
   applyManagedKimiCodeConfig,
   fetchManagedKimiCodeModels,
@@ -69,7 +78,7 @@ export interface RefreshResult {
   readonly failed: ReadonlyArray<{ readonly provider: string; readonly reason: string }>;
 }
 
-export type RefreshProviderScope = 'all' | 'oauth';
+export type RefreshProviderScope = 'all' | 'oauth' | 'modelsDev';
 
 export interface RefreshProviderOptions {
   readonly scope?: RefreshProviderScope;
@@ -376,12 +385,14 @@ function pickDefaultModel(
  *     via `GET /models` with the configured API key as Bearer. Only model
  *     aliases are merged; the provider record is user-owned and never
  *     rewritten.
- *  3. Custom registries (models.dev-style, keyed by `provider.source`).
+ *  3. Known models.dev providers (keyed by `provider.source.catalogId`).
+ *  4. Custom registries (api.json, keyed by `provider.source.url`).
  *
  * Each branch diffs old vs new and only writes when something actually changed
  * (`removeProvider` then `setConfig`). Failures are collected per-provider and
  * never abort the whole refresh. Pass `providerId` to scope the refresh to a
- * single provider; pass `scope: 'oauth'` to refresh only the managed provider.
+ * single provider; pass `scope: 'oauth'` to refresh only managed OAuth models,
+ * or `scope: 'modelsDev'` to refresh only catalog-backed providers.
  */
 export async function refreshProviderModels(
   host: RefreshProviderHost,
@@ -401,6 +412,7 @@ export async function refreshProviderModels(
   const managedProvider = readProvider(config, KIMI_CODE_PROVIDER_NAME);
   const managedWanted = targetId === undefined || targetId === KIMI_CODE_PROVIDER_NAME;
   if (
+    scope !== 'modelsDev' &&
     managedWanted &&
     managedProvider !== undefined &&
     managedProvider.type === 'kimi' &&
@@ -484,7 +496,7 @@ export async function refreshProviderModels(
   // ---------------------------------------------------------------------------
   const openPlatformIds = Object.keys(config.providers).filter((id) => isOpenPlatformId(id));
   for (const providerId of openPlatformIds) {
-    if (targetId !== undefined && targetId !== providerId) continue;
+    if (scope === 'modelsDev' || (targetId !== undefined && targetId !== providerId)) continue;
     const platform = getOpenPlatformById(providerId);
     if (platform === undefined) continue;
 
@@ -558,7 +570,7 @@ export async function refreshProviderModels(
   // `{baseUrl}/models` just like the OAuth branch. Strict baseUrl matching
   // keeps proxies / gateways with an untrusted `/models` schema out.
   for (const providerId of Object.keys(config.providers)) {
-    if (isOpenPlatformId(providerId)) continue;
+    if (scope === 'modelsDev' || isOpenPlatformId(providerId)) continue;
     if (targetId !== undefined && targetId !== providerId) continue;
     const provider = readProvider(config, providerId);
     if (provider === undefined) continue;
@@ -627,7 +639,143 @@ export async function refreshProviderModels(
   }
 
   // ---------------------------------------------------------------------------
-  // 3. Custom Registry providers (grouped by URL, with API-key candidates)
+  // 3. Known models.dev providers (grouped by catalog URL)
+  // ---------------------------------------------------------------------------
+  // A known-provider import stores the catalog URL and provider id in a source
+  // blob, while the API key remains on the provider itself. Re-fetch the
+  // catalog once per URL, then reconcile only the generated `<provider>/...`
+  // aliases. This keeps credentials, default selection, custom aliases, and
+  // explicit model overrides intact while making new upstream models visible
+  // without a re-login or destructive re-import.
+  const modelsDevSources = new Map<
+    string,
+    { readonly source: ModelsDevSource; readonly providerIds: string[] }
+  >();
+  // Providers whose id matches a models.dev entry but which carry no `source`
+  // stamp: only the API-key catalog import writes one, so an OAuth login (xai,
+  // openai-codex, …) left the provider invisible to this refresh and its models
+  // frozen at import time. Resolved against the catalog once it is fetched.
+  const unstamped: string[] = [];
+  for (const providerId of Object.keys(config.providers)) {
+    if (targetId !== undefined && targetId !== providerId) continue;
+    const provider = readProvider(config, providerId);
+    if (provider === undefined) continue;
+    const source = readModelsDevSource(provider);
+    if (source === undefined) {
+      unstamped.push(providerId);
+      continue;
+    }
+    const group = modelsDevSources.get(source.url);
+    if (group !== undefined) {
+      group.providerIds.push(providerId);
+    } else {
+      modelsDevSources.set(source.url, { source, providerIds: [providerId] });
+    }
+  }
+  // Unstamped providers ride along with a models.dev catalog that is already
+  // being fetched; they never trigger a fetch of their own. A provider that
+  // only exists behind OAuth therefore costs no extra network call, and is
+  // picked up as soon as anything else consults the same catalog.
+
+  for (const { source, providerIds } of modelsDevSources.values()) {
+    try {
+      const catalog = await fetchModelsDevCatalog(source, {
+        userAgent: host.userAgent,
+        signal: AbortSignal.timeout(10_000),
+      });
+      const next = structuredClone(config);
+      const changedProviders: ProviderChange[] = [];
+      const providersToRemoveBeforeSet = new Set<string>();
+
+      const catalogIds = new Set(Object.keys(catalog));
+      const groupProviderIds =
+        source.url === MODELS_DEV_CATALOG_URL
+          ? [...providerIds, ...unstamped.filter((id) => catalogIds.has(id))]
+          : providerIds;
+
+      for (const providerId of groupProviderIds) {
+        const provider = readProvider(config, providerId);
+        const providerSource =
+          provider === undefined
+            ? undefined
+            : resolveModelsDevSource(provider, providerId, catalogIds);
+        if (providerSource === undefined) continue;
+
+        let models: ReturnType<typeof modelsDevProviderModels>;
+        try {
+          models = modelsDevProviderModels(catalog, providerSource);
+        } catch (error) {
+          failed.push({
+            provider: providerId,
+            reason: error instanceof Error ? error.message : String(error),
+          });
+          continue;
+        }
+
+        const refreshedAliasKeys = providerRefreshAliasKeys(
+          config,
+          next,
+          providerId,
+          `${providerId}/`,
+        );
+        applyModelsDevProviderModels(next, providerId, models);
+        const nextAliasKeys = providerRefreshAliasKeys(
+          config,
+          next,
+          providerId,
+          `${providerId}/`,
+        );
+
+        if (providerModelsEqual(config, next, providerId, nextAliasKeys)) {
+          unchanged.push(providerId);
+          continue;
+        }
+
+        const { added, removed } = computeChanges(
+          collectModelIdsForAliases(config, refreshedAliasKeys),
+          collectModelIdsForAliases(next, nextAliasKeys),
+        );
+        changedProviders.push({
+          providerId,
+          providerName: providerId,
+          added,
+          removed,
+        });
+        providersToRemoveBeforeSet.add(providerId);
+      }
+
+      if (changedProviders.length > 0) {
+        restoreDefaultSelection(next, config.defaultModel, config.thinking?.enabled);
+        clampDanglingDefault(next);
+        clearDefaultThinkingWhenDefaultRemoved(next, config.defaultModel);
+        for (const providerId of providersToRemoveBeforeSet) {
+          await host.removeProvider(providerId);
+        }
+        config = await host.setConfig({
+          providers: next.providers,
+          models: next.models,
+          defaultModel: next.defaultModel,
+          thinking: next.thinking,
+          defaultProvider: next['defaultProvider'],
+        });
+        changed.push(...changedProviders);
+      }
+    } catch (error) {
+      for (const providerId of providerIds) {
+        failed.push({
+          provider: providerId,
+          reason: error instanceof Error ? error.message : String(error),
+        });
+      }
+    }
+  }
+
+  if (scope === 'modelsDev') {
+    return { changed, unchanged, failed };
+  }
+
+  // ---------------------------------------------------------------------------
+  // 4. Custom Registry providers (grouped by URL, with API-key candidates)
   // ---------------------------------------------------------------------------
   const customSources = new Map<
     string,

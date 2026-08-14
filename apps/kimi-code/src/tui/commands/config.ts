@@ -356,7 +356,10 @@ function showEditorPicker(host: SlashCommandHost): void {
 async function refreshModelsForPicker(host: SlashCommandHost): Promise<void> {
   try {
     const result = await withTimeout(
-      host.authFlow.refreshOAuthProviderModels(),
+      // Keep the picker in sync with every configured source. OAuth providers
+      // are only one part of the model catalog: models.dev-backed providers
+      // and custom registries can publish new models without a new login.
+      host.authFlow.refreshProviderModels(),
       MODEL_PICKER_REFRESH_TIMEOUT_MS,
     );
     if (result === undefined) return;

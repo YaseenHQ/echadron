@@ -19,7 +19,6 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ApprovalPanelComponent } from '#/tui/components/dialogs/approval-panel';
 import { EffortSelectorComponent } from '#/tui/components/dialogs/effort-selector';
 import { KIMI_CODE_PLUGIN_MARKETPLACE_URL } from '#/constant/app';
-import { activityFaceAnimation } from '#/tui/utils/activity-face';
 import { BRAILLE_SPINNER_FRAMES } from '#/tui/constant/rendering';
 import {
   AgentSwarmProgressComponent,
@@ -5327,7 +5326,7 @@ command = "vim"
     });
   });
 
-  it('refreshes only OAuth provider models before opening /model picker', async () => {
+  it('refreshes all configured provider models before opening /model picker', async () => {
     const { driver } = await makeDriver(makeSession(), {
       getConfig: vi.fn(async () => ({
         models: {
@@ -5342,10 +5341,7 @@ command = "vim"
       })),
     });
     const tui = driver as unknown as KimiTUI;
-    const refreshProviderModels = vi
-      .spyOn(tui.authFlow, 'refreshProviderModels')
-      .mockRejectedValue(new Error('full provider refresh should not run'));
-    const refreshOAuthProviderModels = vi.fn(async () => {
+    const refreshProviderModels = vi.fn(async () => {
       await Promise.resolve();
       tui.setAppState({
         availableModels: {
@@ -5362,9 +5358,9 @@ command = "vim"
     });
     (
       tui.authFlow as unknown as {
-        refreshOAuthProviderModels: typeof refreshOAuthProviderModels;
+        refreshProviderModels: typeof refreshProviderModels;
       }
-    ).refreshOAuthProviderModels = refreshOAuthProviderModels;
+    ).refreshProviderModels = refreshProviderModels;
 
     driver.handleUserInput('/model');
 
@@ -5375,11 +5371,10 @@ command = "vim"
       expect(output).toContain('Fresh Kimi K2');
       expect(output).not.toContain('Old Kimi K2');
     });
-    expect(refreshOAuthProviderModels).toHaveBeenCalledOnce();
-    expect(refreshProviderModels).not.toHaveBeenCalled();
+    expect(refreshProviderModels).toHaveBeenCalledOnce();
   });
 
-  it('opens /model picker after 5s when OAuth refresh is still pending', async () => {
+  it('opens /model picker after 5s when provider refresh is still pending', async () => {
     const { driver } = await makeDriver(makeSession(), {
       getConfig: vi.fn(async () => ({
         models: {
@@ -5394,19 +5389,19 @@ command = "vim"
       })),
     });
     const tui = driver as unknown as KimiTUI;
-    const refreshOAuthProviderModels = vi.fn(() => new Promise<never>(() => {}));
+    const refreshProviderModels = vi.fn(() => new Promise<never>(() => {}));
     (
       tui.authFlow as unknown as {
-        refreshOAuthProviderModels: typeof refreshOAuthProviderModels;
+        refreshProviderModels: typeof refreshProviderModels;
       }
-    ).refreshOAuthProviderModels = refreshOAuthProviderModels;
+    ).refreshProviderModels = refreshProviderModels;
 
     vi.useFakeTimers();
     try {
       driver.handleUserInput('/model');
       await Promise.resolve();
 
-      expect(refreshOAuthProviderModels).toHaveBeenCalledOnce();
+      expect(refreshProviderModels).toHaveBeenCalledOnce();
       expect(driver.state.editorContainer.children[0]).not.toBeInstanceOf(TabbedModelSelectorComponent);
 
       await vi.advanceTimersByTimeAsync(4_999);
@@ -5668,11 +5663,7 @@ command = "vim"
     expect(driver.state.livePane.mode).toBe('waiting');
     expect(driver.streamingUI.hasActiveThinkingComponent()).toBe(false);
     const activity = stripSgr(renderActivity(driver));
-    // The waiting indicator is the cube's face, not a braille spinner: the
-    // header logo scrolls away with the transcript, so this is where the
-    // character stays visible while work happens.
-    const waitingFace = activityFaceAnimation('waiting').frames;
-    expect(waitingFace.some((frame) => activity.includes(frame))).toBe(true);
+    expect(BRAILLE_SPINNER_FRAMES.some((frame) => activity.includes(frame))).toBe(true);
 
     // Real thinking text finally arrives -> transition into thinking mode.
     driver.sessionEventHandler.handleEvent(
