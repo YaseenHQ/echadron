@@ -21,7 +21,7 @@ import {
 } from '#/session/terminal/terminalService';
 import { ISessionWorkspaceContext } from '#/session/workspaceContext/workspaceContext';
 
-vi.mock('node-pty', () => ({
+vi.mock('@lydell/node-pty', () => ({
   spawn: vi.fn(),
 }));
 
@@ -275,7 +275,7 @@ describe('HostTerminalService (App scope)', () => {
   afterEach(() => disposables.dispose());
 
   it('spawns a PTY through node-pty and forwards events', async () => {
-    const { spawn } = await import('node-pty');
+    const { spawn } = await import('@lydell/node-pty');
     const dataListeners = new Set<(data: string) => void>();
     const exitListeners = new Set<(event: { exitCode: number }) => void>();
     const mockPty = {
@@ -291,7 +291,7 @@ describe('HostTerminalService (App scope)', () => {
       resize: vi.fn(),
       kill: vi.fn(),
     };
-    vi.mocked(spawn).mockReturnValue(mockPty as unknown as import('node-pty').IPty);
+    vi.mocked(spawn).mockReturnValue(mockPty as unknown as import('@lydell/node-pty').IPty);
 
     const svc = ix.get(IHostTerminalService);
     const proc = await svc.spawn({ cwd: '/ws', shell: '/bin/sh', cols: 80, rows: 24 });
