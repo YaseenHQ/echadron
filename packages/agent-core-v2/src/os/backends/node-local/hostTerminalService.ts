@@ -24,7 +24,21 @@ export class HostTerminalService extends Disposable implements IHostTerminalServ
   private readonly processes = new Set<TerminalProcess>();
 
   async spawn(options: TerminalSpawnOptions): Promise<TerminalProcess> {
-    const pty = await import('node-pty');
+    // `node-pty` is an optional dependency with a native build step. Package
+    // managers now hold install scripts behind an approval prompt, so a user
+    // who declined (or skipped scripts entirely) reaches this with the module
+    // missing. Report what to do instead of surfacing a bare resolution error.
+    let pty: typeof import('node-pty');
+    try {
+      pty = await import('node-pty');
+    } catch (error) {
+      throw new Error(
+        'The interactive terminal needs the optional native module `node-pty`, which is not built. ' +
+          'Re-run the install and allow its build script (npm: `npm approve-scripts node-pty`; ' +
+          'pnpm: `pnpm approve-builds`). Everything else works without it.',
+        { cause: error },
+      );
+    }
     const proc: IPty = pty.spawn(options.shell, [], {
       name: 'xterm-256color',
       cwd: options.cwd,
