@@ -337,6 +337,7 @@ export { AGENT_RUN_PROMPT_ORIGIN } from '#/session/subagent/runAgentTurn';
 export * from '#/session/subagent/mirrorAgentRun';
 import '#/session/subagent/configSection';
 export * from '#/agent/tools/agent/agent';
+export * from '#/agent/tools/agent/resultSchema';
 import '#/agent/tools/agent/agentTool';
 export * from '#/app/sessionLifecycle/sessionLifecycle';
 export * from '#/app/sessionLifecycle/sessionLifecycleService';

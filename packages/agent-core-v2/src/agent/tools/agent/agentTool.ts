@@ -81,6 +81,7 @@ import { ISessionMetadata } from '#/session/sessionMetadata/sessionMetadata';
 import { ISessionWorkspaceContext } from '#/session/workspaceContext/workspaceContext';
 
 import { emitAgentRunSpawned, mirrorAgentRun } from '#/session/subagent/mirrorAgentRun';
+import { buildResultSchemaInstruction, extractStructuredResult } from './resultSchema';
 import { ISessionSubagentService } from '#/session/subagent/subagent';
 import {
   buildSubagentModelDescriptions,
@@ -352,6 +353,10 @@ export class SubagentTool implements ISubagentTool {
       });
     }
 
+    if (args.result_schema !== undefined) {
+      promptText += buildResultSchemaInstruction(args.result_schema);
+    }
+
     const runInBackground = args.run_in_background === true;
     emitAgentRunSpawned(requester, agentId, {
       profileName,
@@ -491,7 +496,7 @@ export class SubagentTool implements ISubagentTool {
           output: formatBackgroundAgentResult(taskId, handle, args.description, allowBackground),
         };
       }
-      return await this.formatForegroundResult(taskId, handle, timeoutMs);
+      return await this.formatForegroundResult(taskId, handle, timeoutMs, args.result_schema);
     } catch (error) {
       return { output: `subagent error: ${launchErrorMessage(error, signal)}`, isError: true };
     }
@@ -501,11 +506,13 @@ export class SubagentTool implements ISubagentTool {
     taskId: string,
     handle: SubagentHandle,
     timeoutMs: number,
+    resultSchema?: Record<string, unknown>,
   ): Promise<ExecutableToolResult> {
     const info = this.tasks.getTask(taskId);
     if (info?.status === 'completed') {
+      const result = await this.tasks.readOutput(taskId);
       return {
-        output: formatForegroundAgentSuccess(handle, await this.tasks.readOutput(taskId)),
+        output: formatForegroundAgentSuccess(handle, result, structuredResultSection(result, resultSchema)),
       };
     }
     const timedOut = info?.status === 'timed_out';
@@ -595,15 +602,40 @@ function formatBackgroundAgentResult(
   ].join('\n');
 }
 
-function formatForegroundAgentSuccess(handle: SubagentHandle, result: string): string {
-  return [
+function formatForegroundAgentSuccess(
+  handle: SubagentHandle,
+  result: string,
+  structuredSection?: string,
+): string {
+  const lines = [
     `agent_id: ${handle.agentId}`,
     `actual_subagent_type: ${handle.profileName}`,
     'status: completed',
     '',
     '[summary]',
     result,
-  ].join('\n');
+  ];
+  if (structuredSection !== undefined) lines.push('', structuredSection);
+  return lines.join('\n');
+}
+
+/**
+ * `[structured_result]` section for the parent to parse, present only when a
+ * `result_schema` was requested. Extraction failure is reported inline rather
+ * than as a tool error: the child did complete, and the parent can resume it
+ * to ask for the object without losing the prose it already produced.
+ */
+function structuredResultSection(
+  result: string,
+  schema: Record<string, unknown> | undefined,
+): string | undefined {
+  if (schema === undefined) return undefined;
+  const extracted = extractStructuredResult(result, schema);
+  if (extracted.ok) return `[structured_result]\n${JSON.stringify(extracted.value)}`;
+  return (
+    `[structured_result_missing]\n${extracted.reason}. ` +
+    'Resume this agent and ask it to reply with only the JSON object.'
+  );
 }
 
 function formatForegroundAgentFailure(

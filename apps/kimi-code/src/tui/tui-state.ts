@@ -29,6 +29,9 @@ import {
   type TUIStartupState,
 } from './types';
 
+/** Keeps height deficit on the transcript; see the root-stack comment. */
+const DOCK_SHRINK_WEIGHT = 0.001;
+
 export interface TUIState {
   ui: TUI;
   terminal: ProcessTerminal;
@@ -125,8 +128,22 @@ export function createTUIState(options: KimiTUIOptions): TUIState {
     dockContainer.addChild(btwPanelContainer, { shrink: 1, minSize: 0 });
     dockContainer.addChild(editorContainer, { shrink: 1, minSize: 3 });
     const root = new VStack();
-    root.addChild(scrollView, { basis: 0, grow: 1, shrink: 1, minSize: 1 });
-    root.addChild(dockContainer, { basis: 'auto', grow: 0, shrink: 1, minSize: 1 });
+    // The spacer bottom-anchors an underfilled transcript: on a short session
+    // the conversation sits just above the editor instead of stranding at the
+    // top of the screen with a dead void between it and the dock. Once the
+    // transcript outgrows the viewport the spacer collapses to zero and the
+    // ScrollView absorbs the whole height deficit — its shrink weight dwarfs
+    // the dock's, so shrink pressure can never crush the activity and todo
+    // rows the way an evenly weighted stack would.
+    const spacer = new Container();
+    root.addChild(spacer, { basis: 0, grow: 1, shrink: 1, minSize: 0 });
+    root.addChild(scrollView, { basis: 'auto', grow: 0, shrink: 1, minSize: 1 });
+    root.addChild(dockContainer, {
+      basis: 'auto',
+      grow: 0,
+      shrink: DOCK_SHRINK_WEIGHT,
+      minSize: 1,
+    });
     ui.setLayoutRoot(root);
   }
 
