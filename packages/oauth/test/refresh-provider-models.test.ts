@@ -10,6 +10,21 @@ const SOURCE = {
 };
 
 const CATALOG = {
+  vendor: {
+    id: 'vendor',
+    name: 'Vendor',
+    npm: '@ai-sdk/openai-compatible',
+    api: 'https://api.vendor.test/v1',
+    models: {
+      'vendor-next': {
+        id: 'vendor-next',
+        name: 'Vendor Next',
+        tool_call: true,
+        modalities: { input: ['text'], output: ['text'] },
+        limit: { context: 200_000, output: 32_768 },
+      },
+    },
+  },
   'zai-coding-plan': {
     id: 'zai-coding-plan',
     name: 'Z.AI Coding Plan',
@@ -213,5 +228,85 @@ describe('refreshProviderModels models.dev providers', () => {
     ]);
     expect(fixture.removeCalls).toEqual([]);
     expect(fixture.getConfig()).toEqual(initial);
+  });
+});
+
+describe('refreshProviderModels: providers without a source stamp', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  /**
+   * Only the API-key catalog import writes `source`. An OAuth login never does,
+   * so providers created that way (xai, openai-codex, …) were skipped by the
+   * refresh entirely and their model list froze at import time — the opposite
+   * of why models.dev is the catalog.
+   */
+  it('refreshes an OAuth provider whose id matches a models.dev entry', async () => {
+    // The shape that actually occurs: one provider imported by API key (so it
+    // carries `source`) next to one created by OAuth login (so it does not).
+    // The second rides along on the catalog the first already fetches.
+    const initial: ManagedKimiConfigShape = {
+      providers: {
+        'zai-coding-plan': {
+          type: 'openai',
+          baseUrl: 'https://api.z.ai/api/coding/paas/v4',
+          apiKey: 'sk-zai',
+          source: SOURCE,
+        },
+        // No `source`, OAuth-backed: previously skipped twice over.
+        vendor: {
+          type: 'openai',
+          baseUrl: 'https://api.vendor.test/v1',
+          oauth: { key: 'oauth/vendor', oauthHost: 'vendor.test' },
+        },
+      },
+      models: {
+        'vendor/old-model': { provider: 'vendor', model: 'old-model' },
+      },
+      defaultModel: 'zai-coding-plan/glm-5.2',
+    } as unknown as ManagedKimiConfigShape;
+
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response(JSON.stringify(CATALOG), { status: 200 })),
+    );
+    const fixture = makeHost(initial);
+
+    await refreshProviderModels(fixture.host);
+    const next = fixture.getConfig();
+
+    // The OAuth provider now tracks models.dev: its new model arrives and the
+    // retired one goes, without an Echadron release.
+    expect(next.models?.['vendor/vendor-next']).toBeDefined();
+    expect(next.models?.['vendor/old-model']).toBeUndefined();
+    // Credentials are untouched.
+    expect(next.providers['vendor']).toEqual(initial.providers['vendor']);
+  });
+
+  it('leaves a provider alone when models.dev does not know it', async () => {
+    const initial: ManagedKimiConfigShape = {
+      providers: {
+        'my-private-gateway': { type: 'openai', baseUrl: 'https://gw.internal/v1' },
+      },
+      models: {
+        'my-private-gateway/house-model': {
+          provider: 'my-private-gateway',
+          model: 'house-model',
+        },
+      },
+    } as unknown as ManagedKimiConfigShape;
+
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response(JSON.stringify(CATALOG), { status: 200 })),
+    );
+    const fixture = makeHost(initial);
+
+    await refreshProviderModels(fixture.host);
+    const next = fixture.getConfig();
+
+    expect(next.models?.['my-private-gateway/house-model']).toBeDefined();
+    expect(next.providers['my-private-gateway']).toEqual(initial.providers['my-private-gateway']);
   });
 });

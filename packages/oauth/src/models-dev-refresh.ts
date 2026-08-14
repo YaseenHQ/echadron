@@ -15,6 +15,11 @@ import type {
 } from './managed-kimi-code';
 import { isRecord } from './utils';
 
+/** The public models.dev catalog. Used to infer provenance for providers that
+ * predate the `source` stamp, or were created by a flow that never wrote one
+ * (OAuth logins). */
+export const MODELS_DEV_CATALOG_URL = 'https://models.dev/api.json';
+
 /** Provenance written by the known-provider models.dev importer. */
 export interface ModelsDevSource {
   readonly kind: 'modelsDev';
@@ -43,6 +48,26 @@ const MODELS_DEV_MODEL_FIELDS: ReadonlySet<string> = new Set([
   'protocol',
   'baseUrl',
 ]);
+
+/**
+ * Provenance for a provider, inferring it when absent.
+ *
+ * Only the API-key catalog import stamps `source`; an OAuth login never does,
+ * so providers like `xai` carried no provenance and were skipped by the
+ * refresh entirely — new upstream models never reached them. When the id
+ * matches a models.dev catalog entry, treat it as models.dev-backed so the
+ * catalog stays the single place new models come from, whatever the auth.
+ */
+export function resolveModelsDevSource(
+  provider: unknown,
+  providerId: string,
+  catalogIds: ReadonlySet<string>,
+): ModelsDevSource | undefined {
+  const declared = readModelsDevSource(provider);
+  if (declared !== undefined) return declared;
+  if (!catalogIds.has(providerId)) return undefined;
+  return { kind: 'modelsDev', url: MODELS_DEV_CATALOG_URL, catalogId: providerId };
+}
 
 export function readModelsDevSource(provider: unknown): ModelsDevSource | undefined {
   const source = isRecord(provider) ? provider['source'] : undefined;

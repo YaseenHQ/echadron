@@ -7,8 +7,10 @@ import {
 import {
   applyModelsDevProviderModels,
   fetchModelsDevCatalog,
+  MODELS_DEV_CATALOG_URL,
   modelsDevProviderModels,
   readModelsDevSource,
+  resolveModelsDevSource,
   type ModelsDevSource,
 } from './models-dev-refresh';
 import {
@@ -649,12 +651,20 @@ export async function refreshProviderModels(
     string,
     { readonly source: ModelsDevSource; readonly providerIds: string[] }
   >();
+  // Providers whose id matches a models.dev entry but which carry no `source`
+  // stamp: only the API-key catalog import writes one, so an OAuth login (xai,
+  // openai-codex, …) left the provider invisible to this refresh and its models
+  // frozen at import time. Resolved against the catalog once it is fetched.
+  const unstamped: string[] = [];
   for (const providerId of Object.keys(config.providers)) {
     if (targetId !== undefined && targetId !== providerId) continue;
     const provider = readProvider(config, providerId);
-    if (provider === undefined || provider.oauth !== undefined) continue;
+    if (provider === undefined) continue;
     const source = readModelsDevSource(provider);
-    if (source === undefined) continue;
+    if (source === undefined) {
+      unstamped.push(providerId);
+      continue;
+    }
     const group = modelsDevSources.get(source.url);
     if (group !== undefined) {
       group.providerIds.push(providerId);
@@ -662,6 +672,10 @@ export async function refreshProviderModels(
       modelsDevSources.set(source.url, { source, providerIds: [providerId] });
     }
   }
+  // Unstamped providers ride along with a models.dev catalog that is already
+  // being fetched; they never trigger a fetch of their own. A provider that
+  // only exists behind OAuth therefore costs no extra network call, and is
+  // picked up as soon as anything else consults the same catalog.
 
   for (const { source, providerIds } of modelsDevSources.values()) {
     try {
@@ -673,9 +687,18 @@ export async function refreshProviderModels(
       const changedProviders: ProviderChange[] = [];
       const providersToRemoveBeforeSet = new Set<string>();
 
-      for (const providerId of providerIds) {
+      const catalogIds = new Set(Object.keys(catalog));
+      const groupProviderIds =
+        source.url === MODELS_DEV_CATALOG_URL
+          ? [...providerIds, ...unstamped.filter((id) => catalogIds.has(id))]
+          : providerIds;
+
+      for (const providerId of groupProviderIds) {
         const provider = readProvider(config, providerId);
-        const providerSource = provider === undefined ? undefined : readModelsDevSource(provider);
+        const providerSource =
+          provider === undefined
+            ? undefined
+            : resolveModelsDevSource(provider, providerId, catalogIds);
         if (providerSource === undefined) continue;
 
         let models: ReturnType<typeof modelsDevProviderModels>;
