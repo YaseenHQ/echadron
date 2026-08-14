@@ -1,5 +1,11 @@
 # @moonshot-ai/kimi-code
 
+## 0.32.2
+
+### Patch Changes
+
+- [#60](https://github.com/YaseenHQ/echadron/pull/60) [`37af9e7`](https://github.com/YaseenHQ/echadron/commit/37af9e73943eb29e434ebef4c7c81da8fdfa004b) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Install Echadron without an approval prompt. The interactive terminal's native module was built from source at install time, so `npm install -g echadron` stopped to ask about running install scripts, and anyone who declined ended up with a broken terminal tool. It now ships as a prebuilt binary selected per platform, so a global install runs no scripts at all.
+
 ## 0.32.1
 
 ### Patch Changes
