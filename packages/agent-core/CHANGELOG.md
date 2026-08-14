@@ -1,5 +1,11 @@
 # @moonshot-ai/agent-core
 
+## 0.16.1
+
+### Patch Changes
+
+- [#54](https://github.com/YaseenHQ/echadron/pull/54) [`85786c1`](https://github.com/YaseenHQ/echadron/commit/85786c117bbec231db7ea0f707ba1a30ee4aa909) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Download ripgrep from upstream's GitHub releases instead of a mirror, removing a third-party dependency from the search tools' first-run path.
+
 ## 0.16.0
 
 ### Minor Changes
