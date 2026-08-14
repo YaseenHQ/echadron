@@ -1,4 +1,4 @@
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync, utimesSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -112,5 +112,54 @@ describe('persistence helpers', () => {
     await appendJsonlLine(file, TestLineSchema, { content: 'hello' });
 
     expect(readFileSync(file, 'utf-8').trim()).toBe(JSON.stringify({ content: 'hello' }));
+  });
+});
+
+describe('abandoned temp files', () => {
+  /**
+   * The write path unlinks its temp file when a write throws, but a process
+   * killed mid-write never runs that cleanup. Those partials accumulate
+   * silently — a real cache directory had fourteen, tens of megabytes' worth.
+   */
+  const tempName = (base: string, nonce: string): string => `.${base}.${nonce}.tmp`;
+
+  it('sweeps abandoned temps left by a killed process', async () => {
+    const target = join(dir, 'state.json');
+    const stale = join(dir, tempName('state.json', '999.1700000000000.abc'));
+    writeFileSync(stale, 'partial write');
+    // Backdate it past the staleness cutoff.
+    const old = new Date(Date.now() - 2 * 60 * 60 * 1000);
+    utimesSync(stale, old, old);
+
+    await writeJsonFile(target, TestJsonSchema, { name: 'a', count: 1 });
+
+    expect(existsSync(stale)).toBe(false);
+    // The write it swept for still landed.
+    await expect(readJsonFile(target, TestJsonSchema, { name: '', count: 0 })).resolves.toEqual({
+      name: 'a',
+      count: 1,
+    });
+  });
+
+  it('leaves a fresh temp alone, since another writer may own it', async () => {
+    const target = join(dir, 'state.json');
+    const fresh = join(dir, tempName('state.json', '1234.1700000000001.def'));
+    writeFileSync(fresh, 'in-flight write by another process');
+
+    await writeJsonFile(target, TestJsonSchema, { name: 'a', count: 1 });
+
+    expect(existsSync(fresh)).toBe(true);
+  });
+
+  it('never touches temps belonging to a different file', async () => {
+    const target = join(dir, 'state.json');
+    const other = join(dir, tempName('sessions.json', '999.1700000000000.abc'));
+    writeFileSync(other, 'someone else');
+    const old = new Date(Date.now() - 2 * 60 * 60 * 1000);
+    utimesSync(other, old, old);
+
+    await writeJsonFile(target, TestJsonSchema, { name: 'a', count: 1 });
+
+    expect(existsSync(other)).toBe(true);
   });
 });
