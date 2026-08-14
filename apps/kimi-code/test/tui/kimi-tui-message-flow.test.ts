@@ -19,7 +19,6 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ApprovalPanelComponent } from '#/tui/components/dialogs/approval-panel';
 import { EffortSelectorComponent } from '#/tui/components/dialogs/effort-selector';
 import { KIMI_CODE_PLUGIN_MARKETPLACE_URL } from '#/constant/app';
-import { activityFaceAnimation } from '#/tui/utils/activity-face';
 import { BRAILLE_SPINNER_FRAMES } from '#/tui/constant/rendering';
 import {
   AgentSwarmProgressComponent,
@@ -5664,11 +5663,7 @@ command = "vim"
     expect(driver.state.livePane.mode).toBe('waiting');
     expect(driver.streamingUI.hasActiveThinkingComponent()).toBe(false);
     const activity = stripSgr(renderActivity(driver));
-    // The waiting indicator is the cube's face, not a braille spinner: the
-    // header logo scrolls away with the transcript, so this is where the
-    // character stays visible while work happens.
-    const waitingFace = activityFaceAnimation('waiting').frames;
-    expect(waitingFace.some((frame) => activity.includes(frame))).toBe(true);
+    expect(BRAILLE_SPINNER_FRAMES.some((frame) => activity.includes(frame))).toBe(true);
 
     // Real thinking text finally arrives -> transition into thinking mode.
     driver.sessionEventHandler.handleEvent(

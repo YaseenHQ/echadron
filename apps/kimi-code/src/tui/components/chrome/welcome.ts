@@ -17,7 +17,7 @@ import { effectiveModelAlias } from '@moonshot-ai/kimi-code-sdk';
 import { isRainbowDancing, renderDanceWelcomeHeader } from '#/tui/easter-eggs/dance';
 import type { AppState } from '#/tui/types';
 import { currentTheme } from '#/tui/theme';
-import { logoFaceAt, paintLogoRun } from '#/tui/utils/logo-eyes';
+import { logoFaceAt, paintLogoRun, type ChadMood } from '#/tui/utils/logo-eyes';
 import { blendHex, glintRow, LOGO_GLINT_INTERVAL_MS } from '#/tui/utils/logo-shimmer';
 
 export interface WelcomeOptions {
@@ -81,7 +81,7 @@ export class WelcomeComponent implements Component {
       );
     }
 
-    const face = logoFaceAt(this.now() / 1000);
+    const face = logoFaceAt(this.now() / 1000, this.mood());
     const logo = face.rows;
     const logoWidth = Math.max(...logo.map((row) => visibleWidth(row)));
     const gap = '  ';
@@ -107,6 +107,27 @@ export class WelcomeComponent implements Component {
     lines.push('');
 
     return lines.map((line) => truncateToWidth(line, safeWidth, '…'));
+  }
+
+  /**
+   * Chad's mood, derived from live session state. The header holds a live
+   * `AppState` reference and already repaints on a timer, so this needs no
+   * new state and no second face elsewhere in the UI.
+   */
+  private mood(): ChadMood {
+    if (this.state.retryStatus !== undefined) return 'retry';
+    switch (this.state.streamingPhase) {
+      case 'thinking':
+        return 'thinking';
+      case 'composing':
+        return 'composing';
+      case 'shell':
+        return 'tool';
+      case 'waiting':
+        return 'waiting';
+      default:
+        return 'idle';
+    }
   }
 
   private renderLogoRow(row: string, logoWidth: number, rowIndex = 0): string {

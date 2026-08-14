@@ -179,6 +179,31 @@ describe('Chad: eyes', () => {
     expect(frames(isWinking, 26, 27.5)).toBeGreaterThan(frames(isBlinking, 5, 5.5));
   });
 
+  it('reacts to what the agent is doing, on the one face at the top', () => {
+    // The header holds live app state, so Chad himself changes tempo — there is
+    // no second face anywhere else in the UI.
+    const gazesOver = (mood: Parameters<typeof logoFaceAt>[1], span: number): number => {
+      const seen = new Set<string>();
+      for (let t = 0; t < span; t += 0.05) seen.add(logoFaceAt(t, mood).rows[0]);
+      return seen.size;
+    };
+    // Thinking scans faster than idle over the same window; a running tool is
+    // calmer than thinking.
+    expect(gazesOver('thinking', 3)).toBeGreaterThan(gazesOver('idle', 3));
+    expect(gazesOver('retry', 3)).toBeGreaterThanOrEqual(gazesOver('thinking', 3));
+    expect(gazesOver('tool', 3)).toBeLessThan(gazesOver('thinking', 3));
+  });
+
+  it('only winks when idle, never mid-task', () => {
+    for (const mood of ['waiting', 'thinking', 'composing', 'tool', 'retry'] as const) {
+      let winked = false;
+      for (let t = 0; t < 120; t += 0.05) {
+        if (logoFaceAt(t, mood).eyeCols.length === 1) winked = true;
+      }
+      expect(winked, mood).toBe(false);
+    }
+  });
+
   it('never opens Chad\'s roof with a half-block pupil', () => {
     for (let t = 0; t < 20; t += 0.25) {
       expect(logoFaceAt(t).rows[0]).not.toMatch(/[▄▙▟▀]/);

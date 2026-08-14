@@ -59,15 +59,44 @@ const WINK_EVERY_WINDOWS = 9;
 const WINK_OFFSET_WINDOWS = 4;
 const WINK_SECS = 0.3;
 
+/**
+ * How Chad behaves while the agent works. Idle keeps the resting cadence;
+ * the rest speed his gaze up or narrow his eyes so the one character at the
+ * top of the TUI reflects what is happening, rather than a second face being
+ * drawn somewhere else.
+ */
+export type ChadMood = 'idle' | 'waiting' | 'thinking' | 'composing' | 'tool' | 'retry';
+
+/** Time scale and blink bias per mood. */
+const MOOD_TEMPO: Record<ChadMood, { readonly rate: number; readonly lidded: boolean }> = {
+  idle: { rate: 1, lidded: false },
+  // Looking at you, waiting for input or approval: calm, no scanning.
+  waiting: { rate: 0.55, lidded: false },
+  // Reading around a problem: the gaze scans noticeably faster.
+  thinking: { rate: 3.1, lidded: false },
+  // Writing: brisk, blinking more often than scanning.
+  composing: { rate: 1.9, lidded: true },
+  // A tool is running: locked on, eyes half-lidded.
+  tool: { rate: 0.7, lidded: true },
+  // Something failed and is being retried: darting, unsettled.
+  retry: { rate: 5.2, lidded: false },
+};
+
 export interface LogoFace {
   readonly rows: readonly [string, string];
   readonly eyeCols: readonly number[];
 }
 
-export function logoFaceAt(secs: number): LogoFace {
-  const t = Number.isFinite(secs) ? Math.max(0, secs) : 0;
+export function logoFaceAt(secs: number, mood: ChadMood = 'idle'): LogoFace {
+  const raw = Number.isFinite(secs) ? Math.max(0, secs) : 0;
+  const tempo = MOOD_TEMPO[mood];
+  const t = raw * tempo.rate;
   const gaze = FACES[gazeAt(t)];
-  const top = isWinking(t) ? winkOf(gaze) : isBlinking(t) ? FACES.blink : gaze;
+  // Lidded moods blink on a shorter duty cycle; winks are idle-only, since a
+  // wink mid-task reads as a glitch rather than character.
+  const blinking = tempo.lidded ? isBlinking(t) || isBlinking(t + BLINK_EVERY_SECS / 2) : isBlinking(t);
+  const winking = mood === 'idle' && isWinking(t);
+  const top = winking ? winkOf(gaze) : blinking ? FACES.blink : gaze;
   return {
     rows: [top, LOGO_BODY],
     eyeCols: eyeColumns(top),
