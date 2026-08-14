@@ -16,7 +16,12 @@ const builtins = new Set([
   ...builtinModules,
   ...builtinModules.map((name) => `node:${name}`),
 ]);
-const optionalNativeDependencies = new Set(['cpu-features']);
+// Packages with napi-rs native bindings. Bundling one inlines its loader,
+// which requires every platform variant it supports (`@firecrawl/anydoc-*` is
+// ~20 of them) — none resolvable from a self-contained binary. Both are
+// reached through guarded dynamic imports, so leaving them external degrades
+// to the feature being unavailable in the SEA build rather than a crash.
+const optionalNativeDependencies = new Set(['cpu-features', '@firecrawl/anydoc']);
 
 function shouldAlwaysBundle(id: string): boolean {
   if (builtins.has(id) || id.startsWith('node:')) return false;

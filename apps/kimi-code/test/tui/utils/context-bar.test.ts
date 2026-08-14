@@ -19,7 +19,8 @@ describe('context bar', () => {
   });
 
   it('keeps the context percent label and adds a bar', () => {
-    const line = formatContextBar(0.42, 430_080, 1_048_576).replaceAll(ANSI_SGR, '');
+    // Decimal, matching how context windows are configured and advertised.
+    const line = formatContextBar(0.42, 420_000, 1_000_000).replaceAll(ANSI_SGR, '');
     expect(line).toContain('context: 42%');
     expect(line).toContain('420k/1M');
     expect(line).toMatch(/[█░]/);

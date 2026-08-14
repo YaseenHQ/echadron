@@ -25,6 +25,7 @@ import SUMMARY_CONTINUATION_PROMPT from './summary-continuation.md?raw';
 
 const AGENT_TOOLS = [
   'Read',
+  'ReadDocument',
   'Write',
   'Edit',
   'Grep',
@@ -69,6 +70,7 @@ const CODER_TOOLS = [
   'Glob',
   'Grep',
   'Read',
+  'ReadDocument',
   'ReadMediaFile',
   'Skill',
   'TaskList',
@@ -83,6 +85,7 @@ const CODER_TOOLS = [
 
 const EXPLORE_TOOLS = [
   'Read',
+  'ReadDocument',
   'ReadMediaFile',
   'Glob',
   'Grep',

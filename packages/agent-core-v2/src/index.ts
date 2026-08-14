@@ -50,6 +50,8 @@ import '#/agent/tools/os/glob/globTool';
 export * from '#/agent/tools/os/grep/grep';
 import '#/agent/tools/os/grep/grepTool';
 export * from '#/agent/tools/os/read/read';
+export * from '#/agent/tools/os/readDocument/readDocument';
+export * from '#/agent/tools/os/readDocument/readDocumentTool';
 import '#/agent/tools/os/read/readTool';
 export * from '#/agent/tools/os/write/write';
 import '#/agent/tools/os/write/writeTool';

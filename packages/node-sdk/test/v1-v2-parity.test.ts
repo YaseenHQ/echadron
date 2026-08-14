@@ -436,7 +436,9 @@ function projectResumedAgent(agent: ResumedAgentState, home: HomePair): unknown 
   } else {
     const tools = projected['tools'] as readonly Record<string, unknown>[];
     projected['tools'] = tools
-      .filter((tool) => tool['name'] !== 'select_tools')
+      // `ReadDocument` is v2-only: it converts documents through a native
+      // dependency the legacy engine does not carry.
+      .filter((tool) => tool['name'] !== 'select_tools' && tool['name'] !== 'ReadDocument')
       .map((tool) => ({ name: tool['name'], active: tool['active'], source: tool['source'] }))
       .toSorted((a, b) => String(a.name).localeCompare(String(b.name)));
   }

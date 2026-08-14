@@ -262,6 +262,7 @@ describe('SessionAgentProfileCatalogService', () => {
       const explore = catalog.get('explore');
       expect(explore?.tools).toEqual([
         'Read',
+        'ReadDocument',
         'ReadMediaFile',
         'Glob',
         'Grep',

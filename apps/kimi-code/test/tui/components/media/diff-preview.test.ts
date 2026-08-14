@@ -65,6 +65,20 @@ describe('renderDiffLines', () => {
 });
 
 describe('renderDiffLinesClustered', () => {
+  it('omits its own header when the caller already shows path and stat', () => {
+    // The tool-call header carries "Used Edit (…/foo.ts) · +1 -1", so the
+    // body repeating "+1 -1 /very/long/path" cost two lines and wrapped the
+    // full path mid-token on a narrow terminal.
+    const withHeader = renderDiffLinesClustered('A\nB\nC', 'A\nX\nC', 'foo.ts');
+    const without = renderDiffLinesClustered('A\nB\nC', 'A\nX\nC', 'foo.ts', {
+      omitHeader: true,
+    });
+    expect(withHeader[0]).toContain('foo.ts');
+    expect(without.length).toBe(withHeader.length - 1);
+    expect(without.join('\n')).not.toContain('foo.ts');
+    expect(without.join('\n')).toContain('X');
+  });
+
   it('renders header with file path and counts', () => {
     const out = renderDiffLinesClustered('A\nB\nC', 'A\nX\nC', 'foo.ts');
     const text = stripAnsi(out[0]!);

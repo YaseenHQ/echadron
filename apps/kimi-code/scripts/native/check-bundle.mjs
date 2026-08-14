@@ -12,6 +12,7 @@ const builtins = new Set([
 ]);
 
 const optionalRuntimeRequires = new Set([
+  '@firecrawl/anydoc',
   'ajv-formats/dist/formats',
   'ajv/dist/runtime/validation_error',
   'bufferutil',
