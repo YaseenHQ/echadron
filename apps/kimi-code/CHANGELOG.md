@@ -1,5 +1,13 @@
 # @moonshot-ai/kimi-code
 
+## 0.32.1
+
+### Patch Changes
+
+- [#59](https://github.com/YaseenHQ/echadron/pull/59) [`97e68ef`](https://github.com/YaseenHQ/echadron/commit/97e68efd37d5dc559680c5d45a67bbdd25527cfd) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Installing Echadron no longer asks you to approve one of its scripts. The package shipped a `postinstall` hook that did nothing — a leftover stub from when the fork renamed an existing executable — but package managers still held it behind an approval prompt on every install. It is gone, along with the migration helpers it no longer used. If the optional native terminal module is left unbuilt, opening an interactive terminal now explains how to enable it instead of failing with a module resolution error.
+
+- [#57](https://github.com/YaseenHQ/echadron/pull/57) [`07a89e8`](https://github.com/YaseenHQ/echadron/commit/07a89e8ed1ec9da939984d22ec3bfae6e4343ed3) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Stop leaving partial temp files behind. Data files are written to a temp sibling and renamed into place, and the temp is deleted if the write fails — but a process killed mid-write never gets to run that cleanup, so the partial file stayed forever. One cache directory had accumulated fourteen of them, tens of megabytes. Abandoned temps older than an hour are now swept on the next successful write; anything newer is left alone in case another process is still writing it.
+
 ## 0.32.0
 
 ### Minor Changes
