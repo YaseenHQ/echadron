@@ -6,12 +6,21 @@
  */
 
 import {
+  createKimiHarness,
+  createKimiHarnessV2,
   flushDiagnosticLogs,
   installGlobalProxyDispatcher,
   log,
   resolveGlobalLogPath,
+  type KimiConfigPatch,
+  type OAuthRef,
 } from '@moonshot-ai/kimi-code-sdk';
-import { applyEchadronEnvironmentAliases } from '@moonshot-ai/kimi-code-oauth';
+import {
+  applyEchadronEnvironmentAliases,
+  refreshProviderModels,
+  type ProviderChange,
+  type RefreshResult,
+} from '@moonshot-ai/kimi-code-oauth';
 import {
   installCrashHandlers,
   track,
@@ -25,8 +34,9 @@ import { runPrompt } from './cli/run-prompt';
 import { runShell } from './cli/run-shell';
 import { formatStartupError } from './cli/startup-error';
 import { runPluginNodeEntry } from './cli/sub/plugin-run-node';
+import { isNativeEngineEnabled } from './cli/engine-routing';
 import { runUpdatePreflight } from './cli/update/preflight';
-import { getVersion } from './cli/version';
+import { createKimiCodeHostIdentity, getVersion } from './cli/version';
 import { refreshModelsDevCatalog } from './cli/models/catalog-cache';
 import {
   ECHADRON_SELF_UPDATE_ENABLED,
@@ -95,7 +105,37 @@ export async function handleUpgradeCommand(version: string): Promise<void> {
   );
 }
 
-/** Refresh Echadron's persisted models.dev metadata without touching auth/config. */
+/**
+ * Refresh configured models.dev providers through the same host adapter used
+ * by the TUI. The models.dev branch never requests OAuth credentials, but the
+ * adapter remains complete so the shared refresh contract stays uniform.
+ */
+async function refreshConfiguredModelsDevProviders(version: string): Promise<RefreshResult> {
+  const harness = (isNativeEngineEnabled() ? createKimiHarnessV2 : createKimiHarness)({
+    homeDir: getDataDir(),
+    identity: createKimiCodeHostIdentity(version),
+  });
+  await harness.ensureConfigFile();
+  try {
+    return await refreshProviderModels(
+      {
+        getConfig: () => harness.getConfig({ reload: true }),
+        removeProvider: (providerId) => harness.removeProvider(providerId),
+        setConfig: (patch) => harness.setConfig(patch as KimiConfigPatch),
+        resolveOAuthToken: async (providerName, oauthRef) =>
+          harness.auth
+            .resolveOAuthTokenProvider(providerName, oauthRef as OAuthRef)
+            .getAccessToken(),
+        userAgent: `echadron-cli/${version}`,
+      },
+      { scope: 'modelsDev' },
+    );
+  } finally {
+    await harness.close();
+  }
+}
+
+/** Refresh Echadron's persisted models.dev metadata and configured providers. */
 export async function handleModelsUpdateCommand(version = getVersion()): Promise<void> {
   try {
     const result = await refreshModelsDevCatalog({
@@ -111,12 +151,39 @@ export async function handleModelsUpdateCommand(version = getVersion()): Promise
       `Echadron model catalog ${result.status} (${String(providerCount)} providers, ` +
         `${String(modelCount)} models).\n`,
     );
+    try {
+      const providers = await refreshConfiguredModelsDevProviders(version);
+      for (const change of providers.changed) {
+        process.stdout.write(formatProviderChange(change));
+      }
+      for (const failure of providers.failed) {
+        process.stderr.write(
+          `Echadron skipped ${failure.provider}: ${failure.reason}\n`,
+        );
+      }
+    } catch (error) {
+      // The public catalog is already safely persisted at this point. Keep
+      // that success visible and report a separate provider-reconciliation
+      // failure instead of claiming that the catalog update failed.
+      process.exitCode = 1;
+      process.stderr.write(
+        `Failed to refresh configured Echadron providers: ${error instanceof Error ? error.message : String(error)}\n`,
+      );
+    }
   } catch (error) {
     process.exitCode = 1;
     process.stderr.write(
       `Failed to refresh Echadron model catalog: ${error instanceof Error ? error.message : String(error)}\n`,
     );
   }
+}
+
+function formatProviderChange(change: ProviderChange): string {
+  const parts: string[] = [];
+  if (change.added > 0) parts.push(`+${String(change.added)}`);
+  if (change.removed > 0) parts.push(`-${String(change.removed)}`);
+  const detail = parts.length === 0 ? 'metadata refreshed' : `${parts.join(' ')} models`;
+  return `Echadron updated ${change.providerName} (${detail}).\n`;
 }
 
 /** A neutral CLIOptions value — `kimi migrate` never opens a chat session. */
