@@ -1,5 +1,11 @@
 # @moonshot-ai/kimi-code-sdk
 
+## 0.16.1
+
+### Patch Changes
+
+- [#45](https://github.com/YaseenHQ/echadron/pull/45) [`29e0da0`](https://github.com/YaseenHQ/echadron/commit/29e0da009e668fb95476b12318919cd79ea00816) Thanks [@YaseenHQ](https://github.com/YaseenHQ)! - Stop listing internal agent profiles as delegatable subagents. Session summaries returned by `resumeSession`, `forkSession`, and `reloadSession` now filter profiles marked internal, so the built-in completion verifier no longer appears alongside `coder`, `explore`, and `plan`.
+
 ## 0.16.0
 
 ### Minor Changes
