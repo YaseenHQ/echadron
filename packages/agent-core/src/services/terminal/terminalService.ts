@@ -236,7 +236,7 @@ export class TerminalService extends Disposable implements ITerminalService {
 
 export class NodePtyTerminalBackend implements TerminalBackend {
   async spawn(options: TerminalSpawnOptions): Promise<TerminalProcess> {
-    const pty = await import('node-pty');
+    const pty = await import('@lydell/node-pty');
     const proc = pty.spawn(options.shell, [], {
       name: 'xterm-256color',
       cwd: options.cwd,
@@ -265,7 +265,7 @@ function frameSeq(frame: TerminalFrame): number {
 
 function defaultShell(): string {
   // Use `||` (not `??`): an EMPTY $SHELL (set but blank, as some daemon/launchd
-  // envs leave it) must still fall back, or node-pty spawns an empty path and
+  // envs leave it) must still fall back, or the pty spawns an empty path and
   // fails with "posix_spawnp failed".
   return process.env['SHELL'] || (os.platform() === 'win32' ? 'powershell.exe' : '/bin/sh');
 }
