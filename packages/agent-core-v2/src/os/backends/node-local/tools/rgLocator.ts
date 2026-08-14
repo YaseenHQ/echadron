@@ -22,7 +22,10 @@ import { basename, join } from 'pathe';
 import { abortable } from '#/_base/utils/abort';
 
 const RG_VERSION = '15.0.0';
-const RG_BASE_URL = 'https://code.kimi.com/kimi-code/rg';
+// Upstream's own release assets. The archives are the same bytes the previous
+// mirror served — every pinned digest below was verified against this host —
+// so search no longer depends on third-party infrastructure staying up.
+const RG_BASE_URL = `https://github.com/BurntSushi/ripgrep/releases/download/${RG_VERSION}`;
 const DOWNLOAD_TIMEOUT_MS = 600_000;
 const RG_ARCHIVE_SHA256: Record<string, string> = {
   'ripgrep-15.0.0-aarch64-apple-darwin.tar.gz':
