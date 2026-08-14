@@ -66,6 +66,52 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @moonshot-ai/pi-tui test
 
+  # Does a fresh install actually launch on Windows? The full suite still has
+  # unresolved POSIX-only assumptions (see the disabled job below), but that is
+  # no reason to ship Windows untested: this packs the real tarball, installs it
+  # the way a user does, and runs the binary — while asserting the install runs
+  # no scripts at all, so nobody ever meets an approval prompt.
+  windows-launch:
+    name: Windows install & launch
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run build
+
+      - name: Pack the publishable tarball
+        id: pack
+        shell: bash
+        run: |
+          cd apps/kimi-code
+          echo "tarball=$(pwd)/$(npm pack --silent)" >> "$GITHUB_OUTPUT"
+
+      # A dependency with an install script makes npm hold the install behind an
+      # approval prompt, and whoever declines gets a half-installed CLI. Every
+      # native module we ship must arrive prebuilt instead, so treat the warning
+      # as a build failure rather than something to read past.
+      - name: Install globally and require zero install scripts
+        shell: bash
+        run: |
+          npm install -g "${{ steps.pack.outputs.tarball }}" 2>&1 | tee install.log
+          if grep -qi "allow-scripts" install.log; then
+            echo "::error::A dependency wants to run an install script; ship a prebuilt binary instead."
+            exit 1
+          fi
+
+      - name: Launch it
+        shell: bash
+        run: |
+          echadron --version
+          chad --version
+          maker --version
+
   test-windows:
     runs-on: windows-latest
     # The full suite still contains unresolved POSIX-only test assumptions.

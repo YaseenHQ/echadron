@@ -1,17 +1,17 @@
 /**
  * `terminal` domain (L6) — `IHostTerminalService` implementation.
  *
- * App-scoped OS terminal process factory backed by `node-pty`. It spawns and
+ * App-scoped OS terminal process factory backed by `@lydell/node-pty`. It spawns and
  * tracks every `TerminalProcess` so the whole process-wide PTY layer can be
  * torn down on disposal. It has no session, workspace, or buffering concerns;
  * those live in the Session-scoped `ISessionTerminalService`.
  *
- * `node-pty` is loaded lazily so merely importing this module (for example in
+ * `@lydell/node-pty` is loaded lazily so merely importing this module (for example in
  * tests that override the service with a fake) does not require the native
  * module to be built or resolvable.
  */
 
-import type { IPty } from 'node-pty';
+import type { IPty } from '@lydell/node-pty';
 
 import { Disposable } from '#/_base/di/lifecycle';
 import { LifecycleScope, ScopeActivation, registerScopedService } from '#/_base/di/scope';
@@ -24,18 +24,17 @@ export class HostTerminalService extends Disposable implements IHostTerminalServ
   private readonly processes = new Set<TerminalProcess>();
 
   async spawn(options: TerminalSpawnOptions): Promise<TerminalProcess> {
-    // `node-pty` is an optional dependency with a native build step. Package
-    // managers now hold install scripts behind an approval prompt, so a user
-    // who declined (or skipped scripts entirely) reaches this with the module
-    // missing. Report what to do instead of surfacing a bare resolution error.
-    let pty: typeof import('node-pty');
+    // Prebuilt binaries arrive as optional per-platform packages, so a normal
+    // install needs no compiler and runs no install script. It can still be
+    // absent — an unsupported platform, or `--no-optional`. Say so plainly
+    // rather than surfacing a bare module-resolution error.
+    let pty: typeof import('@lydell/node-pty');
     try {
-      pty = await import('node-pty');
+      pty = await import('@lydell/node-pty');
     } catch (error) {
       throw new Error(
-        'The interactive terminal needs the optional native module `node-pty`, which is not built. ' +
-          'Re-run the install and allow its build script (npm: `npm approve-scripts node-pty`; ' +
-          'pnpm: `pnpm approve-builds`). Everything else works without it.',
+        `The interactive terminal needs \`@lydell/node-pty\`, which has no prebuilt binary for ${globalThis.process.platform}-${globalThis.process.arch}. ` +
+          'Everything else works without it.',
         { cause: error },
       );
     }
