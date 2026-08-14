@@ -6,7 +6,7 @@
  * these helpers.
  */
 
-import { appendFile, mkdir, readFile, rename, unlink, writeFile } from 'node:fs/promises';
+import { appendFile, mkdir, readdir, readFile, rename, stat, unlink, writeFile } from 'node:fs/promises';
 import { basename, dirname, join } from 'node:path';
 
 import type { z } from 'zod';
@@ -48,6 +48,51 @@ export async function readJsonFile<T>(
   return schema.parse(parsed);
 }
 
+/**
+ * Age after which a leftover temp file is considered abandoned. Comfortably
+ * longer than any write here takes, so a concurrent writer's file is never
+ * removed out from under it.
+ */
+const STALE_TEMP_MS = 60 * 60 * 1000;
+
+/**
+ * Remove abandoned temp siblings of `filePath`.
+ *
+ * The write path unlinks its own temp file when a write *throws*, but a
+ * process killed mid-write (Ctrl+C, SIGKILL) never runs that cleanup, so the
+ * partial file survives forever. These accumulate silently — one cache
+ * directory had fourteen of them, some tens of megabytes. Sweeping on the next
+ * successful write makes the directory self-healing without a separate
+ * maintenance path.
+ *
+ * Best-effort throughout: a sweep failure must never fail the write that
+ * already succeeded.
+ */
+async function sweepStaleTemps(filePath: string): Promise<void> {
+  const dir = dirname(filePath);
+  const prefix = `.${basename(filePath)}.`;
+  let entries: string[];
+  try {
+    entries = await readdir(dir);
+  } catch {
+    return;
+  }
+  const cutoff = Date.now() - STALE_TEMP_MS;
+  await Promise.all(
+    entries
+      .filter((entry) => entry.startsWith(prefix) && entry.endsWith('.tmp'))
+      .map(async (entry) => {
+        const candidate = join(dir, entry);
+        try {
+          const info = await stat(candidate);
+          if (info.mtimeMs < cutoff) await unlink(candidate);
+        } catch {
+          // Raced with another writer, or already gone. Either is fine.
+        }
+      }),
+  );
+}
+
 export async function writeJsonFile<T>(
   filePath: string,
   schema: z.ZodType<T>,
@@ -64,6 +109,7 @@ export async function writeJsonFile<T>(
     await unlink(tmpPath).catch(() => {});
     throw error;
   }
+  await sweepStaleTemps(filePath);
 }
 
 export async function readJsonlFile<T>(
