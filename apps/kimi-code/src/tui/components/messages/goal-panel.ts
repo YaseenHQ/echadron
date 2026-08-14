@@ -171,11 +171,19 @@ export function buildGoalReportLines(goal: GoalSnapshot, wrapWidth: number = WRA
   lines.push(row('Tokens', value(formatTokenCount(goal.tokensUsed))));
   if (!isComplete) {
     const stop = formatStopRow(goal);
-    lines.push(
-      stop !== null
-        ? row('Stop', value(stop))
-        : muted('No stop condition — runs until evaluated complete.'),
-    );
+    if (stop !== null) {
+      lines.push(row('Stop', value(stop)));
+    } else {
+      // Every other row is short enough to fit; this sentence is not, and
+      // pushing it unwrapped overflowed any terminal narrower than it.
+      for (const line of wrap(
+        'No stop condition — runs until evaluated complete.',
+        wrapWidth,
+        MAX_OBJECTIVE_LINES,
+      )) {
+        lines.push(muted(line));
+      }
+    }
   }
   return lines;
 }

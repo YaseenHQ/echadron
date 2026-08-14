@@ -49,6 +49,20 @@ function lines(g: GoalSnapshot): string {
 }
 
 describe('buildGoalReportLines', () => {
+  it('wraps the stop-condition line to the panel width', () => {
+    // Every other row honours the wrapWidth it is given; this sentence was
+    // pushed unwrapped, so a narrow panel truncated it instead of wrapping.
+    const narrow = 34;
+    const out = buildGoalReportLines(goal(), narrow);
+    const stopLines = strip(out)
+      .split('\n')
+      .filter((line) => line.includes('stop condition') || line.includes('evaluated complete'));
+    expect(stopLines.length).toBeGreaterThan(1);
+    for (const line of stopLines) {
+      expect(line.length, line).toBeLessThanOrEqual(narrow);
+    }
+  });
+
   it('renders the objective as a blockquote and key counters for an active goal', () => {
     const out = lines(goal());
     expect(out).toContain('▌ Ship the goal status box');
