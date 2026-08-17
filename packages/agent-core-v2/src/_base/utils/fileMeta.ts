@@ -25,8 +25,18 @@ export interface FileMetaStat {
   readonly ino?: number;
 }
 
+/**
+ * Whether these bytes are unsafe to hand out as UTF-8 text.
+ *
+ * UTF-16 counts as binary here even though `classifyTextSample` reports it as
+ * text, because callers of this helper serve or label the *raw* bytes without
+ * transcoding them — labelling UTF-16 `text/plain` yields NUL-laden mojibake.
+ * A surface that does transcode (`SessionFsService.read`) must branch on
+ * `classifyTextSample(...).encoding` directly instead of calling this.
+ */
 export function detectBinary(buf: Uint8Array): boolean {
-  return classifyTextSample(buf).isBinary;
+  const { isBinary, encoding } = classifyTextSample(buf);
+  return isBinary || encoding !== 'utf-8';
 }
 
 export function countLines(text: string): number {
