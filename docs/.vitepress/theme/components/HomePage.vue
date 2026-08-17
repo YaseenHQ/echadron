@@ -33,7 +33,7 @@ async function renderHome() {
           ? "/zh/guides/getting-started#从源码安装"
           : "/en/guides/getting-started#install-from-source"
       ),
-      imageSrc: withBase("/media/echadron-terminal-window.png"),
+      imageSrc: withBase("/media/echadron-terminal-window.gif"),
     })
   );
 }
