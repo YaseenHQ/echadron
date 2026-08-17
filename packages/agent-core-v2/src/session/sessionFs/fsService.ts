@@ -64,10 +64,10 @@ import ignore, { type Ignore } from 'ignore';
 
 import { LifecycleScope, ScopeActivation, registerScopedService } from '#/_base/di/scope';
 import { defineState } from '#/_base/state/stateRegistry';
+import { classifyTextSample, decodeUtfText } from '#/_base/text/encoding';
 import {
   buildEtag,
   countLines,
-  detectBinary,
   FS_BINARY_SAMPLE_BYTES,
   guessLanguageId,
   guessMime,
@@ -258,7 +258,14 @@ export class SessionFsService implements ISessionFsService {
     const sampleSize = Math.min(FS_BINARY_SAMPLE_BYTES, st.size);
     const sample =
       sampleSize === 0 ? new Uint8Array() : await this.hostFs.readBytes(abs, sampleSize);
-    const isBinary = detectBinary(sample);
+    const classification = classifyTextSample(sample);
+    const transcodeEncoding =
+      !classification.isBinary && classification.encoding !== 'utf-8' && req.encoding !== 'base64'
+        ? classification.encoding
+        : undefined;
+    const isBinary =
+      classification.isBinary ||
+      (classification.encoding !== 'utf-8' && transcodeEncoding === undefined);
 
     if (isBinary && req.encoding === 'utf-8') {
       throw new Error2(ErrorCodes.FS_IS_BINARY, `file is binary: ${req.path}`, {
@@ -266,10 +273,24 @@ export class SessionFsService implements ISessionFsService {
       });
     }
 
-    const effectiveLength = Math.min(req.length, st.size - req.offset);
+    // For UTF-16, apply offset/length to the decoded UTF-8 representation the
+    // client consumes rather than to the raw two-byte code units.
+    let totalLength = st.size;
+    let decodedBytes: Uint8Array | undefined;
+    if (transcodeEncoding !== undefined) {
+      decodedBytes = Buffer.from(
+        decodeUtfText(await this.hostFs.readBytes(abs), transcodeEncoding),
+        'utf-8',
+      );
+      totalLength = decodedBytes.length;
+    }
+
+    const effectiveLength = Math.min(req.length, totalLength - req.offset);
     let bytes: Uint8Array;
     if (effectiveLength <= 0) {
       bytes = new Uint8Array();
+    } else if (decodedBytes !== undefined) {
+      bytes = decodedBytes.subarray(req.offset, req.offset + effectiveLength);
     } else {
       const window = await this.hostFs.readBytes(abs, req.offset + effectiveLength);
       bytes = window.subarray(req.offset, req.offset + effectiveLength);
@@ -281,7 +302,7 @@ export class SessionFsService implements ISessionFsService {
       encoding === 'utf-8'
         ? Buffer.from(bytes).toString('utf-8')
         : Buffer.from(bytes).toString('base64');
-    const truncated = req.offset + effectiveLength < st.size;
+    const truncated = req.offset + effectiveLength < totalLength;
 
     const out: FsReadResponse = {
       path: rel,
@@ -420,7 +441,8 @@ export class SessionFsService implements ISessionFsService {
     const sampleSize = Math.min(FS_BINARY_SAMPLE_BYTES, st.size);
     const sample =
       sampleSize === 0 ? new Uint8Array() : await this.hostFs.readBytes(abs, sampleSize);
-    const isBinary = detectBinary(sample);
+    const classification = classifyTextSample(sample);
+    const isBinary = classification.isBinary || classification.encoding !== 'utf-8';
     return {
       absolute: abs,
       relative: rel,

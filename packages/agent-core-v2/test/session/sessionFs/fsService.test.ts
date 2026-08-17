@@ -42,11 +42,11 @@ function stubWorkspace(): ISessionWorkspaceContext {
 }
 
 function fakeFs(
-  files: Record<string, string>,
+  files: Record<string, string | Uint8Array>,
   symlinks: readonly string[] = [],
   symlinkTargets: Record<string, string> = {},
 ): IHostFileSystem {
-  const fileMap = new Map<string, string>();
+  const fileMap = new Map<string, string | Uint8Array>();
   const dirSet = new Set<string>([WORK_DIR]);
   const addAncestors = (rel: string): void => {
     const parts = rel.split('/');
@@ -78,10 +78,11 @@ function fakeFs(
   };
   const lstatImpl = async (p: string) => {
     if (fileMap.has(p)) {
+      const c = fileMap.get(p)!;
       return {
         isFile: true,
         isDirectory: false,
-        size: fileMap.get(p)!.length,
+        size: typeof c === 'string' ? Buffer.byteLength(c) : c.byteLength,
         mtimeMs: 1000,
         ino: 1,
       };
@@ -99,7 +100,7 @@ function fakeFs(
     readText: async (p) => {
       const c = fileMap.get(p);
       if (c === undefined) throw enoent(p);
-      return c;
+      return typeof c === 'string' ? c : Buffer.from(c).toString('utf8');
     },
     writeText: async () => {},
     appendText: async () => {},
@@ -338,7 +339,7 @@ function defaultGitStub(): IGitService {
 }
 
 function makeSession(
-  files: Record<string, string>,
+  files: Record<string, string | Uint8Array>,
   handler: RunHandler,
   events: Array<{ event: string; properties: Record<string, unknown> }> = [],
   git: IGitService = defaultGitStub(),
@@ -674,6 +675,67 @@ describe('SessionFsService.read', () => {
     ).rejects.toMatchObject({ code: 'fs.is_binary' });
   });
 
+  it('reads UTF-8 Chinese and emoji logs as text', async () => {
+    const log = '2026-08-16 INFO 启动完成 ✅\n处理请求 🚀 成功\n'.repeat(20);
+    const fs = makeSession({ 'app.log': log }, emptyHandler);
+    const result = await fs.read({
+      path: 'app.log',
+      offset: 0,
+      length: 1024 * 1024,
+      encoding: 'utf-8',
+    });
+    expect(result.content).toBe(log);
+    expect(result.encoding).toBe('utf-8');
+    expect(result.is_binary).toBe(false);
+    expect(result.mime).toBe('text/plain');
+    expect(result.truncated).toBe(false);
+  });
+
+  it('returns UTF-8 text for CJK logs in auto mode', async () => {
+    const fs = makeSession({ 'app.log': '中文日志 ✅\n' }, emptyHandler);
+    const result = await fs.read({
+      path: 'app.log',
+      offset: 0,
+      length: 1024,
+      encoding: 'auto',
+    });
+    expect(result.content).toBe('中文日志 ✅\n');
+    expect(result.encoding).toBe('utf-8');
+    expect(result.is_binary).toBe(false);
+  });
+
+  it('transcodes UTF-16 text before applying the read window', async () => {
+    const utf16 = Buffer.concat([
+      Buffer.from([0xff, 0xfe]),
+      Buffer.from('hello\nworld\n', 'utf16le'),
+    ]);
+    const fs = makeSession({ 'notes.txt': utf16 }, emptyHandler);
+    const result = await fs.read({
+      path: 'notes.txt',
+      offset: 0,
+      length: 1024,
+      encoding: 'utf-8',
+    });
+    expect(result.content).toBe('hello\nworld\n');
+    expect(result.encoding).toBe('utf-8');
+    expect(result.is_binary).toBe(false);
+    expect(result.line_count).toBe(2);
+  });
+
+  it('keeps UTF-16 bytes for base64 requests', async () => {
+    const utf16 = Buffer.concat([Buffer.from([0xff, 0xfe]), Buffer.from('hi', 'utf16le')]);
+    const fs = makeSession({ 'notes.txt': utf16 }, emptyHandler);
+    const result = await fs.read({
+      path: 'notes.txt',
+      offset: 0,
+      length: 1024,
+      encoding: 'base64',
+    });
+    expect(result.encoding).toBe('base64');
+    expect(result.is_binary).toBe(true);
+    expect(result.content).toBe(utf16.toString('base64'));
+  });
+
   it('throws fs.is_directory for a directory', async () => {
     const fs = makeSession({ 'src/a.ts': '' }, emptyHandler);
     await expect(
@@ -758,6 +820,12 @@ describe('SessionFsService.resolveDownload', () => {
     expect(res.mime).toBe('text/plain');
     expect(res.etag).toBeTypeOf('string');
     expect(res.modifiedAt).toBeInstanceOf(Date);
+  });
+
+  it('resolves UTF-8 Chinese logs as text/plain', async () => {
+    const fs = makeSession({ 'app.log': '启动完成 ✅ 中文日志内容\n'.repeat(20) }, emptyHandler);
+    const res = await fs.resolveDownload('app.log');
+    expect(res.mime).toBe('text/plain');
   });
 
   it('throws fs.is_directory for a directory', async () => {
