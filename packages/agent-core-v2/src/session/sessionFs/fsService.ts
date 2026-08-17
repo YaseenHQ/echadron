@@ -68,6 +68,7 @@ import { classifyTextSample, decodeUtfText } from '#/_base/text/encoding';
 import {
   buildEtag,
   countLines,
+  detectBinary,
   FS_BINARY_SAMPLE_BYTES,
   guessLanguageId,
   guessMime,
@@ -99,6 +100,15 @@ const GREP_TIMEOUT_MS = 30_000;
 const WALK_MAX_DEPTH = 64;
 
 const FS_READ_MAX_BYTES = 10 * 1024 * 1024;
+
+/**
+ * Extra raw bytes read past a bounded UTF-16 window, so a surrogate pair (or a
+ * code unit) split by the cut decodes to U+FFFD beyond the returned range
+ * instead of inside it.
+ */
+const UTF16_TRANSCODE_SLACK_BYTES = 64;
+/** Past this window end, bounding the read buys nothing — read to EOF. */
+const UTF16_MAX_BOUNDED_WINDOW = FS_READ_MAX_BYTES;
 
 const HIDDEN_NAME_RE = /^\./;
 const MACOS_NOISE = new Set(['.DS_Store', '.AppleDouble', '.LSOverride']);
@@ -274,12 +284,27 @@ export class SessionFsService implements ISessionFsService {
     }
 
     // For UTF-16, apply offset/length to the decoded UTF-8 representation the
-    // client consumes rather than to the raw two-byte code units.
+    // client consumes rather than to the raw two-byte code units. Only the
+    // prefix that can reach the requested window is read: a UTF-16 code unit
+    // is 2 bytes and decodes to at least 1 UTF-8 byte, so twice the window end
+    // always covers it, and the slack keeps a surrogate pair split by the cut
+    // outside the returned range. Reading the whole file here would defeat
+    // paging — the caller's offset/length exist precisely to bound it.
     let totalLength = st.size;
     let decodedBytes: Uint8Array | undefined;
+    let hasMoreRaw = false;
     if (transcodeEncoding !== undefined) {
+      const windowEnd = req.offset + req.length;
+      let rawWanted = st.size;
+      if (Number.isFinite(windowEnd) && windowEnd <= UTF16_MAX_BOUNDED_WINDOW) {
+        const bounded = windowEnd * 2 + UTF16_TRANSCODE_SLACK_BYTES;
+        if (bounded < st.size) {
+          rawWanted = bounded - (bounded % 2); // whole UTF-16 code units
+          hasMoreRaw = true;
+        }
+      }
       decodedBytes = Buffer.from(
-        decodeUtfText(await this.hostFs.readBytes(abs), transcodeEncoding),
+        decodeUtfText(await this.hostFs.readBytes(abs, rawWanted), transcodeEncoding),
         'utf-8',
       );
       totalLength = decodedBytes.length;
@@ -302,7 +327,9 @@ export class SessionFsService implements ISessionFsService {
       encoding === 'utf-8'
         ? Buffer.from(bytes).toString('utf-8')
         : Buffer.from(bytes).toString('base64');
-    const truncated = req.offset + effectiveLength < totalLength;
+    // `totalLength` is only the whole file when the raw read reached EOF; a
+    // bounded transcode read leaves more content behind by construction.
+    const truncated = hasMoreRaw || req.offset + effectiveLength < totalLength;
 
     const out: FsReadResponse = {
       path: rel,
@@ -441,8 +468,10 @@ export class SessionFsService implements ISessionFsService {
     const sampleSize = Math.min(FS_BINARY_SAMPLE_BYTES, st.size);
     const sample =
       sampleSize === 0 ? new Uint8Array() : await this.hostFs.readBytes(abs, sampleSize);
-    const classification = classifyTextSample(sample);
-    const isBinary = classification.isBinary || classification.encoding !== 'utf-8';
+    // A download streams the raw bytes, so UTF-16 must not be labelled text —
+    // that is exactly what `detectBinary` encodes. Do not swap in the softer
+    // `classifyTextSample().isBinary` here; only `read` above transcodes.
+    const isBinary = detectBinary(sample);
     return {
       absolute: abs,
       relative: rel,

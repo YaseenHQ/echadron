@@ -13,6 +13,7 @@ import { createScopedTestHost, stubPair } from '#/_base/di/test';
 import { IGitService } from '#/app/git/git';
 import { ErrorCodes, Error2 } from '#/errors';
 import { type HostDirEntry, IHostFileSystem } from '#/os/interface/hostFileSystem';
+import { FS_BINARY_SAMPLE_BYTES } from '#/_base/utils/fileMeta';
 import { ISessionFsService } from '#/session/sessionFs/fs';
 import { SessionFsService } from '#/session/sessionFs/fsService';
 import { ISessionProcessRunner, type IProcess } from '#/session/process/processRunner';
@@ -720,6 +721,47 @@ describe('SessionFsService.read', () => {
     expect(result.encoding).toBe('utf-8');
     expect(result.is_binary).toBe(false);
     expect(result.line_count).toBe(2);
+  });
+
+  it('bounds the raw read when a UTF-16 window is requested', async () => {
+    // Transcoding needs raw bytes, but only enough to reach the window: pulling
+    // the whole file would defeat the offset/length the caller passed to page a
+    // large file, and allocate a second decoded copy of all of it.
+    const utf16 = Buffer.concat([
+      Buffer.from([0xff, 0xfe]),
+      Buffer.from('x'.repeat(512 * 1024), 'utf16le'), // 1 MiB of UTF-16
+    ]);
+    const reads: number[] = [];
+    const base = fakeFs({ 'big.txt': utf16 });
+    const spyFs: IHostFileSystem = {
+      ...base,
+      readBytes: async (p, n) => {
+        reads.push(n ?? Number.POSITIVE_INFINITY);
+        return base.readBytes(p, n);
+      },
+    };
+    host = createScopedTestHost();
+    const session = host.child(LifecycleScope.Session, 's1', [
+      stubPair(ISessionWorkspaceContext, stubWorkspace()),
+      stubPair(IHostFileSystem, spyFs),
+      stubPair(ISessionProcessRunner, fakeRunner(emptyHandler)),
+      stubPair(ITelemetryService, telemetryStub([])),
+      stubPair(IGitService, defaultGitStub()),
+    ]);
+    const fs = session.accessor.get(ISessionFsService);
+
+    const result = await fs.read({
+      path: 'big.txt',
+      offset: 0,
+      length: 64,
+      encoding: 'utf-8',
+    });
+
+    expect(result.content).toBe('x'.repeat(64));
+    expect(result.truncated).toBe(true);
+    // No read may exceed the 4 KiB classification sample; before bounding, the
+    // transcode read asked for the entire 1 MiB file.
+    expect(Math.max(...reads)).toBeLessThanOrEqual(FS_BINARY_SAMPLE_BYTES);
   });
 
   it('keeps UTF-16 bytes for base64 requests', async () => {
